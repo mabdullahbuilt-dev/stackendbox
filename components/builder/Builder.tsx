@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
 import { ArrowLeft, Check } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -302,7 +303,7 @@ export function Builder() {
                       <div className="done__sub"><span className="mono mono--muted">SUBMITTED</span><b>{brief.needs.join(" + ")}</b></div>
                       <div className="brief__actions">
                         <CalButton placement="builder-done" className="btn btn--lg btn--primary" />
-                        <a className="btn btn--lg btn--secondary" href="/">Back to StackEndBox</a>
+                        <Link className="btn btn--lg btn--secondary" href="/">Back to StackEndBox</Link>
                         {siteConfig.whatsappUrl && (
                           <a className="link-cta" href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">Message us</a>
                         )}

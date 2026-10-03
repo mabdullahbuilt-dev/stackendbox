@@ -10,7 +10,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
 {
   const { p, errs } = await open({ viewport: { width: 1440, height: 900 } });
   ok((await p.locator("h1").count()) === 1, "single h1");
-  ok((await p.locator("h1").innerText()).replace(/\s+/g, " ").trim() === "Build the product. Automate the work. Connect the stack.", "h1 text correct");
+  ok((await p.locator("h1").innerText()).replace(/\s+/g, " ").trim() === "Build the product. Improve the operation. Connect the stack.", "h1 text correct");
   ok((await p.locator(".hero__canvas canvas").count()) === 0, "hero WebGL waits for first interaction");
   await p.mouse.move(600, 400); await p.mouse.move(640, 420);
   await p.waitForTimeout(3500);
@@ -18,9 +18,9 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   ok((await p.locator("#testimonials").count()) === 0, "testimonials hidden (no verified entries)");
   ok((await p.locator("a[href='#']").count()) === 0, "no dead # links");
   const html = await p.content();
-  ok(!html.includes("—"), "no em dash in rendered HTML");
+  ok(!html.includes("\u2014"), "no em dash in rendered HTML");
   // tablists: arrow keys
-  for (const [sel, label] of [["#intent [role=tablist]", "intent"], ["#transform [role=tablist]", "transform"], ["#labs [role=tablist]", "labs"], ["#process [role=tablist]", "process"]]) {
+  for (const [sel, label] of [["#intent [role=tablist]", "intent"], ["#transform [role=tablist]", "transform"], ["#proof [role=tablist]", "proof"], ["#process [role=tablist]", "process"]]) {
     await p.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "center" }), sel);
     await p.waitForTimeout(400);
     const first = p.locator(`${sel} [role=tab][aria-selected=true]`);
@@ -38,9 +38,9 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   // rescue CTA preselects stage
   await p.evaluate(() => document.querySelector("#rescue").scrollIntoView());
   await p.getByRole("link", { name: "Improve an Existing Product" }).click();
+  await p.waitForTimeout(2000);
+  await p.locator("#start .builder__next").click();
   await p.waitForTimeout(1200);
-  await p.getByRole("button", { name: "Continue" }).click();
-  await p.waitForTimeout(900);
   ok((await p.locator("#start .choice[data-checked='true']").allInnerTexts()).join("|").includes("Existing Product"), "rescue CTA preselects Existing Product stage");
   ok(errs.length === 0, "no console errors " + errs.join("|").slice(0, 200));
 }
@@ -65,7 +65,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   ok((await p.evaluate(() => document.documentElement.dataset.motion)) === "reduced", "reduced motion flag set");
   await p.evaluate(() => document.querySelector("#transform").scrollIntoView());
   await p.waitForTimeout(600);
-  ok((await p.locator("#transform .tf__stage").getAttribute("data-state")) === "after", "reduced motion: transformation shows final state");
+  ok((await p.locator("#transform .mt").getAttribute("data-state")) === "after", "reduced motion: transformation shows final state");
   ok(errs.length === 0, "reduced motion: no console errors");
 }
 // --- manual motion switch

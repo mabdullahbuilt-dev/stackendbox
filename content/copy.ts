@@ -9,7 +9,7 @@ export const copy = {
   nav: {
     links: [
       { label: "Services", href: "/#services", id: "services" },
-      { label: "Work", href: "/#work", id: "work" },
+      { label: "Work", href: "/#proof", id: "proof" },
       { label: "How We Build", href: "/#process", id: "process" },
       { label: "Company", href: "/#delivery", id: "delivery" },
     ],
@@ -17,9 +17,9 @@ export const copy = {
   },
   hero: {
     eyebrow: "PRODUCTS · AI · AUTOMATION · INTEGRATIONS",
-    lines: ["Build the product.", "Automate the work.", "Connect the stack."],
+    lines: ["Build the product.", "Improve the operation.", "Connect the stack."],
     support:
-      "StackEndBox designs and engineers SaaS, web apps, AI systems, automations, APIs and internal platforms from first brief to production.",
+      "SaaS, web apps, AI systems, internal platforms, automations and custom software, from first brief to production.",
     primary: "Start a Project",
     secondary: "See What We Build",
     chips: ["SaaS", "MVPs", "Web Apps", "AI", "Automation", "CRM", "APIs", "Custom Software"],
@@ -29,28 +29,28 @@ export const copy = {
     title: "What can we build for you?",
     support: "From the first idea to the systems your business runs on.",
   },
+  start: { eyebrow: "STARTING POINT", title: "Where are you starting from?" },
   intent: {
     eyebrow: "START WITH THE OUTCOME",
     title: "What are you trying to build?",
     support: "Choose the outcome. See what the system behind it could look like.",
   },
   transform: {
-    eyebrow: "MANUAL TO AUTOMATED",
-    title: "Manual today. Automated tomorrow.",
-    support: "Show us the repetitive process. We can turn it into a system.",
+    eyebrow: "MANUAL TO SYSTEM",
+    title: "Manual today. System tomorrow.",
+    support: "Show us the process your team repeats.",
     before: "Before",
     after: "After",
   },
-  labs: {
-    eyebrow: "STACKENDBOX LABS",
-    title: "See how we solve real problems.",
-    support: "Systems we build internally to demonstrate how we solve real operational and product problems.",
-    meta: "BUILT BY STACKENDBOX · CAPABILITY BUILDS",
+  proof: {
+    eyebrow: "PROOF",
+    title: "Built to work.",
+    support: "Products and systems across software, AI, automation, integrations and specialized platforms.",
   },
   product: {
     eyebrow: "PRODUCT DELIVERY",
-    title: "From idea to something people can use.",
-    support: "We take the brief through product design, engineering and launch.",
+    title: "From idea to working product.",
+    support: "",
     cta: "Build Your MVP",
     brief: "Customers need to book, pay and manage appointments online.",
     captions: ["01 BRIEF", "02 STRUCTURE", "03 WIREFRAME", "04 INTERFACE", "05 BACKEND", "06 ACCESS", "07 BILLING", "08 ADMIN", "09 MOBILE", "10 LIVE"],
@@ -59,9 +59,7 @@ export const copy = {
     eyebrow: "EXISTING PRODUCTS",
     titleA: "Already have something?",
     titleB: "We can take it further.",
-    support: "A prototype, an inherited codebase or a product that is hard to change. We stabilize it, extend it and get it production ready.",
     cta: "Improve an Existing Product",
-    note: "Tell us what you have and where it hurts.",
   },
   founders: {
     eyebrow: "FOR FOUNDERS",
@@ -73,20 +71,16 @@ export const copy = {
     secondary: "Show Us Your Prototype",
   },
   ai: {
-    eyebrow: "AI APPLICATIONS",
+    eyebrow: "AI SYSTEMS",
     title: "AI should do work, not just answer questions.",
-    support: "Connect models to your data, APIs, tools and approval workflows.",
     cta: "Build an AI System",
-    verbs: ["classify", "summarize", "retrieve", "generate", "route", "extract", "recommend", "act", "verify"],
   },
   integrations: {
     eyebrow: "INTEGRATIONS",
-    title: "Your tools should work together.",
-    support: "We connect the systems your business already uses so information moves without manual copying.",
-    label: "Systems we can connect",
+    title: "Make your tools work as one system.",
+    support: "Payments, CRM, calendars, messaging, data and AI, connected around how your business runs.",
     techLabel: "TECHNOLOGY WE BUILD WITH",
     cta: "Connect Your Stack",
-    events: ["Payment received", "CRM updated", "Meeting booked", "Message sent", "Data synced", "AI summary created"],
   },
   work: {
     eyebrow: "ENGINEERED WORK",
@@ -103,15 +97,11 @@ export const copy = {
   },
   process: {
     eyebrow: "HOW WE BUILD",
-    title: "From first brief to launch.",
-    support: "You see working software early and often.",
+    title: "From problem to production.",
+    support: "",
   },
   testimonials: { eyebrow: "CLIENT WORDS", title: "What clients say." },
-  trust: {
-    eyebrow: "DELIVERY",
-    title: "What working with StackEndBox looks like.",
-    support: "Six commitments that shape every engagement.",
-  },
+  why: { eyebrow: "WHY STACKENDBOX", title: "Why teams bring StackEndBox in." },
   builder: {
     eyebrow: "START A PROJECT",
     title: "Tell us what you need.",

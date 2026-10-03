@@ -4,7 +4,6 @@ import { copy } from "@/content/copy";
 import { projectImage, projects, type Project } from "@/content/projects";
 import { Reveal } from "@/components/ui/Reveal";
 import { Chip } from "@/components/ui/StatusChip";
-import { ProjectComposition } from "./compositions";
 import { ProjectLinks } from "./ProjectLinks";
 
 function Card({ p, big }: { p: Project; big?: boolean }) {
@@ -13,13 +12,13 @@ function Card({ p, big }: { p: Project; big?: boolean }) {
     <article className="wk" data-big={big} aria-labelledby={`wk-${p.slug}`}>
       <div className="wk__media">
         <div className="wk__frame">
-          {img ? <Image src={img} alt={p.imageAlt} fill sizes={big ? "(max-width: 900px) 92vw, 640px" : "(max-width: 900px) 92vw, 420px"} className="wk__img" loading="lazy" /> : <div className="wk__comp" role="img" aria-label={p.imageAlt}><ProjectComposition slug={p.slug} /></div>}
+          {img ? <Image src={img} alt={p.imageAlt} fill sizes={big ? "(max-width: 900px) 92vw, 640px" : "(max-width: 900px) 92vw, 420px"} className="wk__img" loading="lazy" /> : null}
         </div>
       </div>
       <div className="wk__body">
         <h3 id={`wk-${p.slug}`} className="wk__t">{p.title}</h3>
         <p className="wk__p">{p.text}</p>
-        <ul className="wk__tags" aria-label={`${p.title} capabilities`}>{p.tags.slice(0, big ? 4 : 3).map((t) => <li key={t}><Chip>{t}</Chip></li>)}</ul>
+        <ul className="wk__tags" aria-label={`${p.title} capabilities`}>{p.tags.slice(0, 3).map((t) => <li key={t}><Chip>{t}</Chip></li>)}</ul>
         <ProjectLinks slug={p.slug} liveUrl={p.liveUrl} githubUrl={p.githubUrl} cta={copy.work.cta} />
       </div>
     </article>
@@ -27,8 +26,10 @@ function Card({ p, big }: { p: Project; big?: boolean }) {
 }
 
 export function Work() {
-  const feat = projects.filter((p) => p.featured);
-  const rest = projects.filter((p) => !p.featured);
+  // Only projects with a real screenshot are shown; a project without one is omitted rather than faked.
+  const shown = projects.filter((p) => projectImage(p.slug));
+  const feat = shown.filter((p) => p.featured);
+  const rest = shown.filter((p) => !p.featured);
   return (
     <section id="work" className="section work" aria-labelledby="work-title">
       <div className="container">
@@ -37,8 +38,8 @@ export function Work() {
           <h2 id="work-title" className="h2">{copy.work.title}</h2>
           <p className="body-l">{copy.work.support}</p>
         </Reveal>
-        <div className="work__feat">{feat.map((p, i) => <Reveal key={p.slug} delay={i * 0.06}><Card p={p} big /></Reveal>)}</div>
-        <div className="work__rest">{rest.map((p, i) => <Reveal key={p.slug} delay={i * 0.06}><Card p={p} /></Reveal>)}</div>
+        <div className="work__feat">{feat.map((p) => <Reveal key={p.slug}><Card p={p} big /></Reveal>)}</div>
+        <div className="work__rest">{rest.map((p, i) => <Reveal key={p.slug} delay={i * 0.05}><Card p={p} /></Reveal>)}</div>
         <span className="sr-only"><ArrowUpRight aria-hidden /></span>
       </div>
     </section>

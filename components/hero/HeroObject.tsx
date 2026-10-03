@@ -19,6 +19,7 @@ const D = 1.6;
 const SEAM = 0.012;
 /** Max extra gap per slab: about 16px at the default stage size, so the stack stays inside its frame. */
 const GAP = 0.07;
+const GREEN = new THREE.Color("#2fd27a");
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
@@ -67,7 +68,7 @@ function Slab({ index, mod, seed, hovered, onHover, innerRef, stillMode, accents
       onClick={(e) => { e.stopPropagation(); onHover(hovered ? null : index); }}
     >
       <RoundedBox args={[W, H, D]} radius={0.025} smoothness={2}>
-        <meshStandardMaterial color="#2A2F37" roughness={0.5} metalness={0.45} />
+        <meshStandardMaterial color="#33362f" roughness={0.46} metalness={0.5} />
       </RoundedBox>
       {tex && (
         <>
@@ -86,7 +87,7 @@ function Slab({ index, mod, seed, hovered, onHover, innerRef, stillMode, accents
         </>
       )}
       <lineSegments geometry={edges}>
-        <lineBasicMaterial color="#EDF1F5" transparent opacity={0.5} />
+        <lineBasicMaterial color="#E8EAE5" transparent opacity={0.6} />
       </lineSegments>
       <mesh position={[0, H / 2 - 0.005, D / 2 + 0.003]}>
         <boxGeometry args={[W - 0.06, 0.008, 0.004]} />
@@ -116,6 +117,7 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
   const slabs = useRef<(THREE.Group | null)[]>([]);
   const accents = useRef<Accent[]>([]);
   const hoverAmt = useRef<number[]>(Array(n).fill(0));
+  const baseCols = useRef<THREE.Color[]>(modules.map((m) => new THREE.Color(m.accent)));
   const actAmt = useRef<number[]>(Array(n).fill(0));
   const rot = useRef({ x: 0, y: 0 });
   const t0 = useRef<number | null>(null);
@@ -171,9 +173,15 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
       y += actAmt.current[i] * 0.03;
       const ac = accents.current[i];
       if (ac) {
-        const o = Math.min(1, modules[i].accentOpacity + actAmt.current[i] * 0.55);
-        if (ac.a) ac.a.opacity = o;
-        if (ac.b) ac.b.opacity = o;
+        const o = Math.min(1, modules[i].accentOpacity + actAmt.current[i] * 0.6);
+        // BUILD is orange, CONNECTED is green: a layer the signal has reached turns green, and the
+        // delivery layer stays green once the stack settles (the LIVE state).
+        const reached = !still && rawE > 0.3 && bus.pulse * n > fromBottom + 0.5;
+        const live = !still && bus.settle > 0.5 && i === 0;
+        const col = reached || live ? GREEN : baseCols.current[i];
+        if (ac.a) { ac.a.opacity = o; ac.a.color.lerp(col, 0.25); }
+        if (ac.b) { ac.b.opacity = o; ac.b.color.lerp(col, 0.25); }
+        if (ac.a && (Math.abs(ac.a.color.r - col.r) + Math.abs(ac.a.color.g - col.g) + Math.abs(ac.a.color.b - col.b)) > 0.01) busy = true;
       }
       g.position.y += (y - g.position.y) * (still || !animateIn ? 1 : 1 - Math.pow(1 - 0.35, dt * 60));
       if (Math.abs(y - g.position.y) > 0.0008) busy = true;
@@ -217,10 +225,10 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
           innerRef={(g) => { slabs.current[i] = g; if (g && g.position.y === 0) g.position.y = (n - 1 - i) * (H + SEAM) + (still ? 0 : 1.2); }}
         />
       ))}
-      {/* data pulse travelling through the layers: a thin cyan plane, no arrows */}
+      {/* signal travelling through the layers: a thin orange plane, no arrows */}
       <mesh ref={pulse} visible={false}>
         <boxGeometry args={[W + 0.04, 0.005, D + 0.04]} />
-        <meshBasicMaterial color="#52D2FF" transparent opacity={0.28} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial color="#ff7a1a" transparent opacity={0.32} toneMapped={false} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -243,8 +251,8 @@ export default function HeroObject(props: Props) {
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 6, 2]} intensity={0.6} />
       <Environment resolution={128} frames={1}>
-        <Lightformer form="rect" intensity={7} color="#e8eefc" position={[4, 5, 3]} scale={[10, 5, 1]} rotation-x={-0.9} />
-        <Lightformer form="rect" intensity={0.5} color="#4169FF" position={[-6, 2, -1]} scale={[6, 6, 1]} rotation-y={1.2} />
+        <Lightformer form="rect" intensity={7} color="#f4f1ea" position={[4, 5, 3]} scale={[10, 5, 1]} rotation-x={-0.9} />
+        <Lightformer form="rect" intensity={0.5} color="#ff7a1a" position={[-6, 2, -1]} scale={[6, 6, 1]} rotation-y={1.2} />
         <Lightformer form="ring" intensity={1.2} color="#ffffff" position={[0, 8, 0]} scale={4} rotation-x={Math.PI / 2} />
       </Environment>
       <Stack {...props} />

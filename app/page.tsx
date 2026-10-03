@@ -2,9 +2,9 @@ import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { Hero } from "@/components/hero/Hero";
 import { Services } from "@/components/services/Services";
-import { Intent } from "@/components/intent/Intent";
+import { StartingPoint } from "@/components/start/StartingPoint";
 import { Transformation } from "@/components/transformation/Transformation";
-import { Labs } from "@/components/labs/Labs";
+import { ProofSection } from "@/components/proof/ProofSection";
 import { IdeaToProduct } from "@/components/scenes/IdeaToProduct";
 import { ProductRescue } from "@/components/rescue/ProductRescue";
 import { AiSection } from "@/components/ai/AiSection";
@@ -13,7 +13,7 @@ import { Work } from "@/components/work/Work";
 import { UnderInterface } from "@/components/scenes/UnderInterface";
 import { Process } from "@/components/process/Process";
 import { Testimonials } from "@/components/testimonials/Testimonials";
-import { Trust } from "@/components/trust/Trust";
+import { Why } from "@/components/why/Why";
 import { Builder } from "@/components/builder/Builder";
 import { FinalCTA } from "@/components/site/FinalCTA";
 
@@ -24,18 +24,18 @@ export default function Home() {
       <main id="main">
         <Hero />
         <Services />
-        <Intent />
+        <StartingPoint />
         <Transformation />
-        <Labs />
         <IdeaToProduct />
         <ProductRescue />
         <AiSection />
         <Integrations />
+        <ProofSection />
         <Work />
         <UnderInterface />
         <Process />
         <Testimonials />
-        <Trust />
+        <Why />
         <Builder />
         <FinalCTA />
       </main>

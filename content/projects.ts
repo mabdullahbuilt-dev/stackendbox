@@ -14,11 +14,11 @@ export type Project = {
 };
 
 export const projects: Project[] = [
-  { slug: "resolve", title: "RESOLVE", featured: true, text: "An economic intelligence platform that observes verified activity across code, research, music and media, then turns it into funding programs, payout policies and settlement.", tags: ["Value routing", "Evidence engine", "Payments", "Web3"], imageAlt: "RESOLVE value routing engine connecting source activity to funding and settlement." },
-  { slug: "meridian", title: "MERIDIAN", featured: true, text: "A market intelligence system that turns live data into testable strategy, with explainable rules and permit gated execution.", tags: ["Market data", "Strategy engine", "Backtesting", "Execution"], imageAlt: "MERIDIAN market intelligence home screen." },
-  { slug: "repodiet", title: "RepoDiet", text: "Repository cleanup as a delivery contract: evidence backed analysis, scoped approval, isolated execution and a reviewable pull request.", tags: ["Repository analysis", "Agents", "PR delivery"], imageAlt: "RepoDiet delivery engine from analysis to pull request." },
-  { slug: "agora-forge", title: "Agora Forge", text: "A cross chain execution desk that routes USDC with Circle CCTP, compares routes in real time and settles swaps.", tags: ["Cross chain", "Routing", "Settlement"], imageAlt: "Agora Forge execution desk with live multichain quotes." },
-  { slug: "xroga", title: "Xroga", text: "An AI app builder that turns a Web3 idea into a working project, with repository aware edits and preview verification.", tags: ["AI builder", "Repository edits", "Previews", "Web3"], imageAlt: "Xroga AI app builder landing page." },
+  { slug: "resolve", title: "RESOLVE", featured: true, text: "Evidence based platform that routes funding and payouts to verified work.", tags: ["Value routing", "Evidence engine", "Payments", "Web3"], imageAlt: "RESOLVE value routing engine connecting source activity to funding and settlement." },
+  { slug: "meridian", title: "MERIDIAN", text: "Market intelligence that turns live data into testable strategy.", tags: ["Market data", "Strategy engine", "Backtesting", "Execution"], imageAlt: "MERIDIAN market intelligence home screen." },
+  { slug: "repodiet", title: "RepoDiet", text: "AI repository cleanup delivered as a reviewable pull request.", tags: ["Repository analysis", "Agents", "PR delivery"], imageAlt: "RepoDiet delivery engine from analysis to pull request." },
+  { slug: "agora-forge", title: "Agora Forge", text: "Cross chain execution desk with live routes and settlement.", tags: ["Cross chain", "Routing", "Settlement"], imageAlt: "Agora Forge execution desk with live multichain quotes." },
+  { slug: "xroga", title: "Xroga", text: "AI app builder that turns a Web3 idea into a working project.", tags: ["AI builder", "Repository edits", "Previews", "Web3"], imageAlt: "Xroga AI app builder landing page." },
 ];
 
 const exts = ["avif", "webp", "png", "jpg"] as const;
