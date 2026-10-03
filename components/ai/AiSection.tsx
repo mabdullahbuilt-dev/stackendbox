@@ -1,76 +1,126 @@
 "use client";
-import { ArrowRight, Bot, Check, Database, Eye, FileSearch, FileText, GitBranch, MessageSquare, Sparkles, Zap, UserCheck, type LucideIcon } from "lucide-react";
+import { ArrowRight, Bot, Database, Eye, FileText, MessageSquare, Plug, Search, UserCheck, Wrench, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
 import { presetBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
-import { useSteps } from "@/lib/useSteps";
 import { Reveal } from "@/components/ui/Reveal";
 
-const trace: [LucideIcon, string, string][] = [
-  [MessageSquare, "Request", "A customer asks for a refund on order 5521"],
-  [FileSearch, "Context", "Order, policy and past tickets retrieved"],
-  [Bot, "Model", "Decides the next step from the policy"],
-  [Zap, "Tool call", "check_refund_eligibility(order_5521)"],
-  [Database, "Data", "Payment record and delivery status read"],
-  [UserCheck, "Approval", "Refund over the limit waits for a person"],
-  [Check, "Action", "Refund issued and customer notified"],
+type NodeKey = "vision" | "docs" | "search" | "db" | "api" | "tools" | "approval" | "msg";
+const NODES: { key: NodeKey; label: string; icon: LucideIcon }[] = [
+  { key: "vision", label: "Vision", icon: Eye },
+  { key: "docs", label: "Documents", icon: FileText },
+  { key: "search", label: "Search", icon: Search },
+  { key: "db", label: "Database", icon: Database },
+  { key: "api", label: "APIs", icon: Plug },
+  { key: "tools", label: "Tools", icon: Wrench },
+  { key: "approval", label: "Human approval", icon: UserCheck },
+  { key: "msg", label: "Messaging", icon: MessageSquare },
 ];
-
-const uses: [LucideIcon, string, string][] = [
-  [GitBranch, "Classify and route", "Tag each incoming request and send it to the right queue. SupportGrid does this for support."],
-  [FileSearch, "Retrieve with sources", "Answer from your own documents and show where each answer came from."],
-  [FileText, "Extract and verify", "Pull structured fields from PDFs, forms and emails, then check them against rules."],
-  [Eye, "See and score", "Read images and data together to rank opportunities. DealSignal does this for property."],
-  [Sparkles, "Generate", "Draft scripts, voiceovers and media. ListingReel AI does this for video."],
+type Step = { node: NodeKey; text: string; state?: "blocked" };
+const SCENARIOS: { id: string; tab: string; hub: string; steps: Step[]; cta: string }[] = [
+  { id: "support", tab: "Support", hub: "Refund request", cta: "Build an AI Support System", steps: [
+    { node: "msg", text: "Request received" }, { node: "search", text: "Policy found" }, { node: "db", text: "Order checked" }, { node: "tools", text: "Refund tool called" },
+    { node: "approval", text: "Over the limit: needs a person", state: "blocked" }, { node: "approval", text: "Approved" }, { node: "msg", text: "Customer notified" } ] },
+  { id: "documents", tab: "Documents", hub: "Supplier contract", cta: "Build Document Intelligence", steps: [
+    { node: "docs", text: "Document uploaded" }, { node: "vision", text: "Pages read" }, { node: "tools", text: "Fields extracted" }, { node: "approval", text: "Missing date: flagged", state: "blocked" },
+    { node: "approval", text: "Corrected" }, { node: "db", text: "Validated and stored" } ] },
+  { id: "market", tab: "Market data", hub: "Opportunity signal", cta: "Build a Data Intelligence System", steps: [
+    { node: "api", text: "Live data in" }, { node: "vision", text: "Charts and images read" }, { node: "db", text: "History compared" }, { node: "tools", text: "Score calculated" },
+    { node: "approval", text: "Risk check passed" }, { node: "msg", text: "Alert sent" } ] },
 ];
+const ANG = (i: number) => (i / NODES.length) * Math.PI * 2 - Math.PI / 2;
+const at = (i: number, r: number) => [50 + Math.cos(ANG(i)) * r, 50 + Math.sin(ANG(i)) * r] as const;
 
 export function AiSection() {
   const { reduced } = useMotionPreference();
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, "-10% 0px -10% 0px");
-  const s = useSteps([0, 900, 1800, 2700, 3600, 4500, 5800], inView && !reduced, reduced, 3200);
+  const [tab, setTab] = useState(0);
+  const [step, setStep] = useState(0);
+  const box = useRef<HTMLDivElement>(null);
+  const inView = useInView(box, "-15% 0px -15% 0px");
+  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const played = useRef(false);
+  const sc = SCENARIOS[tab];
+  const N = sc.steps.length;
+
+  const play = (n: number) => {
+    clearInterval(timer.current);
+    let k = 0;
+    setStep(0);
+    timer.current = setInterval(() => { k += 1; setStep(k); if (k >= n) clearInterval(timer.current); }, 850);
+  };
+  useEffect(() => { if (reduced) setStep(N); }, [reduced, N, tab]);
+  useEffect(() => {
+    if (reduced || !inView || played.current) return;
+    played.current = true;
+    const t = setTimeout(() => play(N), 400);
+    return () => clearTimeout(t);
+  }, [inView, reduced, N]);
+  useEffect(() => () => clearInterval(timer.current), []);
+
+  const pick = (i: number) => { setTab(i); track("scene_replay", { scene: "ai", scenario: SCENARIOS[i].id }); if (reduced) setStep(SCENARIOS[i].steps.length); else play(SCENARIOS[i].steps.length); };
+  const onKey = (e: React.KeyboardEvent) => {
+    let i = -1;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") i = (tab + 1) % SCENARIOS.length;
+    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") i = (tab - 1 + SCENARIOS.length) % SCENARIOS.length;
+    if (i >= 0) { e.preventDefault(); pick(i); tabs.current[i]?.focus(); }
+  };
+
+  // state of each node derived from the steps played so far
+  const nodeState = (k: NodeKey): "idle" | "active" | "done" | "blocked" => {
+    let st: "idle" | "active" | "done" | "blocked" = "idle";
+    sc.steps.forEach((s, i) => {
+      if (s.node !== k) return;
+      if (step > i) st = "done";
+      else if (step === i) st = s.state === "blocked" ? "blocked" : "active";
+    });
+    return st;
+  };
+  const current = sc.steps[Math.min(step, N - 1)];
   return (
     <section id="ai" className="section section--alt aisec" aria-labelledby="ai-title">
       <div className="container">
         <Reveal className="sec-head">
           <p className="eyebrow">{copy.ai.eyebrow}</p>
           <h2 id="ai-title" className="h2">{copy.ai.title}</h2>
-          <p className="body-l">{copy.ai.support}</p>
         </Reveal>
-        <div className="aisec__grid" ref={ref}>
-          <div className="aiwin" aria-hidden>
-            <div className="aiwin__bar"><i /><i /><i /><span>Support agent</span><b className="mono" data-done={s >= 6}>{s >= 6 ? "COMPLETE" : "RUNNING"}</b></div>
-            <div className="aiwin__chat">
-              <div className="aib aib--u" data-on={s >= 0}>I was charged twice for order 5521. Can I get a refund?</div>
-              <div className="aib" data-on={s >= 2}>I checked your order and the refund policy. Refunding the duplicate charge needs a quick approval.</div>
-              <div className="aiapp" data-on={s >= 5} data-ok={s >= 6}>
-                <span className="mono">APPROVAL NEEDED</span>
-                <b>Refund 1 duplicate charge</b>
-                <div><span className="mk-btn mk-btn--ok">{s >= 6 ? "Approved" : "Approve"}</span><span className="mk-btn">Edit</span></div>
-              </div>
-              <div className="aib aib--g" data-on={s >= 6}>Done. The duplicate charge is refunded and you will get an email shortly.</div>
-            </div>
+        <div className="aix">
+          <div className="aix__orbit" ref={box} aria-hidden>
+            <svg viewBox="0 0 100 100" className="aix__lines" preserveAspectRatio="none">
+              {NODES.map((n, i) => { const [x, y] = at(i, 38); const st = nodeState(n.key); return <line key={n.key} x1="50" y1="50" x2={x} y2={y} data-st={st} />; })}
+            </svg>
+            <div className="aix__hub" data-done={step >= N}><Bot /><b>AI system</b><em className="mono">{sc.hub}</em></div>
+            {NODES.map((n, i) => {
+              const [x, y] = at(i, 38);
+              const st = nodeState(n.key);
+              return (
+                <div key={n.key} className="aix__node" data-st={st} style={{ left: `${x}%`, top: `${y}%` }}>
+                  <span><n.icon /></span><b>{n.label}</b>
+                </div>
+              );
+            })}
           </div>
-          <ol className="aitrace" aria-hidden>
-            {trace.map(([I, t, d], i) => (
-              <li key={t} data-state={s > i ? "done" : s === i ? "active" : "idle"}>
-                <span className="aitrace__ic"><I /></span>
-                <b>{t}</b><em>{d}</em>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <p className="sr-only">An AI agent receives a refund request, retrieves the order and policy, calls a tool to check eligibility, reads payment data, waits for human approval and then issues the refund.</p>
-        <ul className="aiuses" aria-label="Different ways AI is used">
-          {uses.map(([I, t, d]) => <li key={t}><I aria-hidden /><b>{t}</b><span>{d}</span></li>)}
-        </ul>
-        <div className="aisec__foot">
-          <ul className="aiverbs" aria-label="What AI can do inside a workflow">{copy.ai.verbs.map((v) => <li key={v}>{v}</li>)}</ul>
-          <Link href="/#start" className="btn btn--primary" onClick={() => { track("ai_cta", { placement: "ai" }); presetBuilder("AI System"); }}>{copy.ai.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+          <div className="aix__side">
+            <div className="aix__tabs" role="tablist" aria-label="AI examples" onKeyDown={onKey}>
+              {SCENARIOS.map((s, i) => (
+                <button key={s.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`ai-${s.id}`} aria-selected={tab === i} aria-controls="ai-panel" tabIndex={tab === i ? 0 : -1} className="itab" data-active={tab === i} onClick={() => pick(i)}>{s.tab}</button>
+              ))}
+            </div>
+            <div id="ai-panel" role="tabpanel" aria-labelledby={`ai-${sc.id}`}>
+              <ol className="aix__steps" aria-label="What the system does">
+                {sc.steps.map((s, i) => {
+                  const st = step > i ? "done" : step === i ? (s.state === "blocked" ? "blocked" : "active") : "idle";
+                  return <li key={sc.id + i} data-st={st}><span className="mono">{String(i + 1).padStart(2, "0")}</span>{s.text}</li>;
+                })}
+              </ol>
+              <p className="sr-only" aria-live="polite">{current.text}</p>
+            </div>
+            <Link href="/#start" className="btn btn--primary" onClick={() => { track("ai_cta", { placement: "ai", scenario: sc.id }); presetBuilder("AI System"); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+          </div>
         </div>
       </div>
     </section>

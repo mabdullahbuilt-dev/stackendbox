@@ -10,6 +10,12 @@ import "@/styles/site.css";
 import "@/styles/sections.css";
 import "@/styles/scenes.css";
 import "@/styles/start.css";
+import "@/styles/transform.css";
+import "@/styles/product.css";
+import "@/styles/rescue.css";
+import "@/styles/ai.css";
+import "@/styles/depth.css";
+import "@/styles/why.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

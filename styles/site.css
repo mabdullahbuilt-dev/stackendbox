@@ -71,3 +71,9 @@
 html[data-cv="off"] #services, html[data-cv="off"] #intent, html[data-cv="off"] #transform, html[data-cv="off"] #labs, html[data-cv="off"] #founders, html[data-cv="off"] #ai, html[data-cv="off"] #integrations, html[data-cv="off"] #work, html[data-cv="off"] #process, html[data-cv="off"] #testimonials, html[data-cv="off"] #delivery, html[data-cv="off"] #start, html[data-cv="off"] #final, html[data-cv="off"] .footer, html[data-cv="off"] #rescue { content-visibility: visible; }
 @media (max-width: 767px) { .nav__bar { min-width: 0; } .nav__logo { min-width: 0; flex: 1 1 0; overflow: hidden; } .nav__right { flex: none; } .nav__cta-compact .btn { padding: 0 12px; } }
 .labs__primary > *, .labtab { min-width: 0; } .labtab__n, .labtab b { overflow-wrap: anywhere; }
+
+/* Section background rhythm (art direction): not every section is the same black */
+.hero__sticky { background: var(--black-950); }
+#services { background: var(--black-850); } #intent { background: var(--black-800); } #transform { background: var(--black-900); }
+#labs { background: #101310; } #rescue { background: var(--black-800); } #ai { background: #090c09; } #integrations { background: #101410; }
+#work { background: #070807; } #process { background: var(--black-850); } #start { background: var(--black-900); } #final { background: var(--black-950); }

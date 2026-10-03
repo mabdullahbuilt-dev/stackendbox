@@ -38,7 +38,7 @@ export const copy = {
   transform: {
     eyebrow: "MANUAL TO AUTOMATED",
     title: "Manual today. Automated tomorrow.",
-    support: "Show us the repetitive process. We can turn it into a system.",
+    support: "Show us the process your team repeats.",
     before: "Before",
     after: "After",
   },
@@ -50,8 +50,8 @@ export const copy = {
   },
   product: {
     eyebrow: "PRODUCT DELIVERY",
-    title: "From idea to something people can use.",
-    support: "We take the brief through product design, engineering and launch.",
+    title: "From idea to working product.",
+    support: "",
     cta: "Build Your MVP",
     brief: "Customers need to book, pay and manage appointments online.",
     captions: ["01 BRIEF", "02 STRUCTURE", "03 WIREFRAME", "04 INTERFACE", "05 BACKEND", "06 ACCESS", "07 BILLING", "08 ADMIN", "09 MOBILE", "10 LIVE"],
@@ -60,9 +60,7 @@ export const copy = {
     eyebrow: "EXISTING PRODUCTS",
     titleA: "Already have something?",
     titleB: "We can take it further.",
-    support: "A prototype, an inherited codebase or a product that is hard to change. We stabilize it, extend it and get it production ready.",
     cta: "Improve an Existing Product",
-    note: "Tell us what you have and where it hurts.",
   },
   founders: {
     eyebrow: "FOR FOUNDERS",
@@ -74,20 +72,16 @@ export const copy = {
     secondary: "Show Us Your Prototype",
   },
   ai: {
-    eyebrow: "AI APPLICATIONS",
+    eyebrow: "AI SYSTEMS",
     title: "AI should do work, not just answer questions.",
-    support: "Connect models to your data, APIs, tools and approval workflows.",
     cta: "Build an AI System",
-    verbs: ["classify", "summarize", "retrieve", "generate", "route", "extract", "recommend", "act", "verify"],
   },
   integrations: {
     eyebrow: "INTEGRATIONS",
-    title: "Your tools should work together.",
-    support: "We connect the systems your business already uses so information moves without manual copying.",
-    label: "Systems we can connect",
+    title: "Make your tools work as one system.",
+    support: "Payments, CRM, calendars, messaging, data and AI, connected around how your business runs.",
     techLabel: "TECHNOLOGY WE BUILD WITH",
     cta: "Connect Your Stack",
-    events: ["Payment received", "CRM updated", "Meeting booked", "Message sent", "Data synced", "AI summary created"],
   },
   work: {
     eyebrow: "ENGINEERED WORK",
@@ -108,11 +102,7 @@ export const copy = {
     support: "You see working software early and often.",
   },
   testimonials: { eyebrow: "CLIENT WORDS", title: "What clients say." },
-  trust: {
-    eyebrow: "DELIVERY",
-    title: "What working with StackEndBox looks like.",
-    support: "Six commitments that shape every engagement.",
-  },
+  why: { eyebrow: "WHY STACKENDBOX", title: "Why teams bring StackEndBox in." },
   builder: {
     eyebrow: "START A PROJECT",
     title: "Tell us what you need.",

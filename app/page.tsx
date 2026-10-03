@@ -13,7 +13,7 @@ import { Work } from "@/components/work/Work";
 import { UnderInterface } from "@/components/scenes/UnderInterface";
 import { Process } from "@/components/process/Process";
 import { Testimonials } from "@/components/testimonials/Testimonials";
-import { Trust } from "@/components/trust/Trust";
+import { Why } from "@/components/why/Why";
 import { Builder } from "@/components/builder/Builder";
 import { FinalCTA } from "@/components/site/FinalCTA";
 
@@ -35,7 +35,7 @@ export default function Home() {
         <UnderInterface />
         <Process />
         <Testimonials />
-        <Trust />
+        <Why />
         <Builder />
         <FinalCTA />
       </main>

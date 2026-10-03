@@ -1,76 +1,100 @@
 import type { Need } from "@/lib/briefOptions";
 
-/** Positions are percentages of the stage (center of each item). */
-export type TItem = {
-  icon: string;
-  before: { title: string; sub: string; x: number; y: number; r: number; tone: number };
-  after: { title: string; sub: string; x: number; y: number };
-};
+/**
+ * Manual to automated stories. Each scenario reuses ONE business object: it starts duplicated across
+ * disconnected tools and ends as a single record moving through one platform. Industry neutral on purpose.
+ */
+export type Frag = { icon: string; name: string; badge: string; st: "warn" | "bad" };
+export type Step = { icon: string; label: string };
 export type Scenario = {
-  id: "leads" | "bookings" | "operations" | "content";
+  id: "sales" | "bookings" | "operations" | "support" | "content" | "admin";
   tab: string;
-  headline: string;
-  beforeNote: string;
-  afterNote: string;
+  system: string;
+  object: { icon: string; label: string };
+  frags: Frag[];
+  steps: Step[];
+  line: string;
   cta: string;
   need: Need;
-  token: string;
-  items: TItem[];
 };
-
-const grid = (i: number) => ({ x: 14 + (i % 4) * 24, y: i < 4 ? 30 : 70 });
 
 export const scenarios: Scenario[] = [
   {
-    id: "leads", tab: "Leads", headline: "Lead operations", beforeNote: "Forms, spreadsheets and inboxes. Leads wait, get missed and get followed up late.", afterNote: "Every lead is scored, routed, followed up and booked automatically.", cta: "Automate Lead Operations", need: "Automation", token: "Maya Chen, new lead",
-    items: [
-      { icon: "form", before: { title: "Website form", sub: "name, email, notes", x: 18, y: 24, r: -4, tone: 0 }, after: { title: "Lead arrives", sub: "captured instantly", ...grid(0) } },
-      { icon: "sheet", before: { title: "leads_v3.xlsx", sub: "duplicate rows", x: 44, y: 20, r: 3, tone: 1 }, after: { title: "AI score", sub: "82 / 100 qualified", ...grid(1) } },
-      { icon: "mail", before: { title: "Inbox", sub: "14 unread", x: 74, y: 28, r: -2, tone: 2 }, after: { title: "CRM updated", sub: "owner assigned", ...grid(2) } },
-      { icon: "check", before: { title: "Manual check", sub: "who is this lead?", x: 30, y: 52, r: 5, tone: 3 }, after: { title: "Message sent", sub: "follow up drafted", ...grid(3) } },
-      { icon: "crm", before: { title: "CRM entry", sub: "status: stale", x: 58, y: 56, r: -3, tone: 0 }, after: { title: "Calendar open", sub: "3 slots offered", ...grid(4) } },
-      { icon: "msg", before: { title: "Follow up", sub: "forgot to reply", x: 82, y: 62, r: 4, tone: 3 }, after: { title: "Meeting booked", sub: "Thursday 14:00", ...grid(5) } },
-      { icon: "cal", before: { title: "Calendar", sub: "double booked", x: 22, y: 80, r: -5, tone: 1 }, after: { title: "Reminder queued", sub: "24h before", ...grid(6) } },
-      { icon: "chart", before: { title: "Missed leads", sub: "no one noticed", x: 62, y: 84, r: 2, tone: 2 }, after: { title: "Analytics", sub: "pipeline updated", ...grid(7) } },
+    id: "sales", tab: "Sales", system: "Sales platform", object: { icon: "user", label: "New enquiry" },
+    frags: [
+      { icon: "form", name: "Web form", badge: "NOT SYNCED", st: "bad" },
+      { icon: "mail", name: "Inbox", badge: "WAITING", st: "warn" },
+      { icon: "sheet", name: "Spreadsheet", badge: "DUPLICATE", st: "bad" },
+      { icon: "msg", name: "Messages", badge: "UNANSWERED", st: "warn" },
+      { icon: "crm", name: "CRM", badge: "STALE", st: "bad" },
+      { icon: "cal", name: "Calendar", badge: "CONFLICT", st: "bad" },
     ],
+    steps: [{ icon: "form", label: "Captured" }, { icon: "spark", label: "Scored" }, { icon: "check-user", label: "Assigned" }, { icon: "send", label: "Follow-up sent" }, { icon: "cal-check", label: "Meeting booked" }],
+    line: "Every enquiry is captured, scored, assigned and followed up.", cta: "Automate Sales Operations", need: "Automation",
   },
   {
-    id: "bookings", tab: "Bookings", headline: "Bookings and customer operations", beforeNote: "Messages, calls and a calendar nobody trusts. Confirmations go out by hand.", afterNote: "Availability, booking, confirmation, reminders and rescheduling run as one flow.", cta: "Automate Bookings", need: "Automation", token: "Booking request",
-    items: [
-      { icon: "msg", before: { title: "DM request", sub: "can we book Friday?", x: 18, y: 24, r: -3, tone: 0 }, after: { title: "Request received", sub: "from any channel", ...grid(0) } },
-      { icon: "phone", before: { title: "Phone call", sub: "missed at 18:02", x: 46, y: 20, r: 4, tone: 3 }, after: { title: "Availability checked", sub: "Fri 19:30 is free", ...grid(1) } },
-      { icon: "sheet", before: { title: "Booking sheet", sub: "overwritten twice", x: 76, y: 26, r: -2, tone: 1 }, after: { title: "Booking created", sub: "Fri 19:30, 4 guests", ...grid(2) } },
-      { icon: "cal", before: { title: "Calendar", sub: "conflict", x: 30, y: 52, r: 5, tone: 2 }, after: { title: "Confirmation sent", sub: "guest notified", ...grid(3) } },
-      { icon: "check", before: { title: "Manual confirm", sub: "still pending", x: 60, y: 56, r: -4, tone: 0 }, after: { title: "Reminder scheduled", sub: "2h before", ...grid(4) } },
-      { icon: "bell", before: { title: "Reminder", sub: "nobody sent it", x: 84, y: 62, r: 3, tone: 3 }, after: { title: "Reschedule handled", sub: "one tap for guest", ...grid(5) } },
-      { icon: "crm", before: { title: "Guest notes", sub: "in someone's head", x: 22, y: 80, r: -5, tone: 1 }, after: { title: "Customer record", sub: "history saved", ...grid(6) } },
-      { icon: "users", before: { title: "Staff chat", sub: "who has Friday?", x: 62, y: 84, r: 2, tone: 2 }, after: { title: "Team notified", sub: "shift view updated", ...grid(7) } },
+    id: "bookings", tab: "Bookings", system: "Booking platform", object: { icon: "cal", label: "Booking request" },
+    frags: [
+      { icon: "msg", name: "Direct messages", badge: "UNREAD", st: "warn" },
+      { icon: "phone", name: "Phone calls", badge: "MISSED", st: "bad" },
+      { icon: "sheet", name: "Booking sheet", badge: "OVERWRITTEN", st: "bad" },
+      { icon: "cal", name: "Calendar", badge: "CONFLICT", st: "bad" },
+      { icon: "bell", name: "Reminders", badge: "NOT SENT", st: "warn" },
+      { icon: "users", name: "Staff chat", badge: "OUT OF DATE", st: "warn" },
     ],
+    steps: [{ icon: "msg", label: "Request received" }, { icon: "cal", label: "Availability checked" }, { icon: "lock", label: "Slot locked" }, { icon: "send", label: "Confirmation sent" }, { icon: "bell", label: "Reminder scheduled" }],
+    line: "Availability, booking, confirmation and reminders run as one flow.", cta: "Automate Bookings", need: "Automation",
   },
   {
-    id: "operations", tab: "Operations", headline: "Internal operations", beforeNote: "Requests arrive in chat and email. Approvals stall and reporting is a weekly chore.", afterNote: "Requests are routed by rule, approved in one place and reported automatically.", cta: "Build Internal Software", need: "CRM / Internal Tool", token: "Request 214",
-    items: [
-      { icon: "mail", before: { title: "Request by email", sub: "buried in a thread", x: 18, y: 24, r: -4, tone: 0 }, after: { title: "Request logged", sub: "single intake form", ...grid(0) } },
-      { icon: "msg", before: { title: "Chat ping", sub: "did anyone see this?", x: 46, y: 20, r: 3, tone: 2 }, after: { title: "Routed by rule", sub: "finance queue", ...grid(1) } },
-      { icon: "sheet", before: { title: "Tracker sheet", sub: "three versions", x: 76, y: 26, r: -2, tone: 1 }, after: { title: "Approval requested", sub: "manager notified", ...grid(2) } },
-      { icon: "check", before: { title: "Approval", sub: "waiting a week", x: 30, y: 52, r: 5, tone: 3 }, after: { title: "Approved", sub: "audit trail saved", ...grid(3) } },
-      { icon: "users", before: { title: "Who owns it?", sub: "unclear", x: 60, y: 56, r: -3, tone: 0 }, after: { title: "Owner assigned", sub: "due date set", ...grid(4) } },
-      { icon: "file", before: { title: "Paper form", sub: "scanned late", x: 84, y: 62, r: 4, tone: 2 }, after: { title: "Task completed", sub: "status visible", ...grid(5) } },
-      { icon: "chart", before: { title: "Weekly report", sub: "built by hand", x: 22, y: 80, r: -5, tone: 1 }, after: { title: "Report updated", sub: "always current", ...grid(6) } },
-      { icon: "bell", before: { title: "Reminders", sub: "in calendars", x: 62, y: 84, r: 2, tone: 3 }, after: { title: "Team alerted", sub: "only when needed", ...grid(7) } },
+    id: "operations", tab: "Operations", system: "Operations console", object: { icon: "clip", label: "Request 214" },
+    frags: [
+      { icon: "mail", name: "Email", badge: "BURIED", st: "warn" },
+      { icon: "sheet", name: "Tracker", badge: "3 VERSIONS", st: "bad" },
+      { icon: "msg", name: "Chat", badge: "UNSEEN", st: "warn" },
+      { icon: "file", name: "Paper form", badge: "SCANNED LATE", st: "warn" },
+      { icon: "stamp", name: "Approvals", badge: "STALLED", st: "bad" },
+      { icon: "chart", name: "Weekly report", badge: "BY HAND", st: "warn" },
     ],
+    steps: [{ icon: "clip", label: "Logged" }, { icon: "branch", label: "Routed" }, { icon: "check-user", label: "Approved" }, { icon: "users", label: "Assigned" }, { icon: "chart", label: "Reported" }],
+    line: "Requests are routed by rule, approved in one place and reported automatically.", cta: "Build Internal Software", need: "CRM / Internal Tool",
   },
   {
-    id: "content", tab: "Content", headline: "Content production", beforeNote: "Download assets, write copy, record voice, edit, caption, export. Every single piece.", afterNote: "Submit the source. The pipeline selects assets, writes, voices and assembles a publish ready output.", cta: "Build a Content Workflow", need: "Automation", token: "New source",
-    items: [
-      { icon: "image", before: { title: "Download assets", sub: "18 files", x: 18, y: 24, r: -4, tone: 0 }, after: { title: "Source submitted", sub: "media and details", ...grid(0) } },
-      { icon: "scissors", before: { title: "Select media", sub: "by eye, again", x: 46, y: 20, r: 3, tone: 1 }, after: { title: "AI analysis", sub: "best 6 selected", ...grid(1) } },
-      { icon: "pen", before: { title: "Write copy", sub: "blank page", x: 76, y: 26, r: -2, tone: 2 }, after: { title: "Script generated", sub: "tone matched", ...grid(2) } },
-      { icon: "mic", before: { title: "Record voice", sub: "three takes", x: 30, y: 52, r: 5, tone: 3 }, after: { title: "Voice created", sub: "natural narration", ...grid(3) } },
-      { icon: "film", before: { title: "Edit clips", sub: "timeline in an editor", x: 60, y: 56, r: -3, tone: 0 }, after: { title: "Scenes assembled", sub: "vertical format", ...grid(4) } },
-      { icon: "music", before: { title: "Add music", sub: "license check", x: 84, y: 62, r: 4, tone: 2 }, after: { title: "Audio mixed", sub: "voice and track", ...grid(5) } },
-      { icon: "type", before: { title: "Caption", sub: "typo found late", x: 22, y: 80, r: -5, tone: 1 }, after: { title: "Captions added", sub: "timed to voice", ...grid(6) } },
-      { icon: "upload", before: { title: "Export", sub: "45 minutes later", x: 62, y: 84, r: 2, tone: 3 }, after: { title: "Ready to publish", sub: "output exported", ...grid(7) } },
+    id: "support", tab: "Support", system: "Support desk", object: { icon: "headset", label: "Refund request" },
+    frags: [
+      { icon: "mail", name: "Support inbox", badge: "BACKLOG", st: "bad" },
+      { icon: "msg", name: "Chat widget", badge: "UNANSWERED", st: "warn" },
+      { icon: "file", name: "Policy doc", badge: "OUTDATED", st: "warn" },
+      { icon: "sheet", name: "Order sheet", badge: "MANUAL LOOKUP", st: "warn" },
+      { icon: "archive", name: "Past tickets", badge: "NOT SEARCHABLE", st: "bad" },
+      { icon: "users", name: "Escalation chat", badge: "SLOW", st: "warn" },
     ],
+    steps: [{ icon: "mail", label: "Received" }, { icon: "search", label: "Policy found" }, { icon: "db", label: "Order checked" }, { icon: "check-user", label: "Approved" }, { icon: "done", label: "Resolved" }],
+    line: "Routine requests resolve themselves. Anything uncertain reaches a person.", cta: "Build an AI Support System", need: "AI System",
+  },
+  {
+    id: "content", tab: "Content", system: "Content pipeline", object: { icon: "image", label: "Source material" },
+    frags: [
+      { icon: "image", name: "Photo folder", badge: "UNSORTED", st: "warn" },
+      { icon: "file", name: "Script doc", badge: "BLANK PAGE", st: "warn" },
+      { icon: "mic", name: "Voice file", badge: "3 TAKES", st: "bad" },
+      { icon: "film", name: "Editor timeline", badge: "HOURS", st: "bad" },
+      { icon: "type", name: "Captions", badge: "TYPO FOUND", st: "warn" },
+      { icon: "upload", name: "Export", badge: "WAITING", st: "warn" },
+    ],
+    steps: [{ icon: "eye", label: "Analyzed" }, { icon: "pen", label: "Script written" }, { icon: "mic", label: "Voice created" }, { icon: "film", label: "Assembled" }, { icon: "done", label: "Ready to publish" }],
+    line: "Submit the source. The pipeline selects, writes, voices and assembles.", cta: "Build a Content Pipeline", need: "Automation",
+  },
+  {
+    id: "admin", tab: "Finance", system: "Back office", object: { icon: "receipt", label: "Invoice 1042" },
+    frags: [
+      { icon: "mail", name: "Email PDF", badge: "UNREAD", st: "warn" },
+      { icon: "sheet", name: "Spreadsheet", badge: "RETYPED", st: "bad" },
+      { icon: "bank", name: "Accounting", badge: "MISMATCH", st: "bad" },
+      { icon: "msg", name: "Approval chat", badge: "PENDING", st: "warn" },
+      { icon: "card", name: "Payments", badge: "LATE", st: "bad" },
+      { icon: "bell", name: "Reminders", badge: "MANUAL", st: "warn" },
+    ],
+    steps: [{ icon: "scan", label: "Extracted" }, { icon: "compare", label: "Matched" }, { icon: "check-user", label: "Approved" }, { icon: "card", label: "Paid" }, { icon: "folder", label: "Filed" }],
+    line: "Documents are read, matched, approved and filed without retyping.", cta: "Automate Back Office Work", need: "Automation",
   },
 ];

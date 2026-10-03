@@ -1,0 +1,17 @@
+/* WHY STACKENDBOX: the one light section */
+.why { --text-primary: #090a09; --text-secondary: #3b403a; --text-muted: #5b6159; --border: rgba(9, 10, 9, 0.14); background: #f3f4f0; color: var(--text-primary); padding-block: var(--sec-y); }
+.why .eyebrow { color: #a84300; }
+.why__path { position: relative; display: grid; gap: 28px; margin-top: 8px; counter-reset: s; }
+.why__path li { position: relative; display: grid; gap: 8px; align-content: start; padding-left: 64px; }
+.why__path li::before { content: ""; position: absolute; left: 21px; top: 44px; bottom: -28px; width: 2px; background: rgba(9, 10, 9, 0.14); } .why__path li:last-child::before { display: none; }
+.why__path li[data-st="done"]::before { background: #1f9d5c; }
+.why__node { position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(9, 10, 9, 0.2); background: #fff; color: #3b403a; transition: background 350ms, border-color 350ms, color 350ms; } .why__node svg { width: 20px; height: 20px; stroke-width: 1.8; }
+.why__path li[data-st="active"] .why__node { background: var(--orange-500); border-color: var(--orange-500); color: #080a08; } .why__path li[data-st="done"] .why__node { background: #1f9d5c; border-color: #1f9d5c; color: #fff; }
+.why__path h3 { font-size: 1.25rem; line-height: 1.2; font-weight: 500; letter-spacing: -0.015em; padding-top: 8px; } .why__path p { color: var(--text-secondary); font-size: 0.9375rem; line-height: 1.5; max-width: 34ch; }
+@media (min-width: 900px) {
+  .why__path { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; margin-top: 24px; }
+  .why__path li { padding-left: 0; padding-top: 72px; }
+  .why__path li::before { left: 44px; right: -28px; top: 21px; bottom: auto; width: auto; height: 2px; }
+  .why__node { left: 0; top: 0; } .why__path h3 { padding-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .why__node { transition: none; } }
