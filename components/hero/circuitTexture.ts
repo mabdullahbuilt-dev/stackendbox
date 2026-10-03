@@ -14,7 +14,7 @@ function rng(seed: number) {
   };
 }
 
-const INK = "237,241,245";
+const INK = "232,234,229";
 
 function trace(ctx: CanvasRenderingContext2D, r: () => number, w: number, h: number, step: number, count: number) {
   ctx.lineWidth = 1.6;

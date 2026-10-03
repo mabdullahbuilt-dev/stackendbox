@@ -17,9 +17,9 @@ export const copy = {
   },
   hero: {
     eyebrow: "PRODUCTS · AI · AUTOMATION · INTEGRATIONS",
-    lines: ["Build the product.", "Automate the work.", "Connect the stack."],
+    lines: ["Build the product.", "Improve the operation.", "Connect the stack."],
     support:
-      "StackEndBox designs and engineers SaaS, web apps, AI systems, automations, APIs and internal platforms from first brief to production.",
+      "SaaS, web apps, AI systems, internal platforms, automations and custom software, from first brief to production.",
     primary: "Start a Project",
     secondary: "See What We Build",
     chips: ["SaaS", "MVPs", "Web Apps", "AI", "Automation", "CRM", "APIs", "Custom Software"],
@@ -29,6 +29,7 @@ export const copy = {
     title: "What can we build for you?",
     support: "From the first idea to the systems your business runs on.",
   },
+  start: { eyebrow: "STARTING POINT", title: "Where are you starting from?" },
   intent: {
     eyebrow: "START WITH THE OUTCOME",
     title: "What are you trying to build?",

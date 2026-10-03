@@ -1,28 +1,69 @@
 :root {
-  --bg-canvas: #090b0e;
-  --bg-secondary: #0c0f14;
-  --bg-raised: #11161d;
-  --bg-higher: #171d26;
-  --bg-soft: #1e2530;
+  /* Black family */
+  --black-950: #050605;
+  --black-900: #080a08;
+  --black-850: #0c0f0c;
+  --black-800: #111411;
+  --black-750: #171b17;
+  --black-700: #1d211d;
+  /* White family */
+  --white-100: #f7f8f5;
+  --white-200: #e8eae5;
+  --white-300: #c8cdc5;
+  --white-400: #949c92;
+  /* Orange: creation, action, selection */
+  --orange-500: #ff7a1a;
+  --orange-400: #ff963f;
+  --orange-300: #ffb36b;
+  --orange-dark: #7a3210;
+  /* Green: working, connected, live, verified */
+  --green-500: #2fd27a;
+  --green-400: #54e395;
+  --green-dark: #103d28;
+  /* Red: friction, failure, risk */
+  --red-500: #f05252;
+  --red-400: #ff6b62;
+  --red-dark: #481b1b;
 
-  --text-primary: #f4f6f8;
-  --text-secondary: #a8b0bb;
-  --text-muted: #7d8794;
+  /* Semantic aliases used across the codebase */
+  --bg-canvas: var(--black-900);
+  --bg-secondary: var(--black-850);
+  --bg-raised: var(--black-800);
+  --bg-higher: var(--black-750);
+  --bg-soft: var(--black-700);
+  --bg-deep: var(--black-950);
 
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --border-active: rgba(65, 105, 255, 0.6);
+  --text-primary: var(--white-100);
+  --text-secondary: var(--white-300);
+  --text-muted: var(--white-400);
 
-  --blue: #4169ff;
-  --blue-fill: #3558e6;
-  --blue-text: #6f8dff;
-  --blue-glow: rgba(65, 105, 255, 0.14);
-  --cyan: #52d2ff;
-  --green: #35d39b;
-  --amber: #ffb24a;
-  --red: #f05c69;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.13);
+  --border: var(--border-subtle);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-active: rgba(255, 122, 26, 0.65);
 
-  --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px #6f8dff;
+  --accent: var(--orange-500);
+  --accent-hover: var(--orange-400);
+  --accent-press: #e66a10;
+  --accent-text: var(--orange-400);
+  --accent-glow: rgba(255, 122, 26, 0.14);
+  --on-accent: #080a08;
+  --ok: var(--green-500);
+  --warn: var(--orange-300);
+  --bad: var(--red-500);
+
+  /* Legacy names re-mapped by function (no blue or cyan remains) */
+  --blue: var(--orange-500);
+  --blue-fill: var(--orange-500);
+  --blue-text: var(--orange-400);
+  --blue-glow: var(--accent-glow);
+  --cyan: var(--white-200);
+  --green: var(--green-500);
+  --amber: var(--orange-300);
+  --red: var(--red-500);
+
+  --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--orange-400);
 
   --r-xs: 6px;
   --r-sm: 10px;

@@ -13,7 +13,7 @@ export default function OpenGraphImage() {
   const word = `data:image/png;base64,${fs.readFileSync(path.join(process.cwd(), "public/brand/wordmark.png")).toString("base64")}`;
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, background: "#0A0C0F", color: "#F0F2F5" }}>
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, background: "#050605", color: "#F0F2F5" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={mark} width={64} height={76} alt="" />
@@ -24,7 +24,7 @@ export default function OpenGraphImage() {
           <div style={{ fontSize: 76, lineHeight: 1.02, letterSpacing: -3, fontWeight: 600, maxWidth: 980 }}>{copy.meta.ogTitle}</div>
           <div style={{ fontSize: 28, color: "#A2AAB5", maxWidth: 900 }}>Software, AI and automation, built end to end.</div>
         </div>
-        <div style={{ display: "flex", height: 4, width: 160, background: "#4169FF" }} />
+        <div style={{ display: "flex", height: 4, width: 160, background: "#ff7a1a" }} />
       </div>
     ),
     size,

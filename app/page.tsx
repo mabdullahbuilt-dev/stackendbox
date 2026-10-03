@@ -2,7 +2,7 @@ import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { Hero } from "@/components/hero/Hero";
 import { Services } from "@/components/services/Services";
-import { Intent } from "@/components/intent/Intent";
+import { StartingPoint } from "@/components/start/StartingPoint";
 import { Transformation } from "@/components/transformation/Transformation";
 import { Labs } from "@/components/labs/Labs";
 import { IdeaToProduct } from "@/components/scenes/IdeaToProduct";
@@ -24,7 +24,7 @@ export default function Home() {
       <main id="main">
         <Hero />
         <Services />
-        <Intent />
+        <StartingPoint />
         <Transformation />
         <Labs />
         <IdeaToProduct />

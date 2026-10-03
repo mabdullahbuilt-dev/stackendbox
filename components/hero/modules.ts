@@ -1,15 +1,15 @@
 export type HeroModule = { name: string; sub: string; accent: string; accentOpacity: number };
 
-/** Top to bottom, exactly as specified (research §17.2). */
+/** Top to bottom. Buyer-readable layer names; accents follow the palette (orange builds, green is live). */
 export const heroModules: HeroModule[] = [
-  { name: "DEPLOY", sub: "CI/CD · monitoring · release", accent: "#38D39F", accentOpacity: 0.4 },
-  { name: "API", sub: "integrations · webhooks · services", accent: "#55D7FF", accentOpacity: 0.45 },
-  { name: "CRM", sub: "pipeline · tasks · follow up", accent: "#6F8DFF", accentOpacity: 0.45 },
-  { name: "DATA", sub: "schemas · sync · reporting", accent: "#55D7FF", accentOpacity: 0.45 },
-  { name: "AUTOMATION", sub: "triggers · routing · messaging", accent: "#6F8DFF", accentOpacity: 0.45 },
-  { name: "AI", sub: "agents · vision · retrieval", accent: "#6F8DFF", accentOpacity: 0.45 },
-  { name: "PRODUCT", sub: "SaaS · web apps · internal tools", accent: "#F0F2F5", accentOpacity: 0.4 },
+  { name: "DELIVERY", sub: "Testing, deployment, monitoring", accent: "#2fd27a", accentOpacity: 0.28 },
+  { name: "APIs", sub: "Payments, messaging, third party systems", accent: "#ff7a1a", accentOpacity: 0.3 },
+  { name: "CRM", sub: "Customers, pipelines, operations", accent: "#ff963f", accentOpacity: 0.3 },
+  { name: "DATA", sub: "Models, reporting, synchronization", accent: "#f7f8f5", accentOpacity: 0.3 },
+  { name: "AUTOMATION", sub: "Tasks, routing, notifications", accent: "#ff7a1a", accentOpacity: 0.3 },
+  { name: "AI", sub: "Agents, retrieval, vision, workflows", accent: "#ff963f", accentOpacity: 0.3 },
+  { name: "PRODUCT", sub: "SaaS, web apps, dashboards", accent: "#ff7a1a", accentOpacity: 0.55 },
 ];
 
 /** Mobile object uses four modules to cut legibility and geometry load. */
-export const heroModulesMobile = heroModules.filter((m) => ["DEPLOY", "AUTOMATION", "AI", "PRODUCT"].includes(m.name));
+export const heroModulesMobile = heroModules.filter((m) => ["DELIVERY", "AUTOMATION", "AI", "PRODUCT"].includes(m.name));

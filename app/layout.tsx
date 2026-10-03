@@ -9,6 +9,7 @@ import "@/styles/base.css";
 import "@/styles/site.css";
 import "@/styles/sections.css";
 import "@/styles/scenes.css";
+import "@/styles/start.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A0C0F",
+  themeColor: "#050605",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
