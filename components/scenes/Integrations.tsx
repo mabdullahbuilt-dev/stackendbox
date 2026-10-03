@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, Workflow } from "lucide-react";
+import { ArrowRight, Braces } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
@@ -13,10 +13,9 @@ import { BrandIcon } from "@/components/ui/BrandIcon";
 import { Reveal } from "@/components/ui/Reveal";
 
 type Sys = { key: BrandKey; label: string };
-const SYSTEMS: Sys[] = [
-  { key: "stripe", label: "Stripe" }, { key: "hubspot", label: "HubSpot" }, { key: "whatsapp", label: "WhatsApp" }, { key: "gcal", label: "Google Calendar" },
-  { key: "gmail", label: "Gmail" }, { key: "supabase", label: "Supabase" }, { key: "anthropic", label: "Anthropic" }, { key: "gdrive", label: "Google Drive" },
-];
+const LEFT: Sys[] = [{ key: "stripe", label: "Stripe" }, { key: "gcal", label: "Google Calendar" }, { key: "whatsapp", label: "WhatsApp" }, { key: "gmail", label: "Gmail" }];
+const RIGHT: Sys[] = [{ key: "hubspot", label: "HubSpot" }, { key: "supabase", label: "Supabase" }, { key: "anthropic", label: "Anthropic" }, { key: "gdrive", label: "Google Drive" }];
+const Y = [14, 38, 62, 86];
 type Flow = { node: BrandKey; text: string };
 /** What happens across the connected systems when each one fires an event. */
 const FLOWS: Record<string, Flow[]> = {
@@ -29,8 +28,14 @@ const FLOWS: Record<string, Flow[]> = {
   anthropic: [{ node: "anthropic", text: "Model asked" }, { node: "supabase", text: "Context retrieved" }, { node: "hubspot", text: "Result saved" }, { node: "gmail", text: "Summary sent" }],
   gdrive: [{ node: "gdrive", text: "File added" }, { node: "anthropic", text: "Document read" }, { node: "supabase", text: "Fields stored" }, { node: "hubspot", text: "Record linked" }],
 };
-const ANG = (i: number) => (i / SYSTEMS.length) * Math.PI * 2 - Math.PI / 2;
-const at = (i: number, r: number) => [50 + Math.cos(ANG(i)) * r, 50 + Math.sin(ANG(i)) * r] as const;
+
+function SysBtn({ x, st, sel, onPick }: { x: Sys; st: "idle" | "active" | "done"; sel: boolean; onPick: (k: BrandKey) => void }) {
+  return (
+    <button type="button" className="ixnet__node" data-st={st} data-sel={sel} aria-pressed={sel} aria-label={`${x.label}: show what happens when it fires an event`} onClick={() => onPick(x.key)}>
+      <span><BrandIcon name={x.key} size={22} /></span><b>{x.label}</b>
+    </button>
+  );
+}
 
 export function Integrations() {
   const { reduced } = useMotionPreference();
@@ -74,25 +79,23 @@ export function Integrations() {
           <h2 id="int-title" className="h2">{copy.integrations.title}</h2>
           <p className="body-l">{copy.integrations.support}</p>
         </Reveal>
-        <div className="aix">
-          <div className="aix__orbit" ref={box}>
-            <svg viewBox="0 0 100 100" className="aix__lines" preserveAspectRatio="none" aria-hidden>
-              {SYSTEMS.map((s, i) => { const [x, y] = at(i, 38); return <line key={s.key} x1="50" y1="50" x2={x} y2={y} data-st={nodeState(s.key)} />; })}
+        <div className="ixnet">
+          <div className="ixnet__map">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="ixnet__lines" aria-hidden>
+              {LEFT.map((x, i) => <line key={x.key} x1="26" y1={Y[i]} x2="41" y2="50" data-st={nodeState(x.key)} />)}
+              {RIGHT.map((x, i) => <line key={x.key} x1="59" y1="50" x2="74" y2={Y[i]} data-st={nodeState(x.key)} />)}
             </svg>
-            <div className="aix__hub" data-done={step >= N} aria-hidden><Workflow /><b>Your system</b><em className="mono">Built by StackEndBox</em></div>
-            {SYSTEMS.map((s, i) => {
-              const [x, y] = at(i, 38);
-              const st = nodeState(s.key);
-              return (
-                <button key={s.key} type="button" className="aix__node aix__node--btn" data-st={st} data-sel={sel === s.key} style={{ left: `${x}%`, top: `${y}%` }} aria-pressed={sel === s.key} aria-label={`${s.label}: show what happens when it fires an event`} onClick={() => choose(s.key)}>
-                  <span><BrandIcon name={s.key} size={26} /></span><b>{s.label}</b>
-                </button>
-              );
-            })}
+            <div className="ixnet__col ixnet__col--l">
+              {LEFT.map((x) => <SysBtn key={x.key} x={x} st={nodeState(x.key)} sel={sel === x.key} onPick={choose} />)}
+            </div>
+            <div className="ixnet__core" data-done={step >= N} aria-hidden><Braces /><b>Your application</b><em className="mono">API · WEBHOOKS · MAPPING</em></div>
+            <div className="ixnet__col ixnet__col--r">
+              {RIGHT.map((x) => <SysBtn key={x.key} x={x} st={nodeState(x.key)} sel={sel === x.key} onPick={choose} />)}
+            </div>
           </div>
           <div className="aix__side">
             <p className="mono mono--muted">SELECT A SYSTEM</p>
-            <ol className="aix__steps" aria-live="polite" aria-label="Events across your systems">
+            <ol className="aix__steps" aria-live="polite" aria-label="Events across the connected systems">
               {flow.map((s, i) => {
                 const st = step > i ? "done" : step === i ? "active" : "idle";
                 return <li key={sel + i} data-st={st}><span className="mono">{String(i + 1).padStart(2, "0")}</span><BrandIcon name={s.node} size={16} />{s.text}</li>;

@@ -1,5 +1,5 @@
 "use client";
-import { Bot, Boxes, CandlestickChart, Check, CircleAlert, Database, FileText, Lock, Plug, Search, Terminal, UserCheck, Wallet, Wrench } from "lucide-react";
+import { Bot, Check, CircleAlert, Database, FileText, Lock, Search, ShieldCheck, UserCheck, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 
@@ -9,20 +9,36 @@ import { BrandIcon } from "@/components/ui/BrandIcon";
  */
 const D = (i: number) => ({ ["--i" as string]: i });
 
-export function SaasVisual(_: { play?: boolean }) {
+/** Resting state is the finished scene (n = total). When `play` turns on it runs 0..total once, then rests. */
+function useStages(play: boolean | undefined, total: number, ms: number) {
+  const [n, setN] = useState(total);
+  useEffect(() => {
+    if (!play) return;
+    let k = 0;
+    setN(0);
+    const id = setInterval(() => { k += 1; setN(k); if (k >= total) clearInterval(id); }, ms);
+    return () => clearInterval(id);
+  }, [play, total, ms]);
+  return n;
+}
+
+export function SaasVisual({ play }: { play?: boolean }) {
+  const n = useStages(play, 7, 420);
   return (
-    <div className="sv sv-saas">
-      <div className="sv-win" style={D(0)}>
-        <div className="sv-win__bar"><i /><i /><i /><b>Workspace</b><em className="sv-live"><u />LIVE</em></div>
-        <div className="sv-win__body">
+    <div className="sv sv-saas" data-n={n}>
+      <div className="sv-win">
+        <div className="sv-win__bar"><i /><i /><i /><b>Workspace</b><em className="sv-live" data-on={n >= 7}><u />LIVE</em></div>
+        <div className="sv-win__body" data-ui={n >= 1}>
           <aside><i data-act /><i /><i /></aside>
-          <div><div className="sv-tiles"><s /><s data-hi /><s /></div><div className="sv-bars">{[40, 62, 50, 78, 66, 88].map((h, k) => <i key={k} style={{ height: `${h}%` }} />)}</div></div>
+          <div className="sv-wf"><div className="sv-tiles"><s /><s data-hi /><s /></div><div className="sv-bars">{[40, 62, 50, 78, 66, 88].map((h, k) => <i key={k} style={{ height: `${h}%` }} />)}</div></div>
         </div>
       </div>
-      <div className="sv-phone" style={D(2)}><span /><i /><i /><b /></div>
+      <div className="sv-phone" data-on={n >= 6}><span /><i /><i /><b /></div>
+      <div className="sv-adm" data-on={n >= 5}><ShieldCheck aria-hidden />Admin</div>
       <div className="sv-chips">
-        <span style={D(3)}><Lock aria-hidden />Sign in</span>
-        <span style={D(4)} data-ok><BrandIcon name="stripe" size={13} />Pro active<Check aria-hidden /></span>
+        <span data-on={n >= 2}><Lock aria-hidden />Auth</span>
+        <span data-on={n >= 3}><Database aria-hidden />Data</span>
+        <span data-on={n >= 4} data-ok><BrandIcon name="stripe" size={13} />Billing<Check aria-hidden /></span>
       </div>
     </div>
   );
@@ -78,45 +94,65 @@ export function AutomationVisual(_: { play?: boolean }) {
   );
 }
 
-export function CrmVisual(_: { play?: boolean }) {
+export function CrmVisual({ play }: { play?: boolean }) {
+  const n = useStages(play, 5, 520);
+  const rows = [["Harbor redesign", "M"], ["Northwind rollout", "L"], ["Atlas migration", "I"]] as const;
   return (
-    <div className="sv sv-crm">
-      <div className="sv-rec" style={D(0)}>
-        <div className="sv-rec__h"><span className="sv-av">N</span><div><b>Northwind Ltd</b><em>Account</em></div><span className="sv-stage" style={D(2)}>Active</span></div>
-        <div className="sv-owner" style={D(1)}><span className="sv-av sv-av--o">S</span>Owner: Sam</div>
-        <div className="sv-task" style={D(3)}><i><Check aria-hidden /></i>Send proposal</div>
+    <div className="sv sv-crm" data-n={n}>
+      <nav className="sv-cn"><i data-act /><i /><i /><i /></nav>
+      <div className="sv-ct">
+        {rows.map(([t, o], k) => <div key={t} className="sv-cr" data-sel={k === 1 && n >= 1}><span>{t}</span><u>{k === 1 && n >= 3 ? "S" : o}</u></div>)}
+        <div className="sv-crep"><span><i style={{ width: n >= 5 ? "82%" : "64%" }} data-hot={n >= 5} /></span><em className="mono">REPORT</em></div>
       </div>
-      <div className="sv-act">
-        {["Call logged", "Task created", "Stage updated"].map((t, k) => <p key={t} style={D(4 + k)}><u />{t}</p>)}
-      </div>
-      <div className="sv-rep" style={D(7)}>{[36, 54, 44, 70, 62].map((h, k) => <i key={k} style={{ height: `${h}%` }} />)}</div>
+      <aside className="sv-cd" data-open={n >= 2}>
+        <b>Northwind Ltd</b>
+        <div className="sv-role" data-lead={n >= 4}><Lock aria-hidden />{n >= 4 ? "Project lead" : "Editor"}</div>
+        <p data-done={n >= 5}>{n >= 5 ? <Check aria-hidden /> : <i />}Approve scope</p>
+        <p className="mono sv-audit" data-on={n >= 5}>AUDIT: LOGGED</p>
+      </aside>
     </div>
   );
 }
 
-export function ApiVisual(_: { play?: boolean }) {
+export function ApiVisual({ play }: { play?: boolean }) {
+  const n = useStages(play, 6, 480);
   return (
-    <div className="sv sv-api">
-      <i className="sv-ln sv-ln--a" /><i className="sv-ln sv-ln--b" /><i className="sv-ln sv-ln--c" />
-      <div className="sv-sys sv-sys--s"><BrandIcon name="stripe" size={24} /><b>Stripe</b></div>
-      <div className="sv-hub"><Plug aria-hidden /></div>
-      <div className="sv-sys sv-sys--h" style={D(3)}><BrandIcon name="hubspot" size={24} /><b>HubSpot</b><Check className="sv-ok" aria-label="connected" /></div>
-      <div className="sv-sys sv-sys--p" style={D(4)}><BrandIcon name="postgres" size={24} /><b>PostgreSQL</b><Check className="sv-ok" aria-label="connected" /></div>
-      <div className="sv-sys sv-sys--c" style={D(5)}><BrandIcon name="gcal" size={24} /><b>Calendar</b><Check className="sv-ok" aria-label="connected" /></div>
-      <span className="sv-pkt sv-pkt--a" /><span className="sv-pkt sv-pkt--b" /><span className="sv-pkt sv-pkt--c" />
-      <span className="sv-evt mono">payment.completed</span>
+    <div className="sv sv-api" data-n={n}>
+      <div className="sv-req2"><em className="mono">POST</em><b className="mono">/v1/payments/webhook</b><i data-on={n >= 3}>200 OK</i></div>
+      <div className="sv-pay mono" data-on={n >= 1}>
+        <p><span>type</span><em>payment.completed</em></p>
+        <p data-map={n >= 2}><span>amount</span><em>4900</em><u>to invoice.total</u></p>
+        <p data-map={n >= 2}><span>customer</span><em>cus_8f2</em><u>to account.id</u></p>
+      </div>
+      <div className="sv-db" data-on={n >= 4}><Database aria-hidden />Row written<Check aria-hidden /></div>
+      <div className="sv-retry mono" data-on={n >= 5}>RETRY 0 · SIGNATURE VERIFIED</div>
     </div>
   );
 }
 
-export function CustomVisual(_: { play?: boolean }) {
-  const mods = ["Interface", "API", "Data", "Rules", "AI", "Integration"];
-  const ex = [[CandlestickChart, "Market tools"], [Wallet, "Web3 systems"], [Terminal, "Developer tools"], [Database, "Data products"], [Boxes, "Operations software"]] as const;
+export function CustomVisual({ play }: { play?: boolean }) {
+  const [m, setM] = useState(0);
+  // plays market, web3, developer tool once and rests on the first
+  useEffect(() => {
+    if (!play) return;
+    const t = [setTimeout(() => setM(1), 1100), setTimeout(() => setM(2), 2200), setTimeout(() => setM(0), 3300)];
+    return () => t.forEach(clearTimeout);
+  }, [play]);
+  const names = ["Market data", "Web3", "Developer tools"];
   return (
-    <div className="sv sv-custom">
-      <div className="sv-req" style={D(0)}><b className="mono">REQUEST</b><p>A tool that off the shelf software does not cover</p></div>
-      <div className="sv-mods">{mods.map((m, k) => <span key={m} style={D(k + 1)}><Lock aria-hidden />{m}</span>)}</div>
-      <ul className="sv-ex" aria-label="Examples of specialized software">{ex.map(([Ic, t], k) => <li key={t} style={D(k + 7)}><Ic aria-hidden />{t}</li>)}</ul>
+    <div className="sv sv-custom" data-m={m}>
+      <div className="sv-modes">{names.map((x, i) => <span key={x} data-on={m === i}>{x}</span>)}</div>
+      <div className="sv-cv sv-cv--0" data-on={m === 0}>
+        <svg viewBox="0 0 120 40" preserveAspectRatio="none"><path d="M0,30 L20,26 L40,28 L60,18 L80,20 L100,10 L120,6" /><line x1="0" x2="120" y1="12" y2="12" /></svg>
+        <em className="mono">ALERT</em>
+      </div>
+      <div className="sv-cv sv-cv--1" data-on={m === 1}>
+        {["Wallet", "Request", "Confirmed", "Indexed"].map((t, i) => <span key={t} style={{ ["--k" as string]: i }}>{t}</span>)}
+      </div>
+      <div className="sv-cv sv-cv--2" data-on={m === 2}>
+        <pre><i data-d="del">- heavy-lib 4.2</i>{"\n"}<i data-d="add">+ light-lib 1.1</i></pre>
+        <em className="mono">TESTS PASS</em>
+      </div>
     </div>
   );
 }

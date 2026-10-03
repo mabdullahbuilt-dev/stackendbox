@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, BarChart3, Bot, Boxes, Plug, Rocket, Workflow, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, Bot, Boxes, Building2, Plug, Rocket, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { copy } from "@/content/copy";
@@ -12,13 +12,13 @@ import { useScript } from "@/lib/useScript";
 import { Reveal } from "@/components/ui/Reveal";
 import { ChainDesk } from "./apps/ChainDesk";
 import { ConnectHub } from "./apps/ConnectHub";
-import { FlowOps } from "./apps/FlowOps";
+import { OpsBoard } from "./apps/OpsBoard";
 import { LaunchKit } from "./apps/LaunchKit";
 import { MarketDesk } from "./apps/MarketDesk";
 import { SupportGrid } from "./apps/SupportGrid";
 
-const APPS: Record<ProofId, (p: { step: number }) => React.JSX.Element> = { launchkit: LaunchKit, flowops: FlowOps, supportgrid: SupportGrid, connecthub: ConnectHub, chaindesk: ChainDesk, marketdesk: MarketDesk };
-const ICONS: Record<ProofId, LucideIcon> = { launchkit: Rocket, flowops: Workflow, supportgrid: Bot, connecthub: Plug, chaindesk: Boxes, marketdesk: BarChart3 };
+const APPS: Record<ProofId, (p: { step: number }) => React.JSX.Element> = { launchkit: LaunchKit, opsboard: OpsBoard, supportgrid: SupportGrid, connecthub: ConnectHub, chaindesk: ChainDesk, marketdesk: MarketDesk };
+const ICONS: Record<ProofId, LucideIcon> = { launchkit: Rocket, opsboard: Building2, supportgrid: Bot, connecthub: Plug, chaindesk: Boxes, marketdesk: BarChart3 };
 
 export function ProofSection() {
   const { reduced } = useMotionPreference();

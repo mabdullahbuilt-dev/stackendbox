@@ -252,7 +252,6 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 
 /* TRANSFORMATION */
 .tf__bar { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-.tf__tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; max-width: 100%; } .tf__tabs::-webkit-scrollbar { display: none; }
 .tf__foot { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center; justify-content: space-between; margin-top: 22px; } .tf__foot .body-l { max-width: 62ch; } .tf__foot strong { color: var(--text-primary); font-weight: 500; }
 
 /* Travelling object: the same lead / request moves through the automated flow */

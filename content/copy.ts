@@ -1,10 +1,10 @@
 /** Public homepage copy. Rules: no em dashes, no arrow glyphs, no filler. Arrows are icons in the UI. */
 export const copy = {
   meta: {
-    title: "StackEndBox | SaaS, AI, Automation & Custom Software",
+    title: "StackEndBox | Product Engineering, AI & Custom Software",
     description:
-      "StackEndBox designs and engineers SaaS products, web applications, AI systems, automations, APIs, CRM tools and custom platforms from idea to production.",
-    ogTitle: "We build the systems businesses run on.",
+      "StackEndBox is a product engineering company. We design and build SaaS products, web applications, custom software, AI systems, internal platforms, APIs, integrations and automation from idea to production.",
+    ogTitle: "We design and build the software your business needs.",
   },
   nav: {
     links: [
@@ -16,18 +16,18 @@ export const copy = {
     cta: "Start a Project",
   },
   hero: {
-    eyebrow: "PRODUCTS · AI · AUTOMATION · INTEGRATIONS",
-    lines: ["Build the product.", "Improve the operation.", "Connect the stack."],
+    eyebrow: "PRODUCT ENGINEERING · AI · CUSTOM SOFTWARE",
+    lines: ["Build the product.", "Engineer the platform.", "Connect the stack."],
     support:
-      "SaaS, web apps, AI systems, internal platforms, automations and custom software, from first brief to production.",
+      "We design, build and ship SaaS products, web applications, internal platforms, AI systems and specialized software, from first brief to production.",
     primary: "Start a Project",
     secondary: "See What We Build",
-    chips: ["SaaS", "MVPs", "Web Apps", "AI", "Automation", "CRM", "APIs", "Custom Software"],
+    chips: ["SaaS", "MVPs", "Web Apps", "Internal Software", "AI", "APIs", "Data"],
   },
   services: {
     eyebrow: "WHAT WE BUILD",
     title: "What can we build for you?",
-    support: "From the first idea to the systems your business runs on.",
+    support: "Hire us to design and engineer the product, platform or system you need.",
   },
   start: { eyebrow: "STARTING POINT", title: "Where are you starting from?" },
   intent: {
@@ -38,21 +38,33 @@ export const copy = {
   transform: {
     eyebrow: "MANUAL TO SYSTEM",
     title: "Manual today. System tomorrow.",
-    support: "Show us the process your team repeats.",
+    support: "We turn a manual process into software your team can own.",
     before: "Before",
     after: "After",
   },
   proof: {
     eyebrow: "PROOF",
     title: "Built to work.",
-    support: "Products and systems across software, AI, automation, integrations and specialized platforms.",
+    support: "Products and platforms we have designed and engineered, across software, business systems, AI, backend and specialized domains.",
+  },
+  business: {
+    eyebrow: "BUSINESS SOFTWARE",
+    title: "Management software, built around how you run.",
+    support: "Customer records, teams, projects, roles, approvals, reporting and an audit trail, designed as one application your people use every day.",
+    cta: "Discuss Custom Software",
+  },
+  specialized: {
+    eyebrow: "SPECIALIZED SOFTWARE",
+    title: "When off the shelf does not exist, we engineer it.",
+    support: "Market and data platforms, Web3 applications and developer tools, each designed around its own domain.",
+    cta: "Scope Specialized Software",
   },
   product: {
     eyebrow: "PRODUCT DELIVERY",
-    title: "From idea to working product.",
+    title: "From brief to live product.",
     support: "",
     cta: "Build Your MVP",
-    brief: "Customers need to book, pay and manage appointments online.",
+    brief: "A client portal: accounts, requests, documents, payments and an admin console.",
     captions: ["01 BRIEF", "02 STRUCTURE", "03 WIREFRAME", "04 INTERFACE", "05 BACKEND", "06 ACCESS", "07 BILLING", "08 ADMIN", "09 MOBILE", "10 LIVE"],
   },
   rescue: {
@@ -72,15 +84,15 @@ export const copy = {
   },
   ai: {
     eyebrow: "AI SYSTEMS",
-    title: "AI should do work, not just answer questions.",
-    cta: "Build an AI System",
+    title: "We build AI into real software.",
+    cta: "Discuss an AI System",
   },
   integrations: {
     eyebrow: "INTEGRATIONS",
-    title: "Make your tools work as one system.",
-    support: "Payments, CRM, calendars, messaging, data and AI, connected around how your business runs.",
+    title: "We engineer the layer between your systems.",
+    support: "We build the integration layer: APIs, webhooks, mapping and synchronization between the systems your product depends on.",
     techLabel: "TECHNOLOGY WE BUILD WITH",
-    cta: "Connect Your Stack",
+    cta: "Discuss Your Integration",
   },
   work: {
     eyebrow: "ENGINEERED WORK",
@@ -112,9 +124,9 @@ export const copy = {
     eyebrow: "LET'S TALK",
     a: "Have something in mind?",
     b: "Let's figure out how to build it.",
-    support: "Tell us what you want to launch, automate, connect or improve.",
+    support: "Tell us what you want to build, launch, improve or connect.",
     primary: "Start a Project",
     secondary: "See Our Work",
   },
-  footer: { tagline: "Products, AI and automation built around real business problems." },
+  footer: { tagline: "Product engineering, AI and custom software from brief to production." },
 } as const;

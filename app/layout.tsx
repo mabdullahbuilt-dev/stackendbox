@@ -19,6 +19,9 @@ import "@/styles/why.css";
 import "@/styles/services.css";
 import "@/styles/proof.css";
 import "@/styles/process.css";
+import "@/styles/business.css";
+import "@/styles/specialized.css";
+import "@/styles/chapters.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

@@ -5,7 +5,7 @@ import { siteConfig } from "@/site.config";
 import { Logo } from "./Logo";
 import { MotionToggle } from "./MotionToggle";
 
-const services = ["SaaS & MVPs", "Web Applications", "AI Systems", "Automation", "CRM & Internal Tools", "APIs & Integrations", "Custom Software"];
+const services = ["SaaS & MVPs", "Web Applications", "Custom & Internal Software", "AI Systems", "APIs & Integrations", "Automation", "Specialized Software"];
 
 export function Footer() {
   const social = [

@@ -1,5 +1,5 @@
 "use client";
-import { AlertTriangle, ArrowRight, Archive, Bell, BarChart3, Building2, CalendarCheck, CalendarDays, Check, CheckCheck, CircleCheck, ClipboardList, CreditCard, Database, Eye, FileSearch, FileText, Film, FolderCheck, GitBranch, GitCompare, Headset, Image as Img, Landmark, Lock, Mail, MessageSquare, Mic, PenLine, Phone, Receipt, ScanText, Send, Sparkles, Stamp, Table2, Type, Upload, UserCheck, UserRound, UsersRound, X, type LucideIcon } from "lucide-react";
+import { Search as SearchIcon, ShieldCheck, LayoutGrid, Settings, ListChecks, Building, AlertTriangle, ArrowRight, Archive, Bell, BarChart3, Building2, CalendarCheck, CalendarDays, Check, CheckCheck, CircleCheck, ClipboardList, CreditCard, Database, Eye, FileSearch, FileText, Film, FolderCheck, GitBranch, GitCompare, Headset, Image as Img, Landmark, Lock, Mail, MessageSquare, Mic, PenLine, Phone, Receipt, ScanText, Send, Sparkles, Stamp, Table2, Type, Upload, UserCheck, UserRound, UsersRound, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
@@ -22,22 +22,22 @@ function Glyph({ k }: { k: string }) { const C = icons[k] ?? Building2; return <
 // Fixed before positions (percent of the stage). The same six tiles are reused by every story.
 const POS = [[15, 27, -3], [44, 17, 2], [74, 28, -2], [24, 71, 3], [55, 68, -3], [84, 74, 2]] as const;
 
+const NAV: [LucideIcon, string][] = [[LayoutGrid, "Overview"], [ClipboardList, "Requests"], [Building2, "Vendors"], [Stamp, "Approvals"], [ListChecks, "Tasks"], [BarChart3, "Reports"], [Settings, "Settings"]];
+const ROWS = [["#201", "Atlas Supply", "RM", "Approved", "ok"], ["#202", "Brightline Ltd", "JP", "In review", "run"], ["#203", "Corvid Parts", "AK", "Approved", "ok"]] as const;
+const AUDIT = ["Logged by A. Khan", "Routed to Finance by rule", "Approved by M. Rossi", "Assigned to J. Park", "Weekly report updated"];
+
+/** One transformation: scattered tools become a real internal application (nav, records, owners, permissions, tasks, approvals, activity, reporting, audit). */
 export function Transformation() {
   const { reduced } = useMotionPreference();
-  const [tab, setTab] = useState(0);
   const [state, setState] = useState<"before" | "after">("after");
   const [step, setStep] = useState(0);
   const stage = useRef<HTMLDivElement>(null);
-  const token = useRef<HTMLDivElement>(null);
-  const slot = useRef<HTMLDivElement>(null);
-  const origin = useRef<HTMLDivElement>(null);
   const seen = useRef(false);
   const inView = useInView(stage, "-25% 0px -25% 0px");
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const sc = scenarios[tab];
+  const sc = scenarios[0];
+  const alts = scenarios.slice(1);
   const N = sc.steps.length;
 
-  // Reduced motion: final state, fully resolved. Otherwise start from the fragmented Before state.
   useEffect(() => {
     if (reduced) { setState("after"); setStep(N); return; }
     if (!seen.current) { setState("before"); setStep(-1); }
@@ -46,12 +46,10 @@ export function Transformation() {
   useEffect(() => {
     if (reduced || !inView || seen.current) return;
     seen.current = true;
-    // Not cleared by dependency changes: the first play must always complete.
-    autoplay.current = setTimeout(() => { setState("after"); track("scene_complete", { scene: "transformation" }); }, 700);
+    autoplay.current = setTimeout(() => { setState("after"); track("scene_complete", { scene: "transformation" }); }, 900);
   }, [inView, reduced]);
   useEffect(() => () => clearTimeout(autoplay.current), []);
 
-  // After: fragments dock, the object enters the platform, then each stage turns orange and then green.
   useEffect(() => {
     if (state !== "after") { setStep(-1); return; }
     if (reduced) { setStep(N); return; }
@@ -60,31 +58,14 @@ export function Transformation() {
     let id: ReturnType<typeof setInterval> | undefined;
     const t0 = setTimeout(() => {
       k = 0; setStep(0);
-      id = setInterval(() => { k += 1; setStep(k); if (k >= N) clearInterval(id); }, 720);
-    }, 1000);
+      id = setInterval(() => { k += 1; setStep(k); if (k >= N) clearInterval(id); }, 760);
+    }, 1100);
     return () => { clearTimeout(t0); clearInterval(id); };
-  }, [state, tab, reduced, N]);
+  }, [state, reduced, N]);
 
-  // The object travels from its scattered spot into the platform (measured once per change, transform only).
-  useEffect(() => {
-    const st = stage.current, tk = token.current, target = state === "after" ? slot.current : origin.current;
-    if (!st || !tk || !target) return;
-    const a = st.getBoundingClientRect(), b = target.getBoundingClientRect();
-    tk.style.translate = `${b.left - a.left + b.width / 2 - tk.offsetWidth / 2}px ${b.top - a.top + b.height / 2 - tk.offsetHeight / 2}px`;
-  }, [state, tab]);
-
-  const pick = (i: number) => {
-    setTab(i);
-    track("transformation_selected", { scenario: scenarios[i].id });
-    if (!reduced) { clearTimeout(autoplay.current); seen.current = true; setState("before"); setStep(-1); autoplay.current = setTimeout(() => setState("after"), 900); }
-  };
-  const onKey = (e: React.KeyboardEvent) => {
-    const n = scenarios.length;
-    let i = -1;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") i = (tab + 1) % n;
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") i = (tab - 1 + n) % n;
-    if (i >= 0) { e.preventDefault(); pick(i); tabs.current[i]?.focus(); }
-  };
+  const replay = () => { clearTimeout(autoplay.current); seen.current = true; setState("before"); setStep(-1); if (!reduced) autoplay.current = setTimeout(() => setState("after"), 900); else setState("after"); };
+  const st204 = step < 0 ? "New" : step === 0 ? "New" : step === 1 ? "Routed" : step === 2 ? "Approved" : "Approved";
+  const tone204 = step < 1 ? "idle" : step === 1 ? "run" : "ok";
 
   return (
     <section id="transform" className="section tf" aria-labelledby="tf-title">
@@ -92,66 +73,81 @@ export function Transformation() {
         <Reveal className="sec-head">
           <p className="eyebrow">{copy.transform.eyebrow}</p>
           <h2 id="tf-title" className="h2">{copy.transform.title}</h2>
+          <p className="body-l">{copy.transform.support}</p>
         </Reveal>
 
         <div className="tf__bar">
-          <div className="tf__tabs" role="tablist" aria-label="Processes" onKeyDown={onKey}>
-            {scenarios.map((s, i) => (
-              <button key={s.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`tf-${s.id}`} aria-selected={tab === i} aria-controls="tf-panel" tabIndex={tab === i ? 0 : -1} className="itab" data-active={tab === i} onClick={() => pick(i)}>{s.tab}</button>
-            ))}
-          </div>
-          <div className="segmented" role="group" aria-label="Show the process before or after automation">
-            <button aria-pressed={state === "before"} onClick={() => setState("before")}>{copy.transform.before}</button>
+          <div className="segmented" role="group" aria-label="Show the process before or after it becomes software">
+            <button aria-pressed={state === "before"} onClick={() => { setState("before"); seen.current = true; }}>{copy.transform.before}</button>
             <button aria-pressed={state === "after"} onClick={() => { setState("after"); seen.current = true; }}>{copy.transform.after}</button>
           </div>
+          <button type="button" className="btn btn--ghost tf__replay" onClick={replay}>Replay</button>
         </div>
 
-        <div id="tf-panel" role="tabpanel" aria-labelledby={`tf-${sc.id}`}>
-          <div className="mt" ref={stage} data-state={state} data-sc={sc.id}>
-            <p className="mt-label mt-label--b mono"><AlertTriangle aria-hidden /> BEFORE</p>
-            <p className="mt-label mt-label--a mono"><CircleCheck aria-hidden /> AFTER</p>
+        <div className="mt" ref={stage} data-state={state} data-sc="operations" role="img" aria-label="Vendor approval #204 moving from scattered email, spreadsheets and chat into one custom internal application">
+          <p className="mt-label mt-label--b mono"><AlertTriangle aria-hidden /> BEFORE</p>
+          <p className="mt-label mt-label--a mono"><CircleCheck aria-hidden /> AFTER</p>
 
-            <div className="mt-win" aria-hidden>
-              <div className="mt-win__bar"><i /><i /><i /><b>{sc.system}</b></div>
-              <div className="mt-slot" ref={slot} />
-              <ol className="mt-rows">
-                {sc.steps.map((s, i) => {
-                  const Ic = I(s.icon);
-                  const st = step > i ? "done" : step === i ? "active" : "idle";
-                  return (
-                    <li key={sc.id + s.label} data-st={st}>
-                      <span className="mt-rows__ic"><Ic /></span><b>{s.label}</b>
-                      {st === "done" ? <Check className="mt-rows__ok" /> : st === "active" ? <i className="mt-rows__dot" /> : null}
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-
-            {sc.frags.map((f, i) => {
-              const Ic = I(f.icon);
-              const [x, y, r] = POS[i];
-              return (
-                <div key={sc.id + f.name} className="mt-tile" data-n={i + 1} data-st={f.st} style={{ ["--i" as string]: i, ["--bx" as string]: x, ["--by" as string]: y, ["--br" as string]: r }}>
-                  <span className="mt-tile__ic"><Ic aria-hidden /></span>
-                  <b>{f.name}</b>
-                  <i /><i />
-                  <em className="mt-b mono">{f.st === "bad" ? <X aria-hidden /> : <Bell aria-hidden />}{f.badge}</em>
-                  <em className="mt-a mono"><Check aria-hidden />CONNECTED</em>
+          <div className="mtapp" aria-hidden>
+            <div className="mtapp__bar"><i /><i /><i /><b>Vendor Desk</b><span className="mtapp__search"><SearchIcon />Search requests, vendors</span><em className="mtapp__me">AK</em></div>
+            <div className="mtapp__body">
+              <nav className="mtapp__nav">{NAV.map(([Ic, t]) => <span key={t} data-on={t === "Requests"}><Ic />{t}</span>)}</nav>
+              <div className="mtapp__main">
+                <div className="mtapp__h"><b>Vendor approvals</b><span className="mtapp__kpis"><em>New 3</em><em>In review 5</em><em data-ok>Approved 12</em></span></div>
+                <div className="mtapp__tbl">
+                  <div className="mtapp__r mtapp__r--h"><span>ID</span><span>Vendor</span><span>Owner</span><span>Status</span></div>
+                  {ROWS.map(([id, v, o, stt, tn]) => <div key={id} className="mtapp__r"><span>{id}</span><span>{v}</span><span><u>{o}</u></span><span><i data-t={tn}>{stt}</i></span></div>)}
+                  <div className="mtapp__r mtapp__r--hi" data-s={step}>
+                    <span>#204</span><span>Delta Freight</span>
+                    <span>{step >= 3 ? <u data-new>JP</u> : <u data-empty>-</u>}</span>
+                    <span><i data-t={tone204}>{st204}</i></span>
+                  </div>
                 </div>
-              );
-            })}
+                <div className="mtapp__rep"><b>Approvals this week</b><span>{[34, 52, 44, 66, 58].map((h, k) => <i key={k} style={{ height: `${h}%` }} />)}<i data-hot={step >= N} style={{ height: step >= N ? "92%" : "40%" }} /></span></div>
+              </div>
+              <aside className="mtapp__det">
+                <b>Vendor approval #204</b>
+                <div className="mtapp__perm" data-on={step >= 2}><ShieldCheck />Finance approver<em>can approve</em></div>
+                <ul className="mtapp__tasks">
+                  {["Review contract", "Approve spend", "Notify vendor"].map((t, k) => <li key={t} data-done={step > k + 1}>{step > k + 1 ? <Check /> : <i />}{t}</li>)}
+                </ul>
+                <p className="mono mtapp__ah">AUDIT HISTORY</p>
+                <ol className="mtapp__audit">{AUDIT.map((a, k) => <li key={a} data-on={step >= k}><u />{a}</li>)}</ol>
+              </aside>
+            </div>
+          </div>
 
-            <div className="mt-origin" ref={origin} aria-hidden />
-            <span className="mt-ghost mt-ghost--1" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
-            <span className="mt-ghost mt-ghost--2" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
-            <div className="mt-token" ref={token} data-done={step >= N} aria-hidden><Glyph k={sc.object.icon} /><b>{sc.object.label}</b>{step >= N && <Check />}</div>
-          </div>
-          <div className="tf__foot">
-            <p className="body-l" aria-live="polite">{sc.line}</p>
-            <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "transformation", scenario: sc.id }); presetBuilder(sc.need); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-          </div>
+          {sc.frags.map((f, i) => {
+            const Ic = I(f.icon);
+            const [x, y, r] = POS[i];
+            return (
+              <div key={sc.id + f.name} className="mt-tile" data-n={i + 1} data-st={f.st} style={{ ["--i" as string]: i, ["--bx" as string]: x, ["--by" as string]: y, ["--br" as string]: r }}>
+                <span className="mt-tile__ic"><Ic aria-hidden /></span>
+                <b>{f.name}</b>
+                <i /><i />
+                <em className="mt-b mono">{f.st === "bad" ? <X aria-hidden /> : <Bell aria-hidden />}{f.badge}</em>
+              </div>
+            );
+          })}
+          <span className="mt-ghost mt-ghost--1" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
+          <span className="mt-ghost mt-ghost--2" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
         </div>
+
+        <div className="tf__foot">
+          <p className="body-l" aria-live="polite">We turn a manual process into software your team can own: records, owners, permissions, approvals, reporting and an audit trail.</p>
+          <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "transformation", scenario: sc.id }); presetBuilder(sc.need); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+        </div>
+
+        <ul className="tf__alts" aria-label="Other processes we have turned into software">
+          {alts.map((a) => (
+            <li key={a.id}>
+              <b className="mono">{a.tab.toUpperCase()}</b>
+              <span>{a.frags.slice(0, 3).map((f) => f.name).join(", ")}</span>
+              <ArrowRight aria-hidden />
+              <em>{a.system}</em>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

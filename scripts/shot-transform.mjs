@@ -9,7 +9,6 @@ const total = await p.evaluate(() => document.documentElement.scrollHeight);
 for (let y = 0; y < total; y += 400) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(40); }
 await p.evaluate(() => { const e = document.querySelector("#transform .mt"); scrollTo(0, scrollY + e.getBoundingClientRect().top - 120); });
 await p.waitForTimeout(600);
-await p.locator("#transform [role=tab]").nth(+tab).click();
 const box = await p.locator("#transform .mt").boundingBox();
 const snap = (path) => p.screenshot({ path, clip: box, animations: "allow", caret: "initial" });
 await p.waitForTimeout(150); await snap(`${out}-0before.png`);

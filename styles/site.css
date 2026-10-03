@@ -62,13 +62,13 @@
 
 /* Skip rendering work for below-the-fold sections until they approach the viewport.
    Pinned scenes (#product, #depth) are excluded so ScrollTrigger measures stable heights. */
-#services, #intent, #transform, #proof, #labs, #founders, #rescue, #ai, #integrations, #work, #process, #testimonials, #delivery, #start, #final, .footer {
+#services, #intent, #transform, #business, #specialized, #proof, #labs, #founders, #rescue, #ai, #integrations, #work, #process, #testimonials, #delivery, #start, #final, .footer {
   content-visibility: auto;
   contain-intrinsic-size: auto 900px;
 }
 @media (pointer: coarse), (max-width: 767px) { .itab, .pstep, .module-list button, .labtab { min-height: 44px; } .itab { display: inline-flex; align-items: center; } }
 @media (max-width: 767px) { .footer a { display: inline-flex; align-items: center; min-height: 44px; } }
-html[data-cv="off"] #services, html[data-cv="off"] #intent, html[data-cv="off"] #transform, html[data-cv="off"] #proof, html[data-cv="off"] #labs, html[data-cv="off"] #founders, html[data-cv="off"] #ai, html[data-cv="off"] #integrations, html[data-cv="off"] #work, html[data-cv="off"] #process, html[data-cv="off"] #testimonials, html[data-cv="off"] #delivery, html[data-cv="off"] #start, html[data-cv="off"] #final, html[data-cv="off"] .footer, html[data-cv="off"] #rescue { content-visibility: visible; }
+html[data-cv="off"] #services, html[data-cv="off"] #intent, html[data-cv="off"] #transform, html[data-cv="off"] #business, html[data-cv="off"] #specialized, html[data-cv="off"] #proof, html[data-cv="off"] #labs, html[data-cv="off"] #founders, html[data-cv="off"] #ai, html[data-cv="off"] #integrations, html[data-cv="off"] #work, html[data-cv="off"] #process, html[data-cv="off"] #testimonials, html[data-cv="off"] #delivery, html[data-cv="off"] #start, html[data-cv="off"] #final, html[data-cv="off"] .footer, html[data-cv="off"] #rescue { content-visibility: visible; }
 @media (max-width: 767px) { .nav__bar { min-width: 0; } .nav__logo { min-width: 0; flex: 1 1 0; overflow: hidden; } .nav__right { flex: none; } .nav__cta-compact .btn { padding: 0 12px; } }
 
 /* Section background rhythm (art direction): not every section is the same black */

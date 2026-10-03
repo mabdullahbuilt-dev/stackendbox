@@ -88,26 +88,26 @@ export function IdeaToProduct() {
               {/* 0 brief */}
               <div className="ipv-brief"><span className="mono">BRIEF</span><p>{copy.product.brief}</p></div>
               {/* 1 flow */}
-              <div className="ipv-flow" data-on={on(stage, 1)}>{["Browse", "Pick time", "Pay", "Confirm"].map((t, i) => <span key={t} style={{ ["--i" as string]: i }}>{t}</span>)}</div>
+              <div className="ipv-flow" data-on={on(stage, 1)}>{["Sign in", "Submit request", "Team review", "Pay invoice"].map((t, i) => <span key={t} style={{ ["--i" as string]: i }}>{t}</span>)}</div>
               {/* 2-3 window: wireframe then interface */}
               <div className="ipv-win" data-on={on(stage, 2)} data-ui={on(stage, 3)}>
-                <div className="ipv-win__bar"><i /><i /><i /><b>Studio bookings</b></div>
+                <div className="ipv-win__bar"><i /><i /><i /><b>Client portal</b></div>
                 <div className="ipv-win__body">
                   <div className="ipv-wf"><u /><u /><u /><s /><s /><em /></div>
                   <div className="ipv-ui">
-                    <aside><b data-act>Haircut</b><b>Consultation</b><b>Colour</b></aside>
-                    <div><span className="mono">TUESDAY</span><div className="ipv-slots">{["09:00", "10:30", "13:00", "14:30", "16:00", "17:30"].map((t) => <i key={t} data-act={t === "14:30"}>{t}</i>)}</div><button type="button" tabIndex={-1}>Confirm and pay</button></div>
+                    <aside><b data-act>Requests</b><b>Documents</b><b>Payments</b></aside>
+                    <div><span className="mono">YOUR REQUESTS</span><div className="ipv-rq">{[["Brand refresh", "In review"], ["Site migration", "Approved"], ["Quarterly report", "Delivered"]].map(([t, st], i) => <p key={t} data-act={i === 0}><span>{t}</span><em>{st}</em></p>)}</div><button type="button" tabIndex={-1}>New request</button></div>
                   </div>
                 </div>
               </div>
               {/* 4 mobile */}
-              <div className="ipv-phone" data-on={on(stage, 4)}><span /><b>Book</b><div className="ipv-slots">{["09:00", "13:00", "14:30"].map((t) => <i key={t} data-act={t === "13:00"}>{t}</i>)}</div><em>Pay and confirm</em></div>
+              <div className="ipv-phone" data-on={on(stage, 4)}><span /><b>Requests</b><div className="ipv-rq">{[["Brand refresh", "Review"], ["Site migration", "Approved"]].map(([t, st], i) => <p key={t} data-act={i === 0}><span>{t}</span><em>{st}</em></p>)}</div><em>New request</em></div>
               {/* 5 access */}
-              <div className="ipv-card ipv-auth" data-on={on(stage, 5)}><Lock aria-hidden /><div><b>Sign in</b><span>Customer, staff, admin</span></div><Check className="ipv-ok" aria-label="secured" /></div>
+              <div className="ipv-card ipv-auth" data-on={on(stage, 5)}><Lock aria-hidden /><div><b>Sign in</b><span>Client, team, admin roles</span></div><Check className="ipv-ok" aria-label="secured" /></div>
               {/* 6 data */}
-              <div className="ipv-card ipv-db" data-on={on(stage, 6)}><Database aria-hidden /><div><b>Data</b>{["customers", "services", "bookings", "payments"].map((t) => <span key={t} className="mono">{t}</span>)}</div></div>
+              <div className="ipv-card ipv-db" data-on={on(stage, 6)}><Database aria-hidden /><div><b>Data</b>{["accounts", "projects", "requests", "payments"].map((t) => <span key={t} className="mono">{t}</span>)}</div></div>
               {/* 7 billing */}
-              <div className="ipv-card ipv-bill" data-on={on(stage, 7)}><BrandIcon name="stripe" size={20} /><div><b>Payments</b><span>Subscription active</span></div><Check className="ipv-ok" aria-label="active" /></div>
+              <div className="ipv-card ipv-bill" data-on={on(stage, 7)}><BrandIcon name="stripe" size={20} /><div><b>Payments</b><span>Invoices and plans</span></div><Check className="ipv-ok" aria-label="active" /></div>
               {/* 8 admin */}
               <div className="ipv-card ipv-admin" data-on={on(stage, 8)}><div className="ipv-admin__h"><Users aria-hidden /><b>Admin console</b><BarChart3 aria-hidden /></div><div className="ipv-bars">{[38, 62, 48, 80, 58, 72, 90].map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</div></div>
               {/* 9 tests, 10 live */}
@@ -116,7 +116,7 @@ export function IdeaToProduct() {
           </div>
         </div>
       </div>
-      <p className="sr-only">A written brief becomes a user flow and a wireframe, then a finished interface with a mobile version, sign-in and roles, a database, payments, an admin console, passing tests and a live production deployment.</p>
+      <p className="sr-only">A client portal brief becomes a user flow and a wireframe, then a finished interface with a mobile version, sign-in and roles, a database, billing, an admin console, passing tests and a live production deployment.</p>
     </section>
   );
 }

@@ -10,7 +10,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
 {
   const { p, errs } = await open({ viewport: { width: 1440, height: 900 } });
   ok((await p.locator("h1").count()) === 1, "single h1");
-  ok((await p.locator("h1").innerText()).replace(/\s+/g, " ").trim() === "Build the product. Improve the operation. Connect the stack.", "h1 text correct");
+  ok((await p.locator("h1").innerText()).replace(/\s+/g, " ").trim() === "Build the product. Engineer the platform. Connect the stack.", "h1 text correct");
   ok((await p.locator(".hero__canvas canvas").count()) === 0, "hero WebGL waits for first interaction");
   await p.mouse.move(600, 400); await p.mouse.move(640, 420);
   await p.waitForTimeout(3500);
@@ -20,7 +20,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   const html = await p.content();
   ok(!html.includes("\u2014"), "no em dash in rendered HTML");
   // tablists: arrow keys
-  for (const [sel, label] of [["#intent [role=tablist]", "intent"], ["#transform [role=tablist]", "transform"], ["#proof [role=tablist]", "proof"], ["#process [role=tablist]", "process"]]) {
+  for (const [sel, label] of [["#intent [role=tablist]", "intent"], ["#specialized [role=tablist]", "specialized"], ["#proof [role=tablist]", "proof"], ["#process [role=tablist]", "process"]]) {
     await p.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "center" }), sel);
     await p.waitForTimeout(400);
     const first = p.locator(`${sel} [role=tab][aria-selected=true]`);
@@ -32,7 +32,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   }
   // service CTA preselects builder
   await p.evaluate(() => document.querySelector("#services").scrollIntoView());
-  await p.getByRole("link", { name: /Automate a Workflow/ }).first().click();
+  await p.getByRole("link", { name: /Discuss Process Software/ }).first().click();
   await p.waitForTimeout(900);
   ok((await p.locator("#start .choice[data-checked='true']").allInnerTexts()).join("|").includes("Automation"), "service CTA preselects Automation in builder");
   // rescue CTA preselects stage
