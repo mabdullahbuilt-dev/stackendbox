@@ -25,13 +25,13 @@
   --red-400: #ff6b62;
   --red-dark: #481b1b;
 
-  /* Semantic aliases used across the codebase */
-  --bg-canvas: var(--black-900);
-  --bg-secondary: var(--black-850);
-  --bg-raised: var(--black-800);
-  --bg-higher: var(--black-750);
-  --bg-soft: var(--black-700);
-  --bg-deep: var(--black-950);
+  /* Semantic tokens: components use only these */
+  --surface-deep: var(--black-950);
+  --surface: var(--black-900);
+  --surface-2: var(--black-850);
+  --surface-raised: var(--black-800);
+  --surface-higher: var(--black-750);
+  --surface-soft: var(--black-700);
 
   --text-primary: var(--white-100);
   --text-secondary: var(--white-300);
@@ -47,23 +47,15 @@
   --accent-hover: var(--orange-400);
   --accent-press: #e66a10;
   --accent-text: var(--orange-400);
-  --accent-glow: rgba(255, 122, 26, 0.14);
+  --accent-soft: rgba(255, 122, 26, 0.14);
   --on-accent: #080a08;
-  --ok: var(--green-500);
-  --warn: var(--orange-300);
-  --bad: var(--red-500);
+  --warning: var(--orange-300);
+  --success: var(--green-500);
+  --success-soft: rgba(47, 210, 122, 0.12);
+  --danger: var(--red-500);
+  --danger-soft: rgba(240, 82, 82, 0.12);
 
-  /* Legacy names re-mapped by function (no blue or cyan remains) */
-  --blue: var(--orange-500);
-  --blue-fill: var(--orange-500);
-  --blue-text: var(--orange-400);
-  --blue-glow: var(--accent-glow);
-  --cyan: var(--white-200);
-  --green: var(--green-500);
-  --amber: var(--orange-300);
-  --red: var(--red-500);
-
-  --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--orange-400);
+  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--orange-400);
 
   --r-xs: 6px;
   --r-sm: 10px;

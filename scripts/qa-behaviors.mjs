@@ -20,7 +20,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   const html = await p.content();
   ok(!html.includes("\u2014"), "no em dash in rendered HTML");
   // tablists: arrow keys
-  for (const [sel, label] of [["#intent [role=tablist]", "intent"], ["#transform [role=tablist]", "transform"], ["#labs [role=tablist]", "labs"], ["#process [role=tablist]", "process"]]) {
+  for (const [sel, label] of [["#intent [role=tablist]", "intent"], ["#transform [role=tablist]", "transform"], ["#proof [role=tablist]", "proof"], ["#process [role=tablist]", "process"]]) {
     await p.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "center" }), sel);
     await p.waitForTimeout(400);
     const first = p.locator(`${sel} [role=tab][aria-selected=true]`);
@@ -65,7 +65,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   ok((await p.evaluate(() => document.documentElement.dataset.motion)) === "reduced", "reduced motion flag set");
   await p.evaluate(() => document.querySelector("#transform").scrollIntoView());
   await p.waitForTimeout(600);
-  ok((await p.locator("#transform .tf__stage").getAttribute("data-state")) === "after", "reduced motion: transformation shows final state");
+  ok((await p.locator("#transform .mt").getAttribute("data-state")) === "after", "reduced motion: transformation shows final state");
   ok(errs.length === 0, "reduced motion: no console errors");
 }
 // --- manual motion switch

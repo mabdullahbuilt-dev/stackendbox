@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type Tone = "green" | "amber" | "cyan" | "blue" | "red" | "muted";
+export type Tone = "green" | "amber" | "neutral" | "accent" | "red" | "muted";
 
 export function StatusChip({ tone = "muted", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
   return (

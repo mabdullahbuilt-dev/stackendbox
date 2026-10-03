@@ -1,99 +1,102 @@
 "use client";
-import { AnimatePresence, m } from "motion/react";
-import { ChevronRight, PackageCheck, PenTool, ShieldCheck, Target, Blocks, type LucideIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { Blocks, Check, ClipboardList, Database, FlaskConical, Gauge, LayoutTemplate, PackageCheck, PenTool, Plug, Rocket, ShieldCheck, Smartphone, Target, TriangleAlert, Users, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { steps } from "@/content/process";
-import { useMedia } from "@/lib/hooks";
+import { useInView } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
-import { processVisuals } from "./visuals";
 
-const icons: Record<string, LucideIcon> = { discover: Target, design: PenTool, build: Blocks, verify: ShieldCheck, ship: PackageCheck };
+const icons: LucideIcon[] = [Target, PenTool, Blocks, ShieldCheck, PackageCheck];
 
+/**
+ * One artifact evolves through five stages: brief, flow and wireframe, working product,
+ * tests (with one caught and fixed issue), then a deployment that goes live.
+ */
 export function Process() {
   const { reduced } = useMotionPreference();
-  const wide = useMedia("(min-width: 768px)", true);
-  const [active, setActive] = useState(0);
-  const [open, setOpen] = useState(0);
+  const [stage, setStage] = useState(0);
+  const box = useRef<HTMLDivElement>(null);
+  const inView = useInView(box, "-20% 0px -20% 0px", true);
+  const [fix, setFix] = useState(false);
+  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const cur = steps[active];
 
-  const head = (
-    <div className="proc__head">
-      <p className="eyebrow">{copy.process.eyebrow}</p>
-      <h2 id="process-title" className="h2">{copy.process.title}</h2>
-      <p className="body-l">{copy.process.support}</p>
-    </div>
-  );
+  useEffect(() => { if (reduced) { setStage(4); setFix(true); } }, [reduced]);
+  useEffect(() => {
+    if (reduced || !inView) return;
+    let k = 0;
+    setStage(0);
+    timer.current = setInterval(() => { k += 1; setStage(k); if (k >= 4) clearInterval(timer.current); }, 1500);
+    return () => clearInterval(timer.current);
+  }, [inView, reduced]);
+  useEffect(() => {
+    // the verify stage shows one failing check, then the fix
+    if (stage !== 3) { setFix(stage > 3); return; }
+    setFix(false);
+    const t = setTimeout(() => setFix(true), reduced ? 0 : 900);
+    return () => clearTimeout(t);
+  }, [stage, reduced]);
 
-  if (!wide) {
-    return (
-      <section id="process" className="section proc" aria-labelledby="process-title">
-        <div className="container">
-          <div className="sec-head">{head}</div>
-          <div className="pacc">
-            {steps.map((s, i) => {
-              const Icon = icons[s.id];
-              return (
-                <div key={s.id} className="pacc__item" data-open={open === i}>
-                  <h3>
-                    <button aria-expanded={open === i} aria-controls={`pacc-${s.id}`} id={`pacc-h-${s.id}`} onClick={() => setOpen(open === i ? -1 : i)}>
-                      <span className="pacc__ic"><Icon aria-hidden /></span>
-                      <span className="proc__word proc__word--m"><small className="mono">{s.n}</small>{s.word}</span>
-                      <ChevronRight aria-hidden />
-                    </button>
-                  </h3>
-                  <div id={`pacc-${s.id}`} role="region" aria-labelledby={`pacc-h-${s.id}`} hidden={open !== i}>
-                    <p className="body-l">{s.line}</p>
-                    <div className="pstage pstage--m">{open === i && processVisuals[s.id]}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
+  const pick = (i: number) => { clearInterval(timer.current); setStage(i); };
   const onKey = (e: React.KeyboardEvent) => {
-    const n = steps.length;
     let i = -1;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") i = (active + 1) % n;
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") i = (active - 1 + n) % n;
-    else if (e.key === "Home") i = 0; else if (e.key === "End") i = n - 1;
-    if (i >= 0) { e.preventDefault(); setActive(i); tabs.current[i]?.focus(); }
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") i = Math.min(4, stage + 1);
+    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") i = Math.max(0, stage - 1);
+    if (i >= 0) { e.preventDefault(); pick(i); tabs.current[i]?.focus(); }
   };
+  const on = (n: number) => stage >= n;
+  const cur = steps[stage];
 
   return (
     <section id="process" className="section proc" aria-labelledby="process-title">
       <div className="container">
-        <Reveal className="sec-head">{head}</Reveal>
-        <div className="pflow" role="tablist" aria-label="Steps" onKeyDown={onKey}>
-          <div className="pflow__rail" aria-hidden><i style={{ width: `${(active / (steps.length - 1)) * 100}%` }} /></div>
-          {steps.map((s, i) => {
-            const Icon = icons[s.id];
-            return (
-              <button key={s.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`pt-${s.id}`} aria-selected={active === i} aria-controls="proc-panel" tabIndex={active === i ? 0 : -1} className="pstep" data-active={active === i} data-done={i < active} onClick={() => setActive(i)}>
-                <span className="pstep__ic"><Icon aria-hidden /></span>
-                <span className="mono pstep__n">{s.n}</span>
-                <b>{s.word}</b>
-              </button>
-            );
-          })}
-        </div>
-        <div id="proc-panel" role="tabpanel" aria-labelledby={`pt-${cur.id}`} className="proc__panel">
-          <div className="proc__txt" key={cur.id}>
-            <h3 className="proc__big">{cur.word}</h3>
-            <p className="body-l">{cur.line}</p>
+        <Reveal className="sec-head">
+          <p className="eyebrow">{copy.process.eyebrow}</p>
+          <h2 id="process-title" className="h2">{copy.process.title}</h2>
+        </Reveal>
+        <div className="pxg">
+          <div className="pxg__side">
+            <div className="pxg__tabs" role="tablist" aria-orientation="vertical" aria-label="How we build" onKeyDown={onKey}>
+              {steps.map((s, i) => {
+                const Ic = icons[i];
+                const st = stage > i ? "done" : stage === i ? "active" : "idle";
+                return (
+                  <button key={s.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`px-${s.id}`} aria-selected={stage === i} aria-controls="px-panel" tabIndex={stage === i ? 0 : -1} className="pxg__tab" data-st={st} onClick={() => pick(i)}>
+                    <span className="pxg__ic">{st === "done" ? <Check aria-label="done" /> : <Ic aria-hidden />}</span>
+                    <span className="mono">{s.n}</span><b>{s.word}</b>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="pxg__line" aria-live="polite">{cur.line}</p>
           </div>
-          <div className="pstage" aria-hidden>
-            <AnimatePresence mode="wait" initial={false}>
-              <m.div key={cur.id} initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.26, ease: [0.16, 1, 0.3, 1] }}>
-                {processVisuals[cur.id]}
-              </m.div>
-            </AnimatePresence>
+
+          <div id="px-panel" role="tabpanel" aria-labelledby={`px-${cur.id}`} className="pxg__stage" ref={box}>
+            <div className="pxg__art" aria-hidden data-s={stage}>
+              <div className="px-brief"><span className="mono">BRIEF</span><p>Client portal: accounts, requests, payments, admin</p>
+                <div className="px-reqs">{[[Users, "Users"], [Plug, "Systems"], [ClipboardList, "Rules"]].map(([Ic, t]) => { const I = Ic as LucideIcon; return <span key={t as string}><I />{t as string}</span>; })}</div>
+              </div>
+              <div className="px-flow" data-on={on(1)}>{["Sign in", "Request", "Pay"].map((t) => <span key={t}>{t}</span>)}</div>
+              <div className="px-win" data-on={on(1)} data-ui={on(2)}>
+                <div className="px-win__bar"><i /><i /><i /></div>
+                <div className="px-win__body"><div className="px-wf"><u /><u /><u /><s /></div><div className="px-ui"><u /><u /><u /><button type="button" tabIndex={-1}>Submit request</button></div></div>
+              </div>
+              <div className="px-phone" data-on={on(2)}><Smartphone /><i /><i /><b /></div>
+              <div className="px-chips" data-on={on(2)}><span><Database />Data</span><span><Plug />API</span><span><LayoutTemplate />UI</span></div>
+              <div className="px-tests" data-on={on(3)}>
+                <b className="mono">CHECKS</b>
+                {[["Interface", "ok"], ["API", "ok"], ["Responsive", "ok"], ["Empty state", fix ? "ok" : "bad"]].map(([t, s]) => (
+                  <span key={t} data-t={s}>{s === "ok" ? <Check aria-hidden /> : <TriangleAlert aria-hidden />}{t}{s === "bad" ? " (caught)" : t === "Empty state" ? " (fixed)" : ""}</span>
+                ))}
+              </div>
+              <div className="px-ship" data-on={on(4)}>
+                <b className="mono">DEPLOY</b>
+                <span><Check />Build</span><span><Check />Test</span><span><Check />Release</span>
+                <em><Gauge />Monitoring on</em>
+                <strong><Rocket />LIVE</strong>
+              </div>
+            </div>
           </div>
         </div>
       </div>

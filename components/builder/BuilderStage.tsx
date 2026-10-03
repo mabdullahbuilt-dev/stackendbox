@@ -27,7 +27,7 @@ export function BuilderStage({ needs, stage, goal }: { needs: string[]; stage: s
       <p className="sr-only" aria-live="polite">{summary}</p>
       <div className="bstage stage-grid" aria-hidden>
         <div className="bstage__top">
-          <StatusChip tone={count ? "blue" : "muted"}>{count ? "ASSEMBLING" : "WAITING"}</StatusChip>
+          <StatusChip tone={count ? "accent" : "muted"}>{count ? "ASSEMBLING" : "WAITING"}</StatusChip>
           <span className="mono tnum">{count} MODULES</span>
         </div>
         <m.div layout transition={t} className="bstage__plates">

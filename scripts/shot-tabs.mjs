@@ -11,5 +11,5 @@ await p.evaluate((s) => { const e = document.querySelector(s); scrollTo(0, scrol
 await p.waitForTimeout(800);
 const tabs = p.locator(`${sec} [role=tab]`);
 const n = await tabs.count();
-for (let i = 0; i < n; i++) { await tabs.nth(i).click(); await p.waitForTimeout(1900); await (stage ? p.locator(stage).first() : p.locator(sec)).screenshot({ path: `${out}-${i}.png` }); }
+for (let i = 0; i < n; i++) { await tabs.nth(i).click(); await p.waitForTimeout(+(process.env.WAIT ?? 1900)); await (stage ? p.locator(stage).first() : p.locator(sec)).screenshot({ path: `${out}-${i}.png` }); }
 await b.close();

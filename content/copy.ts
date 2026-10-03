@@ -9,7 +9,7 @@ export const copy = {
   nav: {
     links: [
       { label: "Services", href: "/#services", id: "services" },
-      { label: "Work", href: "/#work", id: "work" },
+      { label: "Work", href: "/#proof", id: "proof" },
       { label: "How We Build", href: "/#process", id: "process" },
       { label: "Company", href: "/#delivery", id: "delivery" },
     ],
@@ -36,17 +36,16 @@ export const copy = {
     support: "Choose the outcome. See what the system behind it could look like.",
   },
   transform: {
-    eyebrow: "MANUAL TO AUTOMATED",
-    title: "Manual today. Automated tomorrow.",
+    eyebrow: "MANUAL TO SYSTEM",
+    title: "Manual today. System tomorrow.",
     support: "Show us the process your team repeats.",
     before: "Before",
     after: "After",
   },
-  labs: {
-    eyebrow: "STACKENDBOX LABS",
-    title: "See how we solve real problems.",
-    support: "Systems we build internally to demonstrate how we solve real operational and product problems.",
-    meta: "BUILT BY STACKENDBOX · CAPABILITY BUILDS",
+  proof: {
+    eyebrow: "PROOF",
+    title: "Built to work.",
+    support: "Products and systems across software, AI, automation, integrations and specialized platforms.",
   },
   product: {
     eyebrow: "PRODUCT DELIVERY",
@@ -98,8 +97,8 @@ export const copy = {
   },
   process: {
     eyebrow: "HOW WE BUILD",
-    title: "From first brief to launch.",
-    support: "You see working software early and often.",
+    title: "From problem to production.",
+    support: "",
   },
   testimonials: { eyebrow: "CLIENT WORDS", title: "What clients say." },
   why: { eyebrow: "WHY STACKENDBOX", title: "Why teams bring StackEndBox in." },

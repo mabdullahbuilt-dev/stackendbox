@@ -4,7 +4,7 @@ import { Hero } from "@/components/hero/Hero";
 import { Services } from "@/components/services/Services";
 import { StartingPoint } from "@/components/start/StartingPoint";
 import { Transformation } from "@/components/transformation/Transformation";
-import { Labs } from "@/components/labs/Labs";
+import { ProofSection } from "@/components/proof/ProofSection";
 import { IdeaToProduct } from "@/components/scenes/IdeaToProduct";
 import { ProductRescue } from "@/components/rescue/ProductRescue";
 import { AiSection } from "@/components/ai/AiSection";
@@ -26,11 +26,11 @@ export default function Home() {
         <Services />
         <StartingPoint />
         <Transformation />
-        <Labs />
         <IdeaToProduct />
         <ProductRescue />
         <AiSection />
         <Integrations />
+        <ProofSection />
         <Work />
         <UnderInterface />
         <Process />

@@ -16,6 +16,9 @@ import "@/styles/rescue.css";
 import "@/styles/ai.css";
 import "@/styles/depth.css";
 import "@/styles/why.css";
+import "@/styles/services.css";
+import "@/styles/proof.css";
+import "@/styles/process.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

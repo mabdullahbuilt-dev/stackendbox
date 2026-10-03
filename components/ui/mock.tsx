@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Tone } from "./StatusChip";
 
 /** Tiny primitives for building believable demo UI out of DOM (no screenshots). */
-export function Line({ w = "100%", h = 8, tone, style }: { w?: string | number; h?: number; tone?: "strong" | "blue"; style?: CSSProperties }) {
+export function Line({ w = "100%", h = 8, tone, style }: { w?: string | number; h?: number; tone?: "strong" | "accent"; style?: CSSProperties }) {
   return <i className="mk-line" data-tone={tone} style={{ width: w, height: h, ...style }} />;
 }
 export function Pill({ children, tone = "muted", mono = true }: { children: ReactNode; tone?: Tone; mono?: boolean }) {
@@ -11,7 +11,7 @@ export function Pill({ children, tone = "muted", mono = true }: { children: Reac
 export function Avatar({ children }: { children: ReactNode }) {
   return <span className="mk-avatar">{children}</span>;
 }
-export function Tile({ label, value, tone }: { label: string; value: string; tone?: "cyan" | "green" | "blue" }) {
+export function Tile({ label, value, tone }: { label: string; value: string; tone?: "neutral" | "green" | "accent" }) {
   return (
     <div className="mk-tile">
       <span className="mono mono--muted">{label}</span>
@@ -19,7 +19,7 @@ export function Tile({ label, value, tone }: { label: string; value: string; ton
     </div>
   );
 }
-export function Bars({ values, tone = "blue" }: { values: number[]; tone?: "blue" | "cyan" | "green" }) {
+export function Bars({ values, tone = "accent" }: { values: number[]; tone?: "accent" | "neutral" | "green" }) {
   return (
     <div className="mk-bars" data-tone={tone}>
       {values.map((v, i) => (

@@ -1,15 +1,15 @@
 /* IDEA TO PRODUCT: stage driven. Transform and opacity only. */
-.ipv { position: relative; background: var(--black-950); }
+.ipv { position: relative; overflow-x: clip; background: var(--black-950); }
 .ipv__sticky { position: relative; padding-block: var(--sec-y); }
 .ipv__in { display: grid; gap: 32px; align-items: center; }
 .ipv__copy { display: grid; gap: 18px; align-content: center; justify-items: start; }
 .ipv__copy .h2 { max-width: 12ch; }
 .ipv__steps { display: grid; gap: 2px; margin-top: 6px; }
 .ipv__steps li { display: flex; gap: 14px; align-items: center; min-height: 30px; font-size: 0.9375rem; color: var(--text-muted); transition: color 250ms; } .ipv__steps .mono { font-size: 11px; color: var(--text-muted); }
-.ipv__steps li[data-st="active"] { color: var(--text-primary); } .ipv__steps li[data-st="active"] .mono { color: var(--orange-400); } .ipv__steps li[data-st="done"] { color: var(--text-secondary); } .ipv__steps li[data-st="done"] .mono { color: var(--green); }
+.ipv__steps li[data-st="active"] { color: var(--text-primary); } .ipv__steps li[data-st="active"] .mono { color: var(--orange-400); } .ipv__steps li[data-st="done"] { color: var(--text-secondary); } .ipv__steps li[data-st="done"] .mono { color: var(--success); }
 .ipv__ctas { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 8px; } .ipv__replay { min-height: 44px; }
 
-.ipv__stage { position: relative; container-type: inline-size; width: 100%; aspect-ratio: 760 / 540; border-radius: var(--r-lg); border: 1px solid var(--border-strong); background: radial-gradient(55% 50% at 50% 40%, rgba(255, 122, 26, 0.07), transparent 72%), linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 32px 32px, linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 32px 32px, var(--bg-canvas); overflow: clip; }
+.ipv__stage { position: relative; container-type: inline-size; width: 100%; aspect-ratio: 760 / 540; border-radius: var(--r-lg); border: 1px solid var(--border-strong); background: radial-gradient(55% 50% at 50% 40%, rgba(255, 122, 26, 0.07), transparent 72%), linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 32px 32px, linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 32px 32px, var(--surface); overflow: clip; }
 .ipv__canvas { --u: calc(100cqw / 760); position: absolute; inset: 0; }
 .ipv__canvas > * { position: absolute; transition: opacity 450ms var(--ease-out), translate 600ms var(--ease-out), scale 600ms var(--ease-out); }
 .ipv-u { font-size: max(10px, calc(var(--u) * 12)); }
@@ -22,7 +22,7 @@
 .ipv-flow span { display: flex; align-items: center; gap: 8px; padding: calc(var(--u) * 5) calc(var(--u) * 10); border-radius: 8px; border: 1px solid rgba(255, 122, 26, 0.55); color: var(--text-primary); font-size: max(10px, calc(var(--u) * 11)); background: rgba(255, 122, 26, 0.08); }
 .ipv-flow span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--orange-500); flex: none; }
 
-.ipv-win { left: calc(var(--u) * 198); top: calc(var(--u) * 24); width: calc(var(--u) * 370); height: calc(var(--u) * 262); border-radius: 14px; border: 1px solid var(--border-strong); background: var(--bg-raised); box-shadow: var(--shadow-3); overflow: hidden; opacity: 0; scale: 0.96; } .ipv-win[data-on="true"] { opacity: 1; scale: 1; }
+.ipv-win { left: calc(var(--u) * 198); top: calc(var(--u) * 24); width: calc(var(--u) * 370); height: calc(var(--u) * 262); border-radius: 14px; border: 1px solid var(--border-strong); background: var(--surface-raised); box-shadow: var(--shadow-3); overflow: hidden; opacity: 0; scale: 0.96; } .ipv-win[data-on="true"] { opacity: 1; scale: 1; }
 .ipv-win__bar { display: flex; align-items: center; gap: 6px; padding: calc(var(--u) * 9) calc(var(--u) * 12); background: rgba(255, 255, 255, 0.04); } .ipv-win__bar i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); } .ipv-win__bar b { margin-left: 8px; font-size: max(9px, calc(var(--u) * 11)); font-weight: 500; color: var(--text-secondary); }
 .ipv-win__body { position: relative; height: calc(100% - var(--u) * 32); }
 .ipv-wf, .ipv-ui { position: absolute; inset: 0; padding: calc(var(--u) * 14); transition: opacity 450ms; }
@@ -33,12 +33,12 @@
 .ipv-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 6); } .ipv-slots i { font-style: normal; text-align: center; padding: calc(var(--u) * 6) 0; border-radius: 7px; border: 1px solid var(--border-strong); font-size: max(9px, calc(var(--u) * 10)); color: var(--text-secondary); } .ipv-slots i[data-act] { background: rgba(255, 122, 26, 0.18); border-color: var(--orange-500); color: var(--text-primary); }
 .ipv-ui button { margin-top: calc(var(--u) * 4); padding: calc(var(--u) * 8); border-radius: 8px; background: var(--orange-500); color: #080a08; font-weight: 600; font-size: max(9px, calc(var(--u) * 11)); }
 
-.ipv-phone { left: calc(var(--u) * 592); top: calc(var(--u) * 38); width: calc(var(--u) * 138); height: calc(var(--u) * 252); padding: calc(var(--u) * 12); border-radius: 22px; border: 1px solid var(--border-strong); background: var(--bg-raised); box-shadow: var(--shadow-3); display: grid; gap: calc(var(--u) * 8); align-content: start; opacity: 0; translate: calc(var(--u) * 50) 0; } .ipv-phone[data-on="true"] { opacity: 1; translate: 0 0; }
+.ipv-phone { left: calc(var(--u) * 592); top: calc(var(--u) * 38); width: calc(var(--u) * 138); height: calc(var(--u) * 252); padding: calc(var(--u) * 12); border-radius: 22px; border: 1px solid var(--border-strong); background: var(--surface-raised); box-shadow: var(--shadow-3); display: grid; gap: calc(var(--u) * 8); align-content: start; opacity: 0; translate: calc(var(--u) * 50) 0; } .ipv-phone[data-on="true"] { opacity: 1; translate: 0 0; }
 .ipv-phone > span { width: 32%; height: 4px; border-radius: 3px; background: rgba(255, 255, 255, 0.16); justify-self: center; } .ipv-phone b { font-size: max(10px, calc(var(--u) * 12)); font-weight: 500; } .ipv-phone .ipv-slots { grid-template-columns: 1fr 1fr; } .ipv-phone em { font-style: normal; text-align: center; padding: calc(var(--u) * 8); border-radius: 8px; background: var(--orange-500); color: #080a08; font-weight: 600; font-size: max(9px, calc(var(--u) * 10)); margin-top: auto; }
 
-.ipv-card { display: flex; align-items: center; gap: calc(var(--u) * 10); padding: calc(var(--u) * 10) calc(var(--u) * 12); border-radius: 12px; border: 1px solid var(--border-strong); background: var(--bg-higher); box-shadow: var(--shadow-1); opacity: 0; } .ipv-card[data-on="true"] { opacity: 1; translate: 0 0; }
+.ipv-card { display: flex; align-items: center; gap: calc(var(--u) * 10); padding: calc(var(--u) * 10) calc(var(--u) * 12); border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-higher); box-shadow: var(--shadow-1); opacity: 0; } .ipv-card[data-on="true"] { opacity: 1; translate: 0 0; }
 .ipv-card > svg:first-child { width: calc(var(--u) * 20); height: calc(var(--u) * 20); min-width: 16px; min-height: 16px; color: var(--orange-400); flex: none; stroke-width: 1.6; } .ipv-card > div:not([class]) { display: grid; gap: 2px; min-width: 0; } .ipv-card b { font-size: max(10px, calc(var(--u) * 12)); font-weight: 500; } .ipv-card span { font-size: max(9px, calc(var(--u) * 10)); color: var(--text-muted); }
-.ipv-ok { margin-left: auto; width: 15px !important; height: 15px !important; color: var(--green); flex: none; }
+.ipv-ok { margin-left: auto; width: 15px !important; height: 15px !important; color: var(--success); flex: none; }
 .ipv-auth { left: calc(var(--u) * 14); top: calc(var(--u) * 266); width: calc(var(--u) * 168); translate: -14px 0; border-color: rgba(255, 122, 26, 0.5); }
 .ipv-db { left: calc(var(--u) * 14); top: calc(var(--u) * 340); width: calc(var(--u) * 168); translate: -14px 10px; align-items: flex-start; } .ipv-db .mono { font-size: max(8px, calc(var(--u) * 10)); color: var(--text-secondary); padding-left: 8px; border-left: 2px solid rgba(255, 255, 255, 0.18); margin-top: 2px; }
 .ipv-bill { left: calc(var(--u) * 592); top: calc(var(--u) * 312); width: calc(var(--u) * 154); translate: 14px 0; } .ipv-bill > svg:first-child { color: var(--text-primary); }

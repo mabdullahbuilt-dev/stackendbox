@@ -101,6 +101,27 @@ export function Integrations() {
             <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "integrations" }); presetBuilder("API / Integration"); }}>{copy.integrations.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
         </div>
+        <div className="ixops" aria-hidden>
+          <div className="ixops__p">
+            <b className="mono">EVENT STREAM</b>
+            {flow.map((f, i) => {
+              const st = step > i ? "ok" : step === i ? (i === 1 ? "retry" : "run") : "wait";
+              return <div key={sel + i} className="ixops__r" data-st={st}><span className="mono">evt_{(2041 + i * 7).toString(16)}</span><em>{f.text}</em><i className="mono">{st === "ok" ? "OK" : st === "retry" ? "RETRY 1" : st === "run" ? "RUNNING" : "QUEUED"}</i></div>;
+            })}
+          </div>
+          <div className="ixops__p">
+            <b className="mono">MAPPING</b>
+            <div className="ixops__m"><code>{sel}.id</code><span>→</span><code>{flow[1]?.node ?? "crm"}.external_id</code></div>
+            <div className="ixops__m"><code>{sel}.email</code><span>→</span><code>{flow[1]?.node ?? "crm"}.contact</code></div>
+            <div className="ixops__m"><code>{sel}.amount</code><span>→</span><code>{flow[2]?.node ?? "db"}.total</code></div>
+          </div>
+          <div className="ixops__p">
+            <b className="mono">SYNC HEALTH</b>
+            <div className="ixops__h" data-ok={step >= N}><span>Webhook signature</span><i className="mono">VERIFIED</i></div>
+            <div className="ixops__h" data-ok={step >= N}><span>Retries</span><i className="mono">{step > 1 ? "1 RESOLVED" : "PENDING"}</i></div>
+            <div className="ixops__h" data-ok={step >= N}><span>Systems in sync</span><i className="mono">{step >= N ? "ALL" : "SYNCING"}</i></div>
+          </div>
+        </div>
         <div className="ixw__tech">
           <p className="mono mono--muted">{copy.integrations.techLabel}</p>
           <ul aria-label="Technology we build with">
