@@ -8,6 +8,7 @@ p.on("console", (m) => ["error", "warning"].includes(m.type()) && errs.push(m.ty
 p.on("pageerror", (e) => errs.push("pageerror: " + e.message));
 await p.goto(url, { waitUntil: "networkidle" });
 await p.waitForTimeout(2500);
+await p.addStyleTag({ content: "html{scroll-behavior:auto!important}" });
 if (+sy) { await p.evaluate((y) => window.scrollTo(0, y), +sy); await p.waitForTimeout(1500); }
 await p.screenshot({ path: out, fullPage: !!full });
 console.log(errs.join("\n") || "no console errors");

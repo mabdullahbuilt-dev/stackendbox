@@ -55,3 +55,10 @@ export const intentNeed: Record<Capability, string> = {
   integrations: "Integration",
   custom: "Something else",
 };
+
+/** Ask the Builder to preselect a need (used by CTAs outside the Builder). */
+export function presetBuilder(need: string) {
+  try {
+    window.dispatchEvent(new CustomEvent("seb:builder-preset", { detail: need }));
+  } catch {}
+}
