@@ -1,10 +1,14 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Mail, Menu, X } from "lucide-react";
 import { copy } from "@/content/copy";
+import { goToBuilder } from "@/lib/intent";
+import { scrollToHash } from "@/lib/scrollToHash";
 import { track } from "@/lib/analytics";
 import { ButtonLink } from "@/components/ui/Button";
+import { CalButton } from "@/components/ui/CalButton";
+import { siteConfig } from "@/site.config";
 
 export function MobileMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   return (
@@ -25,22 +29,24 @@ export function MobileMenu({ open, onOpenChange }: { open: boolean; onOpenChange
             </Dialog.Close>
           </div>
           <ul className="menu-sheet__links">
-            {copy.nav.links.map((l, i) => (
+            {[...copy.nav.left, ...copy.nav.right, copy.nav.contact].map((l, i) => (
               <li key={l.id} style={{ ["--i" as string]: i }}>
-                <Dialog.Close asChild>
-                  <Link href={l.href} onClick={() => track("nav_link_click", { link: l.id })}>
-                    {l.label}
-                  </Link>
-                </Dialog.Close>
+                <Link href={l.href} onClick={(e) => { track("nav_link_click", { link: l.id }); e.preventDefault(); onOpenChange(false); setTimeout(() => (l.id === "start" ? goToBuilder(undefined) : scrollToHash(l.id)), 160); }}>
+                  {l.label}
+                </Link>
               </li>
             ))}
           </ul>
           <div className="menu-sheet__cta">
-            <Dialog.Close asChild>
-              <ButtonLink href="/#start" size="lg" block onClick={() => track("nav_cta_click")}>
-                {copy.nav.cta}
-              </ButtonLink>
-            </Dialog.Close>
+            <ButtonLink href="/#start" size="lg" block onClick={(e) => { track("nav_cta_click"); e.preventDefault(); onOpenChange(false); setTimeout(() => goToBuilder(undefined), 160); }}>
+              {copy.nav.cta}
+            </ButtonLink>
+            <CalButton className="btn btn--lg btn--secondary btn--block" placement="menu" />
+            {siteConfig.contactEmail && (
+              <a className="menu-sheet__mail" href={`mailto:${siteConfig.contactEmail}`} onClick={() => track("contact_clicked", { placement: "menu", kind: "email" })}>
+                <Mail aria-hidden />{siteConfig.contactEmail}
+              </a>
+            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

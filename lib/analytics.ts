@@ -21,6 +21,7 @@ export type AnalyticsEvent =
   | "builder_started"
   | "builder_step_completed"
   | "builder_submitted"
+  | "builder_chip"
   | "builder_error"
   | "contact_clicked"
   | "contact_submit_success"

@@ -6,7 +6,7 @@ import { copy } from "@/content/copy";
 import { scenarios } from "@/content/transformations";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
 
@@ -34,6 +34,7 @@ export function Transformation() {
   const stage = useRef<HTMLDivElement>(null);
   const seen = useRef(false);
   const inView = useInView(stage, "-25% 0px -25% 0px");
+  const near = useInView(stage, "900px 0px 900px 0px", true);
   const sc = scenarios[0];
   const alts = scenarios.slice(1);
   const N = sc.steps.length;
@@ -85,6 +86,8 @@ export function Transformation() {
         </div>
 
         <div className="mt" ref={stage} data-state={state} data-sc="operations" role="img" aria-label="Vendor approval #204 moving from scattered email, spreadsheets and chat into one custom internal application">
+          {near && (
+          <>
           <p className="mt-label mt-label--b mono"><AlertTriangle aria-hidden /> BEFORE</p>
           <p className="mt-label mt-label--a mono"><CircleCheck aria-hidden /> AFTER</p>
 
@@ -131,11 +134,13 @@ export function Transformation() {
           })}
           <span className="mt-ghost mt-ghost--1" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
           <span className="mt-ghost mt-ghost--2" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
+          </>
+          )}
         </div>
 
         <div className="tf__foot">
           <p className="body-l" aria-live="polite">We turn a manual process into software your team can own: records, owners, permissions, approvals, reporting and an audit trail.</p>
-          <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "transformation", scenario: sc.id }); presetBuilder(sc.need); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+          <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "transformation", scenario: sc.id }); goToBuilder(e, sc.need); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
         </div>
 
         <ul className="tf__alts" aria-label="Other processes we have turned into software">

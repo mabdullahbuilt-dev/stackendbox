@@ -25,7 +25,7 @@ describe("brief emails", () => {
 });
 
 describe("POST /api/brief", () => {
-  const body = { needs: ["AI System"], stage: "Idea", goal: "Launch", name: "Ada", email: "ada@example.com" };
+  const body = { needs: ["AI System"], stage: "Idea", goal: "Launch", name: "Ada", email: "ada@example.com", context: "A support assistant" };
   const req = async (b: unknown, ip = "1.1.1.1") => {
     const { POST } = await import("@/app/api/brief/route");
     return POST(new Request("http://x/api/brief", { method: "POST", body: JSON.stringify(b), headers: { "x-forwarded-for": ip } }) as never);

@@ -7,7 +7,7 @@ import { stack } from "@/content/integrations";
 import type { BrandKey } from "@/content/brandIcons";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { Reveal } from "@/components/ui/Reveal";
@@ -101,7 +101,7 @@ export function Integrations() {
                 return <li key={sel + i} data-st={st}><span className="mono">{String(i + 1).padStart(2, "0")}</span><BrandIcon name={s.node} size={16} />{s.text}</li>;
               })}
             </ol>
-            <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "integrations" }); presetBuilder("API / Integration"); }}>{copy.integrations.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+            <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "integrations" }); goToBuilder(e, "API / Integration"); }}>{copy.integrations.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
         </div>
         <div className="ixops" aria-hidden>

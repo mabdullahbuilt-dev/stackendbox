@@ -4,13 +4,13 @@ import { GOALS, NEEDS, STAGES, TIMELINES } from "./briefOptions";
 export { GOALS, NEEDS, STAGES, TIMELINES };
 
 export const briefSchema = z.object({
-  needs: z.array(z.enum(NEEDS)).min(1, "Choose at least one.").max(3, "Choose up to three."),
-  stage: z.enum(STAGES),
-  goal: z.enum(GOALS),
+  needs: z.array(z.enum(NEEDS)).max(10).default([]),
+  stage: z.enum(STAGES).optional(),
+  goal: z.enum(GOALS).optional(),
   name: z.string().trim().min(1, "Tell us your name.").max(120),
   email: z.string().trim().email("That email doesn't look right.").max(200),
   company: z.string().trim().max(160).optional().or(z.literal("")),
-  context: z.string().trim().max(2000).optional().or(z.literal("")),
+  context: z.string().trim().min(5, "Tell us a little about what you need.").max(3000),
   url: z
     .string()
     .trim()

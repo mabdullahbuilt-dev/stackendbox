@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 
 const FIXES = [
@@ -52,7 +52,7 @@ export function ProductRescue() {
           <p className="eyebrow">{r.eyebrow}</p>
           <h2 id="rescue-title" className="h2">{r.titleA}<br />{r.titleB}</h2>
           <div className="rescue__ctas">
-            <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "rescue" }); presetBuilder("Custom Software", "Existing Product"); }}>{r.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+            <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "rescue" }); goToBuilder(e, "Custom Software", "Existing Product"); }}>{r.cta}<ArrowRight className="arrow" aria-hidden /></Link>
             {!reduced && <button type="button" className="chip chip--mono" onClick={() => { track("scene_replay", { scene: "rescue" }); play(); }}>Replay</button>}
           </div>
         </div>

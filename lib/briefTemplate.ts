@@ -8,6 +8,8 @@ const NEED_MODULES: Record<string, string[]> = {
   "CRM / Internal Tool": ["Pipeline", "Contacts", "Tasks", "Admin"],
   "API / Integration": ["Connectors", "Webhooks", "Sync"],
   "Custom Software": ["Custom module"],
+  "Web3 / Blockchain": ["Wallet", "Contracts", "Indexer"],
+  "Trading / Data Platform": ["Data feed", "Rules", "Alerts"],
   "Not sure": ["Discovery"],
 };
 
@@ -40,12 +42,12 @@ export type BriefParts = {
 };
 
 /** Deterministic brief (no AI call). Used by the UI stage, the result card and the server message. */
-export function buildBrief(needs: readonly string[], stage: string, goal: string): BriefParts {
+export function buildBrief(needs: readonly string[], stage: string | undefined, goal: string | undefined): BriefParts {
   const modules: string[] = [];
   for (const n of needs) for (const m of NEED_MODULES[n] ?? []) if (!modules.includes(m)) modules.push(m);
-  const f = STAGE_FOUNDATION[stage];
+  const f = stage ? STAGE_FOUNDATION[stage] : undefined;
   if (f?.extra && !modules.includes(f.extra)) modules.push(f.extra);
-  return { needs: [...needs], stage, goal, modules, foundation: f?.label ?? "", accent: GOAL_ACCENT[goal] ?? "" };
+  return { needs: [...needs], stage: stage ?? "", goal: goal ?? "", modules, foundation: f?.label ?? "", accent: goal ? GOAL_ACCENT[goal] ?? "" : "" };
 }
 
 export function briefLines(b: BriefParts) {

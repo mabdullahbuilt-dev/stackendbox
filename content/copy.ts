@@ -7,12 +7,15 @@ export const copy = {
     ogTitle: "We design and build the software your business needs.",
   },
   nav: {
-    links: [
+    left: [
       { label: "Services", href: "/#services", id: "services" },
       { label: "Work", href: "/#proof", id: "proof" },
+    ],
+    right: [
       { label: "How We Build", href: "/#process", id: "process" },
       { label: "Company", href: "/#delivery", id: "delivery" },
     ],
+    contact: { label: "Contact Us", href: "/#start", id: "start" },
     cta: "Start a Project",
   },
   hero: {
@@ -21,7 +24,7 @@ export const copy = {
     support:
       "We design, build and ship SaaS products, web applications, internal platforms, AI systems and specialized software, from first brief to production.",
     primary: "Start a Project",
-    secondary: "See What We Build",
+    secondary: "Book a Call",
     chips: ["SaaS", "MVPs", "Web Apps", "Internal Software", "AI", "APIs", "Data"],
   },
   services: {
@@ -115,10 +118,10 @@ export const copy = {
   testimonials: { eyebrow: "CLIENT WORDS", title: "What clients say." },
   why: { eyebrow: "WHY STACKENDBOX", title: "Why teams bring StackEndBox in." },
   builder: {
-    eyebrow: "START A PROJECT",
+    eyebrow: "CONTACT US",
     title: "Tell us what you need.",
-    support: "Three quick questions give us enough context to start.",
-    time: "About two minutes.",
+    support: "Tell us what you want to build, improve, automate or connect. Send a quick brief, email us directly, or book a call.",
+    time: "No account needed. Type it in your own words.",
   },
   final: {
     eyebrow: "LET'S TALK",

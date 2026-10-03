@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
 
@@ -31,6 +31,7 @@ export function BusinessSoftware() {
   const [step, setStep] = useState(0);
   const box = useRef<HTMLDivElement>(null);
   const inView = useInView(box, "-20% 0px -20% 0px", true);
+  const near = useInView(box, "900px 0px 900px 0px", true);
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const run = () => {
@@ -58,6 +59,7 @@ export function BusinessSoftware() {
         </Reveal>
 
         <div className="bsw__stage" ref={box} data-s={s} role="img" aria-label="A custom business management application: dashboard, team workload, customer workspace, roles and permissions, tasks, reporting and audit history">
+          {near && (
           <div className="bsw__scene" aria-hidden>
             {/* background layer: reporting and audit */}
             <div className="bsw__back">
@@ -119,13 +121,14 @@ export function BusinessSoftware() {
               </ul>
             </aside>
           </div>
+          )}
         </div>
 
         <div className="bsw__foot">
           <p className="bsw__cap body-l" aria-live="polite">{CAPTIONS[s]}</p>
           <div className="bsw__ctas">
             <button type="button" className="btn btn--ghost" onClick={() => { track("scene_replay", { scene: "business" }); if (reduced) setStep(N - 1); else run(); }}>Replay</button>
-            <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "business" }); presetBuilder("CRM / Internal Tool"); }}>{copy.business.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+            <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "business" }); goToBuilder(e, "CRM / Internal Tool"); }}>{copy.business.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
         </div>
       </div>

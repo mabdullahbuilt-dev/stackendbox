@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useInView } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { BrandIcon } from "@/components/ui/BrandIcon";
@@ -78,7 +78,7 @@ export function IdeaToProduct() {
               ))}
             </ol>
             <div className="ipv__ctas">
-              <Link href="/#start" className="btn btn--primary" onClick={() => { track("mvp_cta", { placement: "product" }); presetBuilder("SaaS / MVP", "Idea"); }}>{copy.product.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+              <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("mvp_cta", { placement: "product" }); goToBuilder(e, "SaaS / MVP", "Idea"); }}>{copy.product.cta}<ArrowRight className="arrow" aria-hidden /></Link>
               {!reduced && <button type="button" className="chip chip--mono ipv__replay" onClick={replay}>Replay</button>}
             </div>
           </div>

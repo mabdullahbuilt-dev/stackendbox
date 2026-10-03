@@ -3,7 +3,8 @@ import { chromium } from "playwright-core";
 import { spawn } from "node:child_process";
 
 const received = [];
-const hook = http.createServer((req, res) => { let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => { received.push({ key: req.headers["api-key"], ...JSON.parse(b) }); res.statusCode = 201; res.end("{}"); }); }).listen(4010);
+let failNext = false;
+const hook = http.createServer((req, res) => { let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => { if (failNext) { failNext = false; res.statusCode = 500; res.end("{}"); return; } received.push({ key: req.headers["api-key"], ...JSON.parse(b) }); res.statusCode = 201; res.end("{}"); }); }).listen(4010);
 const srv = spawn("npx", ["next", "start", "-p", "3102"], { env: { ...process.env, BREVO_API_URL: "http://localhost:4010", BREVO_API_KEY: "xkeysib-local-test-key", BREVO_SENDER_EMAIL: "hello@stackendbox.com", BREVO_SENDER_NAME: "StackEndBox", BRIEF_TO_EMAIL: "hello@stackendbox.com" }, stdio: "ignore" });
 await new Promise((r) => setTimeout(r, 4500));
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox"] });
@@ -15,47 +16,44 @@ await p.goto("http://localhost:3102/#start", { waitUntil: "networkidle" });
 await p.addStyleTag({ content: "html{scroll-behavior:auto!important}" });
 await p.evaluate(() => document.getElementById("start").scrollIntoView());
 const ok = (c, m) => { console.log(c ? "PASS" : "FAIL", m); if (!c) process.exitCode = 1; };
-// validation gate
-await p.click(".builder__next");
-ok(await p.locator('[role="alert"]').first().isVisible(), "Continue blocked with no selection + alert shown");
-// Q1 via keyboard: tab to a checkbox and press space
 const B = p.locator("#start");
-await B.getByText("Automation", { exact: true }).click();
-await B.getByText("CRM / Internal Tool", { exact: true }).click();
-ok(Number((await p.locator(".bstage__top .mono.tnum").innerText()).match(/\d+/)[0]) >= 6, "stage shows modules after selection: " + (await p.locator(".bstage__top .mono.tnum").innerText()));
-await p.click(".builder__next"); await p.waitForTimeout(500);
-ok(await p.locator("legend", { hasText: "Where are you now?" }).isVisible(), "step 2 visible");
-await B.getByText("Manual Process", { exact: true }).click();
-await p.click(".builder__next"); await p.waitForTimeout(500);
-await B.getByText("Automate", { exact: true }).click();
-await p.click(".builder__next"); await p.waitForTimeout(500);
-ok(await B.getByText("YOUR STARTING BRIEF").isVisible(), "brief card shown");
-await p.getByRole("button", { name: "Discuss This Project" }).click(); await p.waitForTimeout(500);
-// invalid submit
-await p.getByRole("button", { name: "Send brief" }).click(); await p.waitForTimeout(600);
+// no wizard: the whole brief is on screen, plus email and call options
+ok(await B.getByRole("button", { name: "Send Project Brief" }).isVisible(), "single-step brief with Send Project Brief");
+ok(await B.locator("a[href='mailto:hello@stackendbox.com']").first().isVisible(), "email visible in the section");
+ok(await B.getByRole("button", { name: "Book a Call" }).first().isVisible(), "Book a Call visible in the section");
+// validation
+await B.getByRole("button", { name: "Send Project Brief" }).click(); await p.waitForTimeout(400);
 ok(await p.getByText("Tell us your name.").isVisible(), "field error shown for empty name");
+// optional chips, no limit of three
+for (const c of ["Web App", "AI", "Automation", "Web3 / Blockchain"]) await B.getByRole("button", { name: c, exact: true }).click();
+ok((await B.locator(".choice[data-checked='true']").count()) === 4, "four optional chips can be selected");
 await p.getByLabel("Name").fill("Test Person");
 await p.getByLabel("Work email").fill("bad");
-await p.getByRole("button", { name: "Send brief" }).click(); await p.waitForTimeout(600);
+await B.getByRole("button", { name: "Send Project Brief" }).click(); await p.waitForTimeout(400);
 ok(await p.getByText("That email doesn't look right.").isVisible(), "email error shown");
 await p.getByLabel("Work email").fill("test@example.com");
-await p.getByLabel("Anything we should know?").fill("We have a spreadsheet mess.");
-await p.getByRole("button", { name: "Send brief" }).click();
+await p.getByLabel("What do you need built?").fill("We have a spreadsheet mess and need a custom platform.");
+// provider failure keeps everything and shows alternatives
+failNext = true;
+await B.getByRole("button", { name: "Send Project Brief" }).click();
+await p.waitForSelector("[role=alert]", { timeout: 8000 });
+ok(await p.getByLabel("What do you need built?").inputValue() === "We have a spreadsheet mess and need a custom platform.", "text kept after a delivery failure");
+ok((await B.locator(".choice[data-checked='true']").count()) === 4, "chips kept after a delivery failure");
+ok(await p.locator("[role=alert] a[href^='mailto:']").first().waitFor({ timeout: 4000 }).then(() => true, () => false), "email alternative shown with the error");
+received.length = 0;
+await B.getByRole("button", { name: "Send Project Brief" }).click();
 await p.waitForSelector("text=Brief received.", { timeout: 8000 });
-ok(true, "success state shown");
+ok(true, "success state shown after retry");
 await new Promise((r) => setTimeout(r, 300));
 ok(received.length === 2, "two emails sent (team + visitor confirmation)");
 ok(received[0]?.to?.[0]?.email === "hello@stackendbox.com" && received[0]?.replyTo?.email === "test@example.com", "team email to hello@ with visitor reply-to");
-ok(received[0]?.subject === "New StackEndBox Project Brief: Automation, CRM / Internal Tool from Test Person", "team subject: " + received[0]?.subject);
-ok(received[0]?.textContent?.includes("Stage: Manual Process") && received[0]?.textContent?.includes("Goal: Automate"), "team email has builder selections");
+ok(/^New StackEndBox Project Brief: .*Web Application.*Web3 \/ Blockchain.* from Test Person$/.test(received[0]?.subject ?? ""), "team subject: " + received[0]?.subject);
+ok(received[0]?.textContent?.includes("spreadsheet mess"), "team email has the brief text");
 ok(received[1]?.to?.[0]?.email === "test@example.com" && received[1]?.subject === "We received your project brief", "visitor confirmation sent");
 ok(received[0]?.key === "xkeysib-local-test-key", "api-key header sent server side only");
-const html = await p.content();
-ok(!html.includes("xkeysib"), "api key never present in page HTML");
-ok(await p.getByText("We have the context. Choose what you want to do next.").isVisible(), "completion state copy");
-ok(await p.getByRole("link", { name: "Back to StackEndBox" }).isVisible(), "back link present");
+ok(!(await p.content()).includes("xkeysib"), "api key never present in page HTML");
 // Cal.com: popup if the embed loads, otherwise a new tab fallback
-const book = p.getByRole("button", { name: "Book a Call" }).first();
+const book = p.locator("#start").getByRole("button", { name: "Book a Call" }).first();
 ok(await book.isVisible(), "Book a Call visible when NEXT_PUBLIC_CAL_URL is set");
 const popupP = p.context().waitForEvent("page", { timeout: 9000 }).then(() => "new-tab", () => null);
 await book.click();

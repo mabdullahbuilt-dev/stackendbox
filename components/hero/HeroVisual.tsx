@@ -208,21 +208,13 @@ export function HeroVisual() {
         ref={list}
         className={`module-list ${staticList ? "module-list--static" : ""}`}
         aria-label="StackEndBox capabilities"
-        onKeyDown={onKey}
       >
         {modules.map((m, i) => (
           <li key={m.name} data-active={hovered === i} style={{ ["--accent" as string]: m.accent }}>
-            <button
-              type="button"
-              tabIndex={i === 0 ? 0 : -1}
-              onFocus={() => hover(i, "focus")}
-              onBlur={() => hover(null)}
-              onPointerEnter={() => hover(i)}
-              onPointerLeave={() => hover(null)}
-            >
+            <div className="module-list__item" onPointerEnter={() => hover(i)} onPointerLeave={() => hover(null)}>
               <span className="module-list__name">{m.name}</span>
               <span className="module-list__sub">{m.sub}</span>
-            </button>
+            </div>
           </li>
         ))}
       </ul>

@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { useScript } from "@/lib/useScript";
 import { Reveal } from "@/components/ui/Reveal";
@@ -100,6 +100,7 @@ export function Specialized() {
   const [rep, setRep] = useState(0);
   const stage = useRef<HTMLDivElement>(null);
   const inView = useInView(stage, "-20% 0px -20% 0px");
+  const near = useInView(stage, "900px 0px 900px 0px", true);
   const mode = MODES[m];
   const step = useScript(mode.steps, 900, inView, reduced, `${mode.id}-${rep}`);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -124,17 +125,17 @@ export function Specialized() {
         </div>
         <div id="spc-panel" role="tabpanel" aria-labelledby={`spc-${mode.id}`}>
           <div className="spc__stage" ref={stage} data-mode={mode.id} role="img" aria-label={mode.line}>
-            <div className="spc__scene" key={mode.id + rep} aria-hidden>
+            {near && <div className="spc__scene" key={mode.id + rep} aria-hidden>
               {mode.id === "market" && <Market s={step} />}
               {mode.id === "web3" && <Web3 s={step} />}
               {mode.id === "dev" && <Dev s={step} />}
-            </div>
+            </div>}
           </div>
           <div className="spc__foot">
             <p className="body-l" aria-live="polite">{mode.line}</p>
             <div className="spc__ctas">
               <button type="button" className="btn btn--ghost" onClick={() => setRep((r) => r + 1)}>Replay</button>
-              <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "specialized", mode: mode.id }); presetBuilder("Custom Software"); }}>{copy.specialized.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+              <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "specialized", mode: mode.id }); goToBuilder(e, "Custom Software"); }}>{copy.specialized.cta}<ArrowRight className="arrow" aria-hidden /></Link>
             </div>
           </div>
         </div>
