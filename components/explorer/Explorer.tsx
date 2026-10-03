@@ -7,7 +7,6 @@ import { track } from "@/lib/analytics";
 import { readIntent, presetBuilder, saveIntent } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { FINE_POINTER } from "@/lib/hooks";
-import { Reveal } from "@/components/ui/Reveal";
 import { explorerItems } from "./data";
 import { Stage } from "./Stage";
 
@@ -118,11 +117,11 @@ export function Explorer() {
       <div className="explorer__pin" ref={pin}>
         <div className="container explorer__grid">
           <div className="explorer__left">
-            <Reveal className="explorer__head">
+            <div className="explorer__head">
               <p className="eyebrow">{copy.explorer.eyebrow}</p>
               <h2 id="explorer-title" className="h2">{copy.explorer.title}</h2>
               <p className="body-l">{copy.explorer.support}</p>
-            </Reveal>
+            </div>
 
             <div ref={strip} className="explorer__list" role="tablist" aria-orientation="vertical" aria-label="Capabilities" onKeyDown={onKey}>
               {explorerItems.map((it, i) => (
