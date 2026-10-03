@@ -1,3 +1,4 @@
+import { CalButton } from "@/components/ui/CalButton";
 import Link from "next/link";
 import { copy } from "@/content/copy";
 import { siteConfig } from "@/site.config";
@@ -45,7 +46,7 @@ export function Footer() {
               <ul>
                 <li><Link href="/#start">Start a Project</Link></li>
                 {siteConfig.contactEmail && <li><a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a></li>}
-                {siteConfig.schedulingUrl && <li><a href={siteConfig.schedulingUrl} target="_blank" rel="noopener noreferrer">Book a Call</a></li>}
+                {siteConfig.calUrl && <li><CalButton placement="footer" className="link-btn" icon={false} /></li>}
                 {siteConfig.whatsappUrl && <li><a href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>}
                 {social.map((s) => <li key={s.label}><a href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a></li>)}
               </ul>

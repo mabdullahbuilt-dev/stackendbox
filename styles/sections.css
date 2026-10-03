@@ -401,11 +401,11 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 .tfi__ok { width: 14px; height: 14px; color: var(--green); stroke-width: 2.4; opacity: 0; transition: opacity 400ms; } .tf__stage[data-state="after"] .tfi[data-on="true"] .tfi__ok { opacity: 1; transition-delay: 0ms; }
 .tf__foot { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center; justify-content: space-between; margin-top: 22px; } .tf__foot .body-l { max-width: 62ch; } .tf__foot strong { color: var(--text-primary); font-weight: 500; }
 @media (max-width: 767px) {
-  .tf__stage { height: 560px; }
+  .tf__stage { height: 500px; }
   .tfi { width: 46cqw; min-width: 0; grid-template-columns: 30px 1fr; padding: 10px; } .tfi__ok { display: none; }
     .tfi[data-n="7"], .tfi[data-n="8"] { display: none; }
   .tf__stage[data-state="after"] .tfi[data-par="odd"] { --x: 27; } .tf__stage[data-state="after"] .tfi[data-par="even"] { --x: 73; }
-  .tf__stage[data-state="after"] .tfi[data-n="1"], .tf__stage[data-state="after"] .tfi[data-n="2"] { --y: 17; } .tf__stage[data-state="after"] .tfi[data-n="3"], .tf__stage[data-state="after"] .tfi[data-n="4"] { --y: 47; } .tf__stage[data-state="after"] .tfi[data-n="5"], .tf__stage[data-state="after"] .tfi[data-n="6"] { --y: 77; }
+  .tf__stage[data-state="after"] .tfi[data-n="1"], .tf__stage[data-state="after"] .tfi[data-n="2"] { --y: 15; } .tf__stage[data-state="after"] .tfi[data-n="3"], .tf__stage[data-state="after"] .tfi[data-n="4"] { --y: 43; } .tf__stage[data-state="after"] .tfi[data-n="5"], .tf__stage[data-state="after"] .tfi[data-n="6"] { --y: 71; }
   .tfi[data-n="1"] { --bx: 28 !important; --by: 14 !important; } .tfi[data-n="2"] { --bx: 66 !important; --by: 24 !important; } .tfi[data-n="3"] { --bx: 30 !important; --by: 44 !important; } .tfi[data-n="4"] { --bx: 70 !important; --by: 54 !important; } .tfi[data-n="5"] { --bx: 32 !important; --by: 74 !important; } .tfi[data-n="6"] { --bx: 68 !important; --by: 86 !important; }
 }
 
@@ -527,3 +527,6 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 
 .aiuses { display: grid; gap: 10px; margin-top: 22px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); } .aiuses li { display: grid; gap: 6px; align-content: start; padding: 16px; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--bg-raised); } .aiuses svg { width: 20px; height: 20px; color: var(--blue-text); stroke-width: 1.6; } .aiuses b { font-weight: 500; font-size: 1rem; } .aiuses span { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.45; }
 .final { min-height: min(80vh, 760px); } .final h2 { font-size: clamp(2.25rem, 1.1rem + 3.8vw, 4.25rem); line-height: 1.04; letter-spacing: -0.035em; text-wrap: balance; }
+
+.link-btn { color: inherit; font: inherit; text-align: left; padding: 0; min-height: 0; } @media (hover: hover) { .link-btn:hover { color: var(--text-primary); } }
+.done__sub { display: grid; gap: 2px; } .done__sub b { font-weight: 500; } .turnstile { min-height: 65px; }

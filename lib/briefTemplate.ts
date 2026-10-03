@@ -54,25 +54,3 @@ export function briefLines(b: BriefParts) {
     line2: `Suggested starting scope: ${[b.foundation, ...b.modules, b.accent].filter(Boolean).join(" · ")}`,
   };
 }
-
-export function briefText(input: BriefInput) {
-  const b = buildBrief(input.needs, input.stage, input.goal);
-  const l = briefLines(b);
-  return [
-    "New StackEndBox brief",
-    "",
-    `Need: ${b.needs.join(", ")}`,
-    `Stage: ${b.stage}`,
-    `Goal: ${b.goal}`,
-    l.line2,
-    "",
-    `Name: ${input.name}`,
-    `Email: ${input.email}`,
-    input.company ? `Company: ${input.company}` : "",
-    input.timeline ? `Timeline: ${input.timeline}` : "",
-    input.url ? `Link: ${input.url}` : "",
-    input.context ? `\nContext:\n${input.context}` : "",
-  ]
-    .filter((x) => x !== "")
-    .join("\n");
-}

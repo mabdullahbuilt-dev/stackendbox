@@ -18,6 +18,10 @@ export const briefSchema = z.object({
     .refine((v) => v === "" || /^https?:\/\/\S+\.\S+/i.test(v), "Enter a full link starting with https://")
     .optional(),
   timeline: z.enum(TIMELINES).optional(),
+  /** Page the brief was sent from (path only) and referrer origin, for context. */
+  source: z.string().trim().max(200).optional().or(z.literal("")),
+  referrer: z.string().trim().max(200).optional().or(z.literal("")),
+  turnstileToken: z.string().max(4096).optional().or(z.literal("")),
   /** Honeypot: real users never fill this. */
   website: z.string().max(0).optional().or(z.literal("")),
 });

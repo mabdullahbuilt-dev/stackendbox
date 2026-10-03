@@ -9,6 +9,8 @@ import { useMedia } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { ButtonLink } from "@/components/ui/Button";
 import { Magnet } from "@/components/vendor/Magnet";
+import { CalButton } from "@/components/ui/CalButton";
+import { siteConfig } from "@/site.config";
 
 const THUMBS = ["crm", "ai", "api", "product", "automation", "integration"] as const;
 const POS: [number, number][] = [[-38, -30], [36, -34], [-44, 10], [42, 14], [-26, 38], [26, 40]];
@@ -90,7 +92,11 @@ export function FinalCTA() {
         <p className="body-l">{copy.final.support}</p>
         <div className="final__ctas">
           <Magnet><ButtonLink href="/#start" size="lg" onClick={() => track("cta_click", { placement: "final" })}>{copy.final.primary}</ButtonLink></Magnet>
-          <ButtonLink href="/#work" variant="secondary" size="lg" arrow={false} onClick={() => track("cta_click", { placement: "final-work" })}>{copy.final.secondary}<ArrowRight className="arrow" aria-hidden /></ButtonLink>
+          {siteConfig.calUrl ? (
+            <CalButton placement="final" />
+          ) : (
+            <ButtonLink href="/#work" variant="secondary" size="lg" arrow={false} onClick={() => track("cta_click", { placement: "final-work" })}>{copy.final.secondary}<ArrowRight className="arrow" aria-hidden /></ButtonLink>
+          )}
         </div>
       </div>
     </section>

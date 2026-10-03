@@ -29,7 +29,6 @@ export function WebVisual() {
 export function AiVisual() {
   return (
     <div className="sv sv-ai" aria-hidden>
-      <div className="sv-msg sv-msg--u">Summarize this contract</div>
       <div className="sv-tool"><Server />search_documents<Pill tone="green">done</Pill></div>
       <div className="sv-tool"><Database />extract_clauses<Pill tone="green">done</Pill></div>
       <div className="sv-msg sv-msg--a">3 clauses need review</div>

@@ -11,7 +11,9 @@ import { intentNeed, readIntent } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
+import { CalButton } from "@/components/ui/CalButton";
 import { BuilderStage } from "./BuilderStage";
+import { Turnstile } from "./Turnstile";
 
 type Phase = "q" | "brief" | "contact" | "done";
 const QUESTIONS = [
@@ -59,6 +61,8 @@ export function Builder() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
   const [serverErr, setServerErr] = useState("");
+  const [turnstile, setTurnstile] = useState("");
+  const onToken = useCallback((t: string) => setTurnstile(t), []);
   const started = useRef(false);
   const prefilled = useRef(false);
   const focusRef = useRef<HTMLElement>(null);
@@ -132,7 +136,12 @@ export function Builder() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { needs, stage, goal, ...form, timeline: form.timeline || undefined };
+    const payload = {
+      needs, stage, goal, ...form, timeline: form.timeline || undefined,
+      source: `${location.pathname}${location.hash}`.slice(0, 200),
+      referrer: document.referrer ? new URL(document.referrer).origin : "",
+      turnstileToken: turnstile,
+    };
     // Validation library is loaded on demand so it never weighs on the initial page load.
     const { briefSchema } = await import("@/lib/briefSchema");
     const r = briefSchema.safeParse(payload);
@@ -160,7 +169,9 @@ export function Builder() {
       }
       if (body.fields) setErrors(body.fields);
       setServerErr(
-        body.error === "rate_limited"
+        body.error === "verification_failed"
+          ? "We couldn't verify this request. Please refresh the check and try again."
+          : body.error === "rate_limited"
           ? "Too many attempts. Please wait a few minutes and try again."
           : body.error === "validation"
             ? "Please check the highlighted fields."
@@ -240,11 +251,7 @@ export function Builder() {
                       <p className="body-s mono--muted">We review every brief and reply with questions, not a pitch.</p>
                       <div className="brief__actions">
                         <Button size="lg" onClick={() => { setDir(1); setPhase("contact"); }}>Discuss This Project</Button>
-                        {siteConfig.schedulingUrl && (
-                          <a className="btn btn--lg btn--secondary" href={siteConfig.schedulingUrl} target="_blank" rel="noopener noreferrer" onClick={() => track("contact_clicked", { placement: "builder-call" })}>
-                            Book a Call
-                          </a>
-                        )}
+                        <CalButton placement="builder-brief" />
                       </div>
                     </div>
                   )}
@@ -279,6 +286,7 @@ export function Builder() {
                       <div className="hp" aria-hidden>
                         <label>Website<input tabIndex={-1} autoComplete="off" name="website" value={form.website} onChange={set("website")} /></label>
                       </div>
+                      <Turnstile onToken={onToken} />
                       <p className="body-s mono--muted">By sending this you agree to be contacted about your project.</p>
                       <Button type="submit" size="lg" loading={status === "sending"} aria-disabled={status === "sending"} onClick={status === "sending" ? (e) => e.preventDefault() : undefined}>
                         {status === "sending" ? "Sending..." : "Send brief"}
@@ -290,11 +298,15 @@ export function Builder() {
                     <div className="done" role="status">
                       <span className="done__tick" aria-hidden><Check /></span>
                       <h3 ref={focusRef as React.RefObject<HTMLHeadingElement>} tabIndex={-1} className="builder__q">Brief received.</h3>
-                      <p className="body-l">We&apos;ll review the system you described and reply using the contact details you provided.</p>
-                      <p className="body-s">{lines.line1}</p>
-                      {siteConfig.whatsappUrl && (
-                        <a className="link-cta" href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">Message us</a>
-                      )}
+                      <p className="body-l">We have the context. Choose what you want to do next.</p>
+                      <div className="done__sub"><span className="mono mono--muted">SUBMITTED</span><b>{brief.needs.join(" + ")}</b></div>
+                      <div className="brief__actions">
+                        <CalButton placement="builder-done" className="btn btn--lg btn--primary" />
+                        <a className="btn btn--lg btn--secondary" href="/">Back to StackEndBox</a>
+                        {siteConfig.whatsappUrl && (
+                          <a className="link-cta" href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">Message us</a>
+                        )}
+                      </div>
                     </div>
                   )}
                 </m.div>
