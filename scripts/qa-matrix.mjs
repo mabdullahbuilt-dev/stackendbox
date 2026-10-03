@@ -29,6 +29,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1024, 768], [768, 1024], [430, 
     return [...new Set(out)].slice(0, 6);
   });
   await p.evaluate(() => window.scrollTo(0, 0));
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(1500);
   await p.evaluate(axeSrc);
   const ax = await p.evaluate(async () => { const r = await axe.run(document, { runOnly: ["wcag2a", "wcag2aa", "wcag21aa"] }); return r.violations.map((v) => `${v.id}(${v.impact}) x${v.nodes.length}: ${v.nodes.slice(0, 2).map((n) => n.target.join(" ")).join(" | ")}`); });
   console.log(`${w}x${h} overflow=${maxOverflow} wide=${JSON.stringify(wide)} consoleErrors=${errs.length} axe=${ax.length ? "\n  " + ax.join("\n  ") : "clean"}`);

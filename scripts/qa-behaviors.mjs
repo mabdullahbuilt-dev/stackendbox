@@ -38,9 +38,9 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   // rescue CTA preselects stage
   await p.evaluate(() => document.querySelector("#rescue").scrollIntoView());
   await p.getByRole("link", { name: "Improve an Existing Product" }).click();
+  await p.waitForTimeout(2000);
+  await p.locator("#start .builder__next").click();
   await p.waitForTimeout(1200);
-  await p.getByRole("button", { name: "Continue" }).click();
-  await p.waitForTimeout(900);
   ok((await p.locator("#start .choice[data-checked='true']").allInnerTexts()).join("|").includes("Existing Product"), "rescue CTA preselects Existing Product stage");
   ok(errs.length === 0, "no console errors " + errs.join("|").slice(0, 200));
 }

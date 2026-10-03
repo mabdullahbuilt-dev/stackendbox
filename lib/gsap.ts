@@ -8,11 +8,14 @@ let cached: Promise<G> | null = null;
 export function loadGsap(): Promise<G> {
   if (cached) return cached;
   cached = new Promise<G>((resolve) => {
-    const go = () =>
-      Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(([g, s]) => {
+    const go = () => {
+      // Pinned scenes measure the whole document, so render every section at its real height first.
+      document.documentElement.setAttribute("data-cv", "off");
+      return Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(([g, s]) => {
         g.gsap.registerPlugin(s.ScrollTrigger);
         resolve({ gsap: g.gsap, ScrollTrigger: s.ScrollTrigger });
       });
+    };
     // Wait for the first real interaction (or a long idle) so animation code never competes with first paint.
     // A deep link (#hash) loads immediately because the visitor may land inside a pinned scene.
     const events = ["scroll", "wheel", "pointerdown", "pointermove", "touchstart", "keydown"] as const;

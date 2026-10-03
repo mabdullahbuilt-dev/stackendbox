@@ -36,7 +36,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   position: fixed; top: 8px; left: 8px; z-index: var(--z-skip);
   background: var(--bg-higher); border: 1px solid var(--border-strong);
   padding: 10px 16px; border-radius: var(--r-sm); font-weight: 500;
-  transform: translateY(-200%);
+  transform: translateY(-200%); max-width: calc(100vw - 16px);
 }
 .skip-link:focus { transform: none; }
 
@@ -172,3 +172,4 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .btn--sm::after { content: ""; position: absolute; inset: -4px; }
 .nav__logo { padding-block: 8px; margin-block: -8px; }
 @media (pointer: coarse) { .dcar__dot { width: 44px; } }
+h1, h2, h3, .h2, .h-xxl { overflow-wrap: break-word; hyphens: manual; }
