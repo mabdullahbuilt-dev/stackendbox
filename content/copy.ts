@@ -43,9 +43,9 @@ export const copy = {
   },
   labs: {
     eyebrow: "STACKENDBOX LABS",
-    title: "See what we can automate.",
-    support: "Interactive systems built by StackEndBox to show how we approach real business problems.",
-    more: "More builds",
+    title: "See how we solve real problems.",
+    support: "Systems we build internally to demonstrate how we solve real operational and product problems.",
+    meta: "BUILT BY STACKENDBOX · CAPABILITY BUILDS",
   },
   product: {
     eyebrow: "PRODUCT DELIVERY",
@@ -54,6 +54,14 @@ export const copy = {
     cta: "Build Your MVP",
     brief: "Customers need to book, pay and manage appointments online.",
     captions: ["01 BRIEF", "02 STRUCTURE", "03 WIREFRAME", "04 INTERFACE", "05 BACKEND", "06 ACCESS", "07 BILLING", "08 ADMIN", "09 MOBILE", "10 LIVE"],
+  },
+  rescue: {
+    eyebrow: "EXISTING PRODUCTS",
+    titleA: "Already have something?",
+    titleB: "We can take it further.",
+    support: "A prototype, an inherited codebase or a product that is hard to change. We stabilize it, extend it and get it production ready.",
+    cta: "Improve an Existing Product",
+    note: "Tell us what you have and where it hurts.",
   },
   founders: {
     eyebrow: "FOR FOUNDERS",
@@ -75,14 +83,15 @@ export const copy = {
     eyebrow: "INTEGRATIONS",
     title: "Your tools should work together.",
     support: "We connect the systems your business already uses so information moves without manual copying.",
-    label: "Common systems we can connect",
+    label: "Systems we can connect",
+    techLabel: "TECHNOLOGY WE BUILD WITH",
     cta: "Connect Your Stack",
     events: ["Payment received", "CRM updated", "Meeting booked", "Message sent", "Data synced", "AI summary created"],
   },
   work: {
-    eyebrow: "SELECTED BUILDS",
-    title: "Products and systems we've engineered.",
-    support: "Real product work, from first screen to production.",
+    eyebrow: "ENGINEERED WORK",
+    title: "Selected builds.",
+    support: "Products, systems and technical tools engineered from end to end.",
     cta: "View project",
   },
   depth: {
@@ -100,8 +109,8 @@ export const copy = {
   testimonials: { eyebrow: "CLIENT WORDS", title: "What clients say." },
   trust: {
     eyebrow: "DELIVERY",
-    title: "Built for real delivery.",
-    support: "What working with StackEndBox includes.",
+    title: "What working with StackEndBox looks like.",
+    support: "Six commitments that shape every engagement.",
   },
   builder: {
     eyebrow: "START A PROJECT",

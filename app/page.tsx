@@ -6,7 +6,7 @@ import { Intent } from "@/components/intent/Intent";
 import { Transformation } from "@/components/transformation/Transformation";
 import { Labs } from "@/components/labs/Labs";
 import { IdeaToProduct } from "@/components/scenes/IdeaToProduct";
-import { Founders } from "@/components/founders/Founders";
+import { ProductRescue } from "@/components/rescue/ProductRescue";
 import { AiSection } from "@/components/ai/AiSection";
 import { Integrations } from "@/components/scenes/Integrations";
 import { Work } from "@/components/work/Work";
@@ -28,7 +28,7 @@ export default function Home() {
         <Transformation />
         <Labs />
         <IdeaToProduct />
-        <Founders />
+        <ProductRescue />
         <AiSection />
         <Integrations />
         <Work />

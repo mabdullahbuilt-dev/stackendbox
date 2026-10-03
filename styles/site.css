@@ -59,3 +59,12 @@
 .nf { min-height: 80svh; display: grid; align-content: center; gap: 20px; padding-top: 140px; padding-bottom: 80px; }
 .nf h1 { max-width: 16ch; text-wrap: balance; } .nf__ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
 @media (min-width: 768px) and (max-width: 1023px) { .nav__bar { gap: 12px; } .nav__link { padding: 0 9px; font-size: 0.875rem; } .nav__links ul { gap: 0; } .nav__cta .btn { padding: 0 16px; } }
+
+/* Skip rendering work for below-the-fold sections until they approach the viewport.
+   Pinned scenes (#product, #depth) are excluded so ScrollTrigger measures stable heights. */
+#services, #intent, #transform, #labs, #founders, #ai, #integrations, #work, #process, #testimonials, #delivery, #start, #final, .footer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
+@media (pointer: coarse), (max-width: 767px) { .itab, .pstep, .module-list button, .labtab { min-height: 44px; } .itab { display: inline-flex; align-items: center; } }
+@media (max-width: 767px) { .footer a { display: inline-flex; align-items: center; min-height: 44px; } }

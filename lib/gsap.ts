@@ -13,13 +13,19 @@ export function loadGsap(): Promise<G> {
         g.gsap.registerPlugin(s.ScrollTrigger);
         resolve({ gsap: g.gsap, ScrollTrigger: s.ScrollTrigger });
       });
-    const idle = () => {
-      const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-      if (ric) ric(go, { timeout: 1200 });
-      else setTimeout(go, 250);
+    // Wait for the first real interaction (or a long idle) so animation code never competes with first paint.
+    // A deep link (#hash) loads immediately because the visitor may land inside a pinned scene.
+    const events = ["scroll", "wheel", "pointerdown", "pointermove", "touchstart", "keydown"] as const;
+    let started = false;
+    const off = () => { events.forEach((e) => window.removeEventListener(e, start)); clearTimeout(fallback); };
+    const start = () => { if (started) return; started = true; off(); go(); };
+    const fallback = window.setTimeout(start, 7000);
+    const arm = () => {
+      if (location.hash.length > 1) { start(); return; }
+      events.forEach((e) => window.addEventListener(e, start, { passive: true, once: true }));
     };
-    if (document.readyState === "complete") idle();
-    else window.addEventListener("load", () => setTimeout(idle, 100), { once: true });
+    if (document.readyState === "complete") arm();
+    else window.addEventListener("load", arm, { once: true });
   });
   return cached;
 }

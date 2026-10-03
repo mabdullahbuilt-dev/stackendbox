@@ -14,3 +14,10 @@ export const systems: { key: BrandKey; label: string; action: string }[] = [
   { key: "vercel", label: "Vercel", action: "Deployment live" },
   { key: "notion", label: "Notion", action: "Page created" },
 ];
+
+/** Technology we build with. Supporting credibility only, never presented as clients or partners. */
+export const stack: { key: BrandKey; label: string }[] = [
+  { key: "react", label: "React" }, { key: "nextjs", label: "Next.js" }, { key: "typescript", label: "TypeScript" }, { key: "node", label: "Node.js" },
+  { key: "python", label: "Python" }, { key: "postgres", label: "PostgreSQL" }, { key: "supabase", label: "Supabase" }, { key: "prisma", label: "Prisma" },
+  { key: "redis", label: "Redis" }, { key: "docker", label: "Docker" }, { key: "vercel", label: "Vercel" }, { key: "github", label: "GitHub" },
+];

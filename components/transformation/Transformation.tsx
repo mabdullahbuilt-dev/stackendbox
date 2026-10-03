@@ -21,6 +21,34 @@ export function Transformation() {
   const inView = useInView(stage, "-25% 0px -25% 0px");
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const sc = scenarios[tab];
+  const [step, setStep] = useState(-1);
+  const token = useRef<HTMLDivElement>(null);
+  const count = useRef(8);
+
+  // The same object travels through the automated flow, one stage at a time.
+  useEffect(() => {
+    const st = stage.current;
+    if (!st) return;
+    const items = [...st.querySelectorAll<HTMLElement>(".tfi")].filter((e) => getComputedStyle(e).display !== "none");
+    count.current = items.length;
+    if (state !== "after") { setStep(-1); return; }
+    if (reduced) { setStep(items.length - 1); return; }
+    let k = 0;
+    let id: ReturnType<typeof setInterval> | undefined;
+    const t0 = setTimeout(() => {
+      setStep(0);
+      id = setInterval(() => { k += 1; if (k >= items.length) { clearInterval(id); return; } setStep(k); }, 640);
+    }, 1100);
+    return () => { clearTimeout(t0); clearInterval(id); };
+  }, [state, tab, reduced]);
+  useEffect(() => {
+    const st = stage.current; const tk = token.current;
+    if (!st || !tk || step < 0) return;
+    const el = st.querySelectorAll<HTMLElement>(".tfi")[step];
+    if (!el) return;
+    const a = st.getBoundingClientRect(); const b = el.getBoundingClientRect();
+    tk.style.translate = `${b.left - a.left + b.width * 0.5 - tk.offsetWidth / 2}px ${b.top - a.top - tk.offsetHeight - 8}px`;
+  }, [step]);
 
   // On first view play the transformation once (before then after). Reduced motion keeps the final state.
   useEffect(() => {
@@ -75,13 +103,14 @@ export function Transformation() {
           <div className="tf__stage" ref={stage} data-state={state} data-sc={sc.id}>
             <div className="tf__label tf__label--b mono">BEFORE</div>
             <div className="tf__label tf__label--a mono">AFTER <i className="vd" /></div>
+            <div ref={token} className="tf__token" data-show={state === "after" && step >= 0} aria-hidden><i />{sc.token}</div>
             {sc.items.map((it, i) => {
               const Icon = icons[it.icon] ?? FileText;
               return (
                 <div
                   key={sc.id + i}
                   className="tfi"
-                  data-tone={it.before.tone} data-n={i + 1} data-par={i % 2 === 0 ? "odd" : "even"}
+                  data-on={state === "after" && step >= i} data-tone={it.before.tone} data-n={i + 1} data-par={i % 2 === 0 ? "odd" : "even"}
                   style={{ ["--i" as string]: i, ["--bx" as string]: it.before.x, ["--by" as string]: it.before.y, ["--br" as string]: it.before.r, ["--ax" as string]: it.after.x, ["--ay" as string]: it.after.y }}
                 >
                   <span className="tfi__ic"><Icon aria-hidden /></span>

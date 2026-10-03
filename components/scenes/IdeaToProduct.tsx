@@ -173,7 +173,7 @@ export function IdeaToProduct() {
               ) : (
                 <div aria-hidden><FitBox><IdeaStage /></FitBox></div>
               )}
-              <p className="sr-only">From a written brief, to a wireframe, to a finished interface with a database behind it, sign-in and roles, an API, billing and an admin area, then live in production. Shown with sample data.</p>
+              <p className="sr-only">From a written brief, to a wireframe, to a finished interface with a database behind it, sign-in and roles, an API, billing and an admin area, then live in production. </p>
             </div>
           </div>
 

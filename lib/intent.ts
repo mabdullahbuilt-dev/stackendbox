@@ -52,9 +52,9 @@ export const needCapability: Record<Need, Capability> = {
 };
 
 /** Ask the Builder to preselect a need (used by CTAs outside the Builder). */
-export function presetBuilder(need: Need) {
+export function presetBuilder(need: Need, stage?: string) {
   try {
-    window.dispatchEvent(new CustomEvent("seb:builder-preset", { detail: need }));
+    window.dispatchEvent(new CustomEvent("seb:builder-preset", { detail: { need, stage } }));
     saveIntent(needCapability[need]);
   } catch {}
 }

@@ -65,14 +65,25 @@ export function HeroVisual() {
   // Load the 3D chunk after first paint when the device qualifies.
   useEffect(() => {
     if (reduced || degraded || Obj) return;
-    if (lowEnd() || !webglOK()) return;
+    if (lowEnd() || !webglOK() || window.matchMedia("(max-width: 767px)").matches) return; // phones keep the poster
     let cancelled = false;
     const load = () => import("./HeroObject").then((m) => !cancelled && setObj(() => m.default));
-    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    const id = ric ? ric(load, { timeout: 1500 }) : window.setTimeout(load, 600);
+    // Mount the 3D scene on first real interaction (or after a long idle). Keeps the main thread free during load.
+    const events = ["pointerdown", "pointermove", "wheel", "keydown", "touchstart", "scroll"] as const;
+    let started = false;
+    const go = () => {
+      if (started) return;
+      started = true;
+      off();
+      const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+      if (ric) ric(load, { timeout: 800 }); else window.setTimeout(load, 200);
+    };
+    const off = () => { events.forEach((e) => window.removeEventListener(e, go)); clearTimeout(fallback); };
+    events.forEach((e) => window.addEventListener(e, go, { passive: true, once: true }));
+    const fallback = window.setTimeout(go, 9000);
     return () => {
       cancelled = true;
-      if (!ric) clearTimeout(id);
+      off();
     };
   }, [reduced, degraded, Obj]);
 

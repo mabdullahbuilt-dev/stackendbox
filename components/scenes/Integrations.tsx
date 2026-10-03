@@ -3,7 +3,7 @@ import { ArrowRight, Check, RotateCcw, Workflow } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
-import { systems } from "@/content/integrations";
+import { stack, systems } from "@/content/integrations";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
 import { presetBuilder } from "@/lib/intent";
@@ -94,6 +94,12 @@ export function Integrations() {
               {!reduced && <button type="button" className="chip chip--mono ix-replay" onClick={replay}><RotateCcw aria-hidden /> Replay</button>}
             </div>
           </div>
+        </div>
+        <div className="ixw__tech">
+          <p className="mono mono--muted">{copy.integrations.techLabel}</p>
+          <ul aria-label="Technology we build with">
+            {stack.map((t) => <li key={t.key}><BrandIcon name={t.key} size={18} />{t.label}</li>)}
+          </ul>
         </div>
       </div>
     </section>

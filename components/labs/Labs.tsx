@@ -41,11 +41,10 @@ export function Labs() {
     else if (e.key === "Home") i = 0; else if (e.key === "End") i = n - 1;
     if (i >= 0) { e.preventDefault(); open(i, "key"); tabs.current[i]?.focus(); }
   };
-  const btn = (l: Lab, i: number, small?: boolean) => (
-    <button key={l.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`lab-${l.id}`} aria-selected={active === i} aria-controls="labs-panel" tabIndex={active === i ? 0 : -1} className={small ? "labtab labtab--s" : "labtab"} data-active={active === i} onClick={() => open(i, "click")}>
-      <span className="labtab__n mono">{small ? "" : String(i + 1).padStart(2, "0")}</span>
+  const btn = (l: Lab, i: number) => (
+    <button key={l.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`lab-${l.id}`} aria-selected={active === i} aria-controls="labs-panel" tabIndex={active === i ? 0 : -1} className="labtab" data-active={active === i} onClick={() => open(i, "click")}>
+      <span className="labtab__n mono">{l.category}</span>
       <b>{l.name}</b>
-      {!small && <em>{l.headline}</em>}
     </button>
   );
 
@@ -56,14 +55,11 @@ export function Labs() {
           <p className="eyebrow">{copy.labs.eyebrow}</p>
           <h2 id="labs-title" className="h2">{copy.labs.title}</h2>
           <p className="body-l">{copy.labs.support}</p>
+          <p className="mono mono--muted">{copy.labs.meta}</p>
         </Reveal>
 
         <div role="tablist" aria-label="StackEndBox Labs builds" className="labs__tabs" onKeyDown={onKey}>
-          <div className="labs__primary" role="presentation">{primaryLabs.map((l, i) => btn(l, i))}</div>
-          <div className="labs__more" role="presentation">
-            <span className="mono mono--muted">{copy.labs.more}</span>
-            {secondaryLabs.map((l, i) => btn(l, i + primaryLabs.length, true))}
-          </div>
+          <div className="labs__primary" role="presentation">{all.map((l, i) => btn(l, i))}</div>
         </div>
 
         <div id="labs-panel" role="tabpanel" aria-labelledby={`lab-${lab.id}`}>
@@ -73,7 +69,6 @@ export function Labs() {
           </div>
           <div className="labs__cap" key={"c" + lab.id}>
             <div className="labs__capmain">
-              <Chip mono>CAPABILITY BUILD</Chip>
               <h3 className="labs__h">{lab.headline}</h3>
               <p className="body-l">{lab.text}</p>
               <ul className="labs__tags" aria-label="Capabilities shown">{lab.tags.map((t) => <li key={t}><Chip>{t}</Chip></li>)}</ul>

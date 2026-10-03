@@ -1,18 +1,29 @@
-/** Reusable client case study shape. Publish only verified facts. Qualitative outcomes are fine. */
+/**
+ * Client case studies. Publish only verified, permissioned facts. Qualitative outcomes are fine.
+ * Layout contract: problem, before, what we built, after, result, technology, testimonial.
+ */
 export type CaseStudy = {
-  id: string;
+  slug: string;
   client: string;
   industry: string;
+  service: string;
   problem: string;
-  before: string;
+  before: string[];
   solution: string;
   whatWeBuilt: string[];
-  after: string;
-  result?: string;
-  metric?: { label: string; value: string };
+  after: string[];
+  results: string[];
+  metrics: Metric[];
   testimonialId?: string;
-  stack: string[];
   screenshots: string[];
+  stack: string[];
+  liveUrl?: string;
   verified: boolean;
+  permissionConfirmed: boolean;
 };
-export const caseStudies: CaseStudy[] = [];
+
+/** A public metric must be verified. Never add arbitrary numbers for visual impact. */
+export type Metric = { label: string; value: string; verified: boolean };
+
+const all: CaseStudy[] = [];
+export const caseStudies: CaseStudy[] = all.filter((c) => c.verified === true && c.permissionConfirmed === true).map((c) => ({ ...c, metrics: c.metrics.filter((m) => m.verified === true) }));

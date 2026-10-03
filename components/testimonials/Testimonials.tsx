@@ -1,37 +1,64 @@
 "use client";
 import { AnimatePresence, m } from "motion/react";
+import Image from "next/image";
 import { useState } from "react";
 import { copy } from "@/content/copy";
-import { testimonials } from "@/content/testimonials";
+import { isPublishable, testimonials } from "@/content/testimonials";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 
-/** Renders nothing unless at least one testimonial is verified. No placeholders, ever. */
+/**
+ * Editorial testimonials. Renders nothing unless at least one entry is verified AND permission confirmed.
+ * No autoplay: visitors move through quotes with the index controls.
+ */
 export function Testimonials() {
   const { reduced } = useMotionPreference();
-  const list = testimonials.filter((t) => t.verified === true);
-  const [i, setI] = useState(0);
+  const list = testimonials.filter(isPublishable);
+  const [i, setI] = useState(() => Math.max(0, list.findIndex((t) => t.featured)));
   if (list.length === 0) return null;
   const t = list[i % list.length];
-  const others = list.filter((_, k) => k !== i % list.length).slice(0, 2);
+  const dur = reduced ? 0 : 0.35;
+  const support = list.filter((x) => x.id !== t.id).slice(0, 2);
   return (
     <section id="testimonials" className="section tst" aria-labelledby="tst-title">
       <div className="container">
         <p className="eyebrow">{copy.testimonials.eyebrow}</p>
-        <h2 id="tst-title" className="sr-only">{copy.testimonials.title}</h2>
+        <h2 id="tst-title" className="h2">{copy.testimonials.title}</h2>
         <div className="tst__grid">
-          <figure className="tst__main">
+          <figure className="tst__main" aria-live="polite">
             <AnimatePresence mode="wait" initial={false}>
-              <m.div key={t.id} initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.3 }}>
-                <blockquote>{t.quote}</blockquote>
-                <figcaption><b>{t.name}</b><span>{t.role}, {t.company}</span><em className="mono">{t.projectType}</em></figcaption>
-              </m.div>
+              <m.blockquote key={t.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur }}>{t.quote}</m.blockquote>
             </AnimatePresence>
           </figure>
-          <div className="tst__side">
-            {others.map((o) => (
-              <button key={o.id} className="tst__small" onClick={() => setI(list.indexOf(o))}><span>{o.quote.slice(0, 120)}</span><b>{o.name}</b></button>
-            ))}
-          </div>
+          <aside className="tst__who">
+            <AnimatePresence mode="wait" initial={false}>
+              <m.div key={t.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: dur }}>
+                {t.avatar && <Image className="tst__avatar" src={t.avatar} alt="" width={72} height={72} />}
+                <b>{t.name}</b>
+                <span>{t.role}</span>
+                <span>{t.company}</span>
+                {t.companyLogo && <Image className="tst__logo" src={t.companyLogo} alt={t.company} width={120} height={32} />}
+                <em className="mono">{t.service}{t.project ? ` · ${t.project}` : ""}</em>
+              </m.div>
+            </AnimatePresence>
+            {list.length > 1 && (
+              <div className="tst__ctl" role="group" aria-label="Choose testimonial">
+                {list.map((x, k) => (
+                  <button key={x.id} type="button" aria-label={`Show testimonial ${k + 1} of ${list.length}: ${x.company}`} aria-current={k === i % list.length} onClick={() => setI(k)} className="tst__dot" />
+                ))}
+              </div>
+            )}
+          </aside>
+          {support.length > 0 && (
+            <div className="tst__sup">
+              {support.map((x) => (
+                <button key={x.id} type="button" className="tst__small" onClick={() => setI(list.indexOf(x))}>
+                  <span className="mono mono--muted">{x.service}</span>
+                  <span>{x.quote.length > 140 ? `${x.quote.slice(0, 137)}...` : x.quote}</span>
+                  <b>{x.name}, {x.company}</b>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

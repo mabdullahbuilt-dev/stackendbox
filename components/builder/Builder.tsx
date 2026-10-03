@@ -79,11 +79,12 @@ export function Builder() {
       setNeeds((n) => (n.length ? n : [intentNeed[i]]));
     }
     const on = (e: Event) => {
-      const need = (e as CustomEvent<string>).detail;
+      const { need, stage: st } = (e as CustomEvent<{ need: string; stage?: string }>).detail;
       prefilled.current = true;
       setPhase("q");
       setStep(0);
       setNeeds((n) => (n.includes(need) ? n : [...n, need].slice(-3)));
+      if (st) setStage(st);
     };
     window.addEventListener("seb:builder-preset", on);
     return () => window.removeEventListener("seb:builder-preset", on);

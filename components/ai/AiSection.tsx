@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, Bot, Check, Database, FileSearch, MessageSquare, Zap, UserCheck, type LucideIcon } from "lucide-react";
+import { ArrowRight, Bot, Check, Database, Eye, FileSearch, FileText, GitBranch, MessageSquare, Sparkles, Zap, UserCheck, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
 import { copy } from "@/content/copy";
@@ -18,6 +18,14 @@ const trace: [LucideIcon, string, string][] = [
   [Database, "Data", "Payment record and delivery status read"],
   [UserCheck, "Approval", "Refund over the limit waits for a person"],
   [Check, "Action", "Refund issued and customer notified"],
+];
+
+const uses: [LucideIcon, string, string][] = [
+  [GitBranch, "Classify and route", "Tag each incoming request and send it to the right queue. SupportGrid does this for support."],
+  [FileSearch, "Retrieve with sources", "Answer from your own documents and show where each answer came from."],
+  [FileText, "Extract and verify", "Pull structured fields from PDFs, forms and emails, then check them against rules."],
+  [Eye, "See and score", "Read images and data together to rank opportunities. DealSignal does this for property."],
+  [Sparkles, "Generate", "Draft scripts, voiceovers and media. ListingReel AI does this for video."],
 ];
 
 export function AiSection() {
@@ -57,6 +65,9 @@ export function AiSection() {
           </ol>
         </div>
         <p className="sr-only">An AI agent receives a refund request, retrieves the order and policy, calls a tool to check eligibility, reads payment data, waits for human approval and then issues the refund.</p>
+        <ul className="aiuses" aria-label="Different ways AI is used">
+          {uses.map(([I, t, d]) => <li key={t}><I aria-hidden /><b>{t}</b><span>{d}</span></li>)}
+        </ul>
         <div className="aisec__foot">
           <ul className="aiverbs" aria-label="What AI can do inside a workflow">{copy.ai.verbs.map((v) => <li key={v}>{v}</li>)}</ul>
           <Link href="/#start" className="btn btn--primary" onClick={() => { track("ai_cta", { placement: "ai" }); presetBuilder("AI System"); }}>{copy.ai.cta}<ArrowRight className="arrow" aria-hidden /></Link>
