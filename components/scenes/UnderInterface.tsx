@@ -5,6 +5,7 @@ import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { FINE_POINTER, useMedia } from "@/lib/hooks";
 import { presetBuilder } from "@/lib/intent";
+import { loadGsap } from "@/lib/gsap";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { planes, SETS } from "./planes";
 
@@ -29,9 +30,8 @@ export function UnderInterface() {
     let cancelled = false;
     let cleanup: (() => void) | undefined;
     (async () => {
-      const [{ gsap }, { ScrollTrigger }] = await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
+      const { gsap, ScrollTrigger } = await loadGsap();
       if (cancelled) return;
-      gsap.registerPlugin(ScrollTrigger);
       const ctx = gsap.context(() => {
         const q = gsap.utils.selector(wrap.current!);
         const pls = q<HTMLElement>(".pln");

@@ -408,3 +408,7 @@
 @property --lift { syntax: "<length>"; inherits: false; initial-value: 0px; }
 .dm-lead { overflow: hidden; }
 @media (max-width: 599px) { .dm-lead .mk-sub { display: none; } .dm-lead { padding: 6px 8px; } .dm-lead b { font-size: 12px; } .dm-lead .mk-pill { font-size: 10px; padding: 0 6px; height: 18px; } }
+
+/* contrast: muted labels on the lighter demo surfaces use a lifted tone (≥4.5:1 on --bg-higher) */
+.slot__in .mono--muted, .dm .mono--muted, .mk-tile .mono--muted, .mod .mono--muted, .pln .mono--muted, .ipm .mono--muted, .ip .mono--muted, .fthumb .mono--muted, .mk-mini .mono--muted { color: #8f99a6; }
+.dm-big small { color: var(--text-secondary); }

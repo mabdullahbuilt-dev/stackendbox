@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { readIntent, presetBuilder, saveIntent } from "@/lib/intent";
+import { loadGsap } from "@/lib/gsap";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { FINE_POINTER } from "@/lib/hooks";
 import { explorerItems } from "./data";
@@ -54,9 +55,8 @@ export function Explorer() {
     let ctx: { revert: () => void } | undefined;
     let cancelled = false;
     (async () => {
-      const [{ gsap }, { ScrollTrigger }] = await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
+      const { gsap, ScrollTrigger } = await loadGsap();
       if (cancelled || !pin.current || !root.current) return;
-      gsap.registerPlugin(ScrollTrigger);
       const mm = gsap.matchMedia();
       mm.add("(min-width: 1024px) and (min-height: 640px)", () => {
         const trig = ScrollTrigger.create({

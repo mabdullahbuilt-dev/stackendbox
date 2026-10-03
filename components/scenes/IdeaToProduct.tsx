@@ -7,6 +7,7 @@ import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useMedia } from "@/lib/hooks";
 import { presetBuilder } from "@/lib/intent";
+import { loadGsap } from "@/lib/gsap";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { FitBox } from "@/components/ui/FitBox";
 import { Line, Pill } from "@/components/ui/mock";
@@ -17,36 +18,36 @@ const THRESH = [0, 0.1, 0.25, 0.45, 0.55, 0.75, 0.85, 0.95];
 function build(gsap: typeof import("gsap").gsap, root: HTMLElement) {
   const q = gsap.utils.selector(root);
   const tl = gsap.timeline({ paused: true, defaults: { ease: "power2.inOut" } });
-  gsap.set(q(".ip-wire"), { opacity: 0, scale: 0.92 });
+  gsap.set(q(".ip-wire"), { autoAlpha: 0, scale: 0.92 });
   gsap.set(q(".ip-ui"), { clipPath: "inset(0 100% 0 0)" });
-  gsap.set(q(".ip-edge"), { opacity: 0, left: 60 });
-  gsap.set(q(".ip-schema"), { opacity: 0, y: 0, scale: 1 });
-  gsap.set(q(".ip-auth"), { opacity: 0, y: -18 });
-  gsap.set(q(".ip-api"), { opacity: 0, x: 30 });
-  gsap.set(q(".ip-bill"), { opacity: 0, y: 24 });
-  gsap.set(q(".ip-admin"), { opacity: 0, x: -30, scale: 0.92 });
-  gsap.set(q(".ip-live"), { opacity: 0 });
-  gsap.set(q(".ip-briefdone"), { opacity: 0 });
+  gsap.set(q(".ip-edge"), { autoAlpha: 0, left: 60 });
+  gsap.set(q(".ip-schema"), { autoAlpha: 0, y: 0, scale: 1 });
+  gsap.set(q(".ip-auth"), { autoAlpha: 0, y: -18 });
+  gsap.set(q(".ip-api"), { autoAlpha: 0, x: 30 });
+  gsap.set(q(".ip-bill"), { autoAlpha: 0, y: 24 });
+  gsap.set(q(".ip-admin"), { autoAlpha: 0, x: -30, scale: 0.92 });
+  gsap.set(q(".ip-live"), { autoAlpha: 0 });
+  gsap.set(q(".ip-briefdone"), { autoAlpha: 0 });
   // 01 BRIEF → compress; 02 WIREFRAME
-  tl.to(q(".ip-brief"), { scale: 0.32, x: -270, y: -150, opacity: 0, duration: 0.15 }, 0.1);
-  tl.to(q("[data-lo]"), { opacity: 0, scale: 0.9, duration: 0.12, stagger: 0.01 }, 0.1);
-  tl.to(q(".ip-briefdone"), { opacity: 1, duration: 0.05 }, 0.22);
-  tl.to(q(".ip-wire"), { opacity: 1, scale: 1, duration: 0.15 }, 0.12);
+  tl.to(q(".ip-brief"), { scale: 0.32, x: -270, y: -150, autoAlpha: 0, duration: 0.15 }, 0.1);
+  tl.to(q("[data-lo]"), { autoAlpha: 0, scale: 0.9, duration: 0.12, stagger: 0.01 }, 0.1);
+  tl.to(q(".ip-briefdone"), { autoAlpha: 1, duration: 0.05 }, 0.22);
+  tl.to(q(".ip-wire"), { autoAlpha: 1, scale: 1, duration: 0.15 }, 0.12);
   // 03 INTERFACE: mask wipe left → right with a 1px blue edge
   tl.to(q(".ip-ui"), { clipPath: "inset(0 0% 0 0)", duration: 0.2, ease: "power2.inOut" }, 0.25);
-  tl.fromTo(q(".ip-edge"), { opacity: 1, left: 60 }, { opacity: 0, left: 700, duration: 0.2, ease: "power2.inOut", immediateRender: false }, 0.25);
-  tl.to(q(".ip-wire"), { opacity: 0, duration: 0.05 }, 0.44);
+  tl.fromTo(q(".ip-edge"), { autoAlpha: 1, left: 60 }, { autoAlpha: 0, left: 700, duration: 0.2, ease: "power2.inOut", immediateRender: false }, 0.25);
+  tl.to(q(".ip-wire"), { autoAlpha: 0, duration: 0.05 }, 0.44);
   // 04 DATA: schema slides behind
-  tl.to(q(".ip-schema"), { opacity: 0.75, y: 28, scale: 0.94, duration: 0.14 }, 0.45);
+  tl.to(q(".ip-schema"), { autoAlpha: 0.75, y: 28, scale: 0.94, duration: 0.14 }, 0.45);
   // 05 ACCESS + API
-  tl.to(q(".ip-auth"), { opacity: 1, y: 0, duration: 0.12, ease: "power3.out" }, 0.55);
-  tl.to(q(".ip-api"), { opacity: 1, x: 0, duration: 0.12, ease: "power3.out" }, 0.65);
+  tl.to(q(".ip-auth"), { autoAlpha: 1, y: 0, duration: 0.12, ease: "power3.out" }, 0.55);
+  tl.to(q(".ip-api"), { autoAlpha: 1, x: 0, duration: 0.12, ease: "power3.out" }, 0.65);
   // 06 BILLING
-  tl.to(q(".ip-bill"), { opacity: 1, y: 0, duration: 0.12, ease: "power3.out" }, 0.75);
+  tl.to(q(".ip-bill"), { autoAlpha: 1, y: 0, duration: 0.12, ease: "power3.out" }, 0.75);
   // 07 ADMIN
-  tl.to(q(".ip-admin"), { opacity: 1, x: 48, scale: 0.92, duration: 0.1 }, 0.85);
+  tl.to(q(".ip-admin"), { autoAlpha: 1, x: 48, scale: 0.92, duration: 0.1 }, 0.85);
   // 08 LIVE
-  tl.to(q(".ip-live"), { opacity: 1, duration: 0.05 }, 0.95);
+  tl.to(q(".ip-live"), { autoAlpha: 1, duration: 0.05 }, 0.95);
   tl.to({}, { duration: 0 }, 1);
   return tl;
 }
@@ -88,7 +89,7 @@ function Frozen({ at, label }: { at: number; label: string }) {
   useEffect(() => {
     let kill: (() => void) | undefined;
     (async () => {
-      const { gsap } = await import("gsap");
+      const { gsap } = await loadGsap();
       if (!ref.current) return;
       const ctx = gsap.context(() => { build(gsap, ref.current!).progress(at).pause(); }, ref.current);
       kill = () => ctx.revert();
@@ -118,9 +119,8 @@ export function IdeaToProduct() {
     let cancelled = false;
     let cleanup: (() => void) | undefined;
     (async () => {
-      const [{ gsap }, { ScrollTrigger }] = await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
+      const { gsap, ScrollTrigger } = await loadGsap();
       if (cancelled) return;
-      gsap.registerPlugin(ScrollTrigger);
       const ctx = gsap.context(() => {
         const tl = build(gsap, stage.current!);
         let done = false;

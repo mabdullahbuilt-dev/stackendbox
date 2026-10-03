@@ -49,10 +49,10 @@ export function Breadth() {
         </Reveal>
       </div>
 
-      <div ref={wrap} className="rail" data-static={reduced} aria-label="Examples of what StackEndBox builds" role="list">
-        <ul ref={track_} className="rail__track" style={{ animationDuration: `${dur}s`, animationPlayState: inView && !reduced ? "running" : "paused" }}>
+      <div ref={wrap} className="rail" data-static={reduced}>
+        <ul ref={track_} role="list" aria-label="Examples of what StackEndBox builds" className="rail__track" style={{ animationDuration: `${dur}s`, animationPlayState: inView && !reduced ? "running" : "paused" }}>
           {[...chips, ...(reduced ? [] : chips)].map((c, i) => (
-            <li key={`${c}-${i}`} role={i < chips.length ? "listitem" : "presentation"} aria-hidden={i >= chips.length} className="rail__chip mono" data-mid={c === "Web3" || c === "Market Tools"}>{c}</li>
+            <li key={`${c}-${i}`} aria-hidden={i >= chips.length || undefined} className="rail__chip mono" data-mid={c === "Web3" || c === "Market Tools"}>{c}</li>
           ))}
         </ul>
       </div>

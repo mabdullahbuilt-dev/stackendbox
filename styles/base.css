@@ -167,3 +167,8 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; animation: spin 700ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* touch targets: keep compact visuals, extend the hit area to 44px */
+.btn--sm::after { content: ""; position: absolute; inset: -4px; }
+.nav__logo { padding-block: 8px; margin-block: -8px; }
+@media (pointer: coarse) { .dcar__dot { width: 44px; } }

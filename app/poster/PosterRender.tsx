@@ -12,7 +12,7 @@ export function PosterRender() {
   const explode = typeof window === "undefined" ? 0 : Number(new URLSearchParams(location.search).get("e") ?? 0);
   return (
     <div style={{ width: 1600, height: 1600, background: "transparent" }} data-done={done}>
-      <HeroObject bus={bus.current} modules={heroModules} hovered={null} onHover={() => {}} still={{ explode }} dpr={1} onReady={() => setTimeout(() => setDone(true), 600)} />
+      <HeroObject bus={bus.current} modules={heroModules} hovered={null} onHover={() => {}} still={{ explode }} dpr={1} onReady={() => setTimeout(() => setDone(true), 1500)} />
     </div>
   );
 }

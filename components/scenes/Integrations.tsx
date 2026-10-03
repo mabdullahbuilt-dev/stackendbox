@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { presetBuilder } from "@/lib/intent";
+import { loadGsap } from "@/lib/gsap";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
 import { Pill } from "@/components/ui/mock";
@@ -37,7 +38,7 @@ export function Integrations() {
     let cancelled = false;
     let cleanup: (() => void) | undefined;
     (async () => {
-      const { gsap } = await import("gsap");
+      const { gsap } = await loadGsap();
       if (cancelled) return;
       const compact = window.matchMedia("(max-width: 599px)").matches;
       const ctx = gsap.context(() => {

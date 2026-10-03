@@ -1,0 +1,12 @@
+import { chromium } from "playwright-core";
+const url = process.argv[2] ?? "http://localhost:3100";
+const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox", "--disable-gpu", "--disable-webgl"] });
+const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const p = await ctx.newPage();
+const cdp = await ctx.newCDPSession(p);
+await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+await p.addInitScript(() => { window.__lt = []; new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__lt.push([Math.round(e.startTime), Math.round(e.duration)]); }).observe({ type: "longtask", buffered: true }); window.__lcp = 0; new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__lcp = Math.round(e.startTime); }).observe({ type: "largest-contentful-paint", buffered: true }); });
+await p.goto(url, { waitUntil: "load" });
+await p.waitForTimeout(5000);
+console.log(JSON.stringify(await p.evaluate(() => ({ nodes: document.querySelectorAll("*").length, lcp: window.__lcp, longTasks: window.__lt, tbt: window.__lt.reduce((s, [, d]) => s + Math.max(0, d - 50), 0), bySection: [...document.querySelectorAll("main > section, main > div")].map((s) => `${s.id || s.className}:${s.querySelectorAll("*").length}`).join(" ") }))));
+await b.close();

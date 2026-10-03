@@ -5,7 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { copy } from "@/content/copy";
 import { siteConfig } from "@/site.config";
 import { track } from "@/lib/analytics";
-import { GOALS, NEEDS, STAGES, TIMELINES, briefSchema } from "@/lib/briefSchema";
+import { GOALS, NEEDS, STAGES, TIMELINES } from "@/lib/briefOptions";
 import { briefLines, buildBrief } from "@/lib/briefTemplate";
 import { intentNeed, readIntent } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
@@ -133,6 +133,8 @@ export function Builder() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { needs, stage, goal, ...form, timeline: form.timeline || undefined };
+    // Validation library is loaded on demand so it never weighs on the initial page load.
+    const { briefSchema } = await import("@/lib/briefSchema");
     const r = briefSchema.safeParse(payload);
     if (!r.success) {
       const f: Record<string, string> = {};

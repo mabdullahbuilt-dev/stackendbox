@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { copy } from "@/content/copy";
+import { loadGsap } from "@/lib/gsap";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 
 /** Quiet bridge: one sentence, word-by-word opacity on scroll (no blur, no rotation). */
@@ -15,9 +16,8 @@ export function Bridge() {
     let kill: (() => void) | undefined;
     let cancelled = false;
     (async () => {
-      const [{ gsap }, { ScrollTrigger }] = await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
+      const { gsap, ScrollTrigger } = await loadGsap();
       if (cancelled) return;
-      gsap.registerPlugin(ScrollTrigger);
       const ctx = gsap.context(() => {
         const w = el.querySelectorAll(".bridge__w");
         gsap.set(w, { opacity: 0.18 });
@@ -35,8 +35,9 @@ export function Bridge() {
 
   return (
     <div id="bridge" className="bridge">
-      <p ref={ref} className="bridge__p" aria-label={copy.bridge}>
-        {words.map((w, i) => <span key={i} className="bridge__w" aria-hidden>{w}{" "}</span>)}
+      <p ref={ref} className="bridge__p">
+        <span className="sr-only">{copy.bridge}</span>
+        <span aria-hidden>{words.map((w, i) => <span key={i} className="bridge__w">{w}{" "}</span>)}</span>
       </p>
     </div>
   );

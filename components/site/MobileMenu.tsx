@@ -15,8 +15,8 @@ export function MobileMenu({ open, onOpenChange }: { open: boolean; onOpenChange
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Content className="sheet" aria-describedby={undefined}>
-          <div className="sheet__top">
+        <Dialog.Content className="menu-sheet" aria-describedby={undefined}>
+          <div className="menu-sheet__top">
             <Dialog.Title className="mono">Menu</Dialog.Title>
             <Dialog.Close asChild>
               <button className="icon-btn" aria-label="Close">
@@ -24,7 +24,7 @@ export function MobileMenu({ open, onOpenChange }: { open: boolean; onOpenChange
               </button>
             </Dialog.Close>
           </div>
-          <ul className="sheet__links">
+          <ul className="menu-sheet__links">
             {copy.nav.links.map((l, i) => (
               <li key={l.id} style={{ ["--i" as string]: i }}>
                 <Dialog.Close asChild>
@@ -35,7 +35,7 @@ export function MobileMenu({ open, onOpenChange }: { open: boolean; onOpenChange
               </li>
             ))}
           </ul>
-          <div className="sheet__cta">
+          <div className="menu-sheet__cta">
             <Dialog.Close asChild>
               <ButtonLink href="/#start" size="lg" block onClick={() => track("nav_cta_click")}>
                 {copy.nav.cta}

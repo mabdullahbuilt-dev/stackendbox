@@ -1,9 +1,7 @@
 import { z } from "zod";
 
-export const NEEDS = ["Product", "AI", "Automation", "CRM", "Integration", "Internal system", "Booking system", "Something else"] as const;
-export const STAGES = ["Idea", "Prototype", "Manual workflow", "Existing application", "Production"] as const;
-export const GOALS = ["Launch", "Automate", "Scale", "Improve reliability", "Add AI", "Connect systems", "Improve UX"] as const;
-export const TIMELINES = ["ASAP", "1–3 months", "Exploring"] as const;
+import { GOALS, NEEDS, STAGES, TIMELINES } from "./briefOptions";
+export { GOALS, NEEDS, STAGES, TIMELINES };
 
 export const briefSchema = z.object({
   needs: z.array(z.enum(NEEDS)).min(1, "Choose at least one.").max(3, "Choose up to three."),

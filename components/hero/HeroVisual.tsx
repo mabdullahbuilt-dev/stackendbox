@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { track } from "@/lib/analytics";
 import { useMedia, FINE_POINTER } from "@/lib/hooks";
+import { loadGsap } from "@/lib/gsap";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { heroModules, heroModulesMobile } from "./modules";
 import type { HeroBus } from "./HeroObject";
@@ -84,9 +85,8 @@ export function HeroVisual() {
     let kill: (() => void) | undefined;
     let cancelled = false;
     (async () => {
-      const [{ gsap }, { ScrollTrigger }] = await Promise.all([import("gsap"), import("gsap/ScrollTrigger")]);
+      const { gsap, ScrollTrigger } = await loadGsap();
       if (cancelled) return;
-      gsap.registerPlugin(ScrollTrigger);
       const amp = window.matchMedia("(max-width: 767px)").matches ? 0.6 : 1;
       const copyEl = track_.querySelector<HTMLElement>("[data-hero-copy]");
       const st = ScrollTrigger.create({
@@ -157,7 +157,7 @@ export function HeroVisual() {
     }
   };
 
-  const staticList = !live; // reduced motion / poster: module list is plain visible text
+  const staticList = reduced; // reduced motion: module list is plain visible text. Never toggled by canvas load (avoids CLS).
 
   return (
     <div className="hero__visual" ref={wrap} onPointerMove={onMove} onPointerLeave={onLeave}>
@@ -168,9 +168,7 @@ export function HeroVisual() {
             alt=""
             fill
             sizes="(max-width: 767px) 92vw, (max-width: 1279px) 56vw, 780px"
-            priority={false}
-            loading="eager"
-            fetchPriority="low"
+            priority
             className="hero__poster-img"
           />
         </div>

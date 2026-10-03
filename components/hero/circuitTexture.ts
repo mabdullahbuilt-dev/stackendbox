@@ -55,7 +55,7 @@ function toTexture(canvas: HTMLCanvasElement) {
   return t;
 }
 
-export function makeTopTexture(seed: number, size = 1024) {
+export function makeTopTexture(seed: number, size = 768) {
   const c = document.createElement("canvas");
   c.width = c.height = size;
   const ctx = c.getContext("2d")!;
@@ -79,12 +79,14 @@ export function makeTopTexture(seed: number, size = 1024) {
 
 /** Side faces. `bin` = binary/hex rows + module label, `circuit` = traces. */
 export function makeSideTexture(seed: number, variant: "bin" | "circuit", label: string) {
+  // drawn in a 2048×256 design space, rasterised at 75% to cut upload cost
   const w = 2048;
   const h = 256;
   const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
+  c.width = w * 0.75;
+  c.height = h * 0.75;
   const ctx = c.getContext("2d")!;
+  ctx.scale(0.75, 0.75);
   const r = rng(seed * 7919 + 3);
   if (variant === "circuit") {
     ctx.strokeStyle = `rgba(${INK},0.7)`;

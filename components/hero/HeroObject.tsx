@@ -1,7 +1,7 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Html, Lightformer, PerformanceMonitor, RoundedBox } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { makeSideTexture, makeTopTexture } from "./circuitTexture";
 import type { HeroModule } from "./modules";
@@ -31,15 +31,26 @@ type Props = {
   onDegrade?: () => void;
 };
 
-function Slab({ index, mod, seed, hovered, onHover, innerRef }: {
-  index: number; mod: HeroModule; seed: number; hovered: boolean;
+function Slab({ index, mod, seed, hovered, onHover, innerRef, stillMode }: {
+  index: number; mod: HeroModule; seed: number; hovered: boolean; stillMode: boolean;
   onHover: (i: number | null) => void; innerRef: (g: THREE.Group | null) => void;
 }) {
-  const top = useMemo(() => makeTopTexture(seed), [seed]);
-  const circuit = useMemo(() => makeSideTexture(seed + 31, "circuit", mod.name), [seed, mod.name]);
-  const bin = useMemo(() => makeSideTexture(seed + 57, "bin", mod.name), [seed, mod.name]);
+  const invalidate = useThree((s) => s.invalidate);
+  const [tex, setTex] = useState<{ top: THREE.Texture; circuit: THREE.Texture; bin: THREE.Texture } | null>(null);
   const edges = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(W - 0.01, H - 0.004, D - 0.01)), []);
-  useEffect(() => () => { top.dispose(); circuit.dispose(); bin.dispose(); edges.dispose(); }, [top, circuit, bin, edges]);
+  // Surface art is generated per slab in staggered tasks so no single task blocks the main thread.
+  useEffect(() => {
+    let made: THREE.Texture[] = [];
+    const run = () => {
+      const t = { top: makeTopTexture(seed), circuit: makeSideTexture(seed + 31, "circuit", mod.name), bin: makeSideTexture(seed + 57, "bin", mod.name) };
+      made = [t.top, t.circuit, t.bin];
+      setTex(t);
+      invalidate();
+    };
+    const id = window.setTimeout(run, stillMode ? 0 : 60 + index * 70);
+    return () => { window.clearTimeout(id); made.forEach((t) => t.dispose()); };
+  }, [seed, mod.name, index, invalidate, stillMode]);
+  useEffect(() => () => edges.dispose(), [edges]);
 
   return (
     <group
@@ -51,18 +62,22 @@ function Slab({ index, mod, seed, hovered, onHover, innerRef }: {
       <RoundedBox args={[W, H, D]} radius={0.025} smoothness={2}>
         <meshStandardMaterial color="#2A2F37" roughness={0.5} metalness={0.45} />
       </RoundedBox>
-      <mesh rotation-x={-Math.PI / 2} position={[0, H / 2 + 0.0016, 0]}>
-        <planeGeometry args={[W - 0.08, D - 0.08]} />
-        <meshBasicMaterial map={top} transparent depthWrite={false} toneMapped={false} polygonOffset polygonOffsetFactor={-1} />
-      </mesh>
-      <mesh position={[0, 0, D / 2 + 0.0016]}>
-        <planeGeometry args={[W - 0.08, H - 0.04]} />
-        <meshBasicMaterial map={circuit} transparent depthWrite={false} toneMapped={false} polygonOffset polygonOffsetFactor={-1} />
-      </mesh>
-      <mesh rotation-y={Math.PI / 2} position={[W / 2 + 0.0016, 0, 0]}>
-        <planeGeometry args={[D - 0.08, H - 0.04]} />
-        <meshBasicMaterial map={bin} transparent depthWrite={false} toneMapped={false} polygonOffset polygonOffsetFactor={-1} />
-      </mesh>
+      {tex && (
+        <>
+          <mesh rotation-x={-Math.PI / 2} position={[0, H / 2 + 0.0016, 0]}>
+            <planeGeometry args={[W - 0.08, D - 0.08]} />
+            <meshBasicMaterial map={tex.top} transparent depthWrite={false} toneMapped={false} polygonOffset polygonOffsetFactor={-1} />
+          </mesh>
+          <mesh position={[0, 0, D / 2 + 0.0016]}>
+            <planeGeometry args={[W - 0.08, H - 0.04]} />
+            <meshBasicMaterial map={tex.circuit} transparent depthWrite={false} toneMapped={false} polygonOffset polygonOffsetFactor={-1} />
+          </mesh>
+          <mesh rotation-y={Math.PI / 2} position={[W / 2 + 0.0016, 0, 0]}>
+            <planeGeometry args={[D - 0.08, H - 0.04]} />
+            <meshBasicMaterial map={tex.bin} transparent depthWrite={false} toneMapped={false} polygonOffset polygonOffsetFactor={-1} />
+          </mesh>
+        </>
+      )}
       <lineSegments geometry={edges}>
         <lineBasicMaterial color="#EDF1F5" transparent opacity={0.5} />
       </lineSegments>
@@ -174,6 +189,7 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
           index={i}
           mod={m}
           seed={i + 1}
+          stillMode={!!still}
           hovered={hovered === i}
           onHover={onHover}
           innerRef={(g) => { slabs.current[i] = g; if (g && g.position.y === 0) g.position.y = (n - 1 - i) * (H + SEAM) + (still ? 0 : 1.2); }}
@@ -199,7 +215,7 @@ export default function HeroObject(props: Props) {
       {!still && onDegrade && <PerformanceMonitor flipflops={2} onDecline={onDegrade} bounds={() => [40, 120]} />}
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 6, 2]} intensity={0.6} />
-      <Environment resolution={256} frames={1}>
+      <Environment resolution={128} frames={1}>
         <Lightformer form="rect" intensity={7} color="#e8eefc" position={[4, 5, 3]} scale={[10, 5, 1]} rotation-x={-0.9} />
         <Lightformer form="rect" intensity={0.5} color="#4169FF" position={[-6, 2, -1]} scale={[6, 6, 1]} rotation-y={1.2} />
         <Lightformer form="ring" intensity={1.2} color="#ffffff" position={[0, 8, 0]} scale={4} rotation-x={Math.PI / 2} />
