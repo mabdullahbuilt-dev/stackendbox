@@ -20,6 +20,11 @@ describe("copy", () => {
     const all = strings(copy).join("\n").toLowerCase();
     for (const b of BANNED) expect(all, b).not.toContain(b);
   });
+  it("has no em dashes or arrow glyphs in public copy", () => {
+    const all = strings(copy).join("\n");
+    expect(all).not.toContain("\u2014");
+    expect(all).not.toContain("\u2192");
+  });
   it("has no unresolved [CONFIRM] markers", () => {
     expect(strings(copy).join("\n")).not.toContain("[CONFIRM");
   });

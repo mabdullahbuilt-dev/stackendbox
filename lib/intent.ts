@@ -1,3 +1,5 @@
+import type { Need } from "./briefOptions";
+
 export type Capability = "product" | "ai" | "automation" | "crm" | "integrations" | "custom";
 
 const KEY = "seb_intent";
@@ -27,38 +29,32 @@ export function readIntent(): Capability | null {
   }
 }
 
-export const intentCta: Record<Capability, string> = {
-  product: "Discuss a Product Build",
-  ai: "Discuss an AI Build",
-  automation: "Discuss an Automation",
-  crm: "Discuss Your System",
-  integrations: "Discuss an Integration",
-  custom: "Describe It",
-};
-
-/** Maps a capability to the demo to show first in the Proof Stage. */
-export const intentDemo: Record<Capability, string> = {
-  product: "launchkit",
-  ai: "supportgrid",
-  automation: "leados",
-  crm: "leados",
-  integrations: "connecthub",
-  custom: "opsboard",
-};
-
-/** Maps a capability to the Builder Q1 option. */
-export const intentNeed: Record<Capability, string> = {
-  product: "Product",
-  ai: "AI",
+/** Maps a capability to the Builder first answer. */
+export const intentNeed: Record<Capability, Need> = {
+  product: "SaaS / MVP",
+  ai: "AI System",
   automation: "Automation",
-  crm: "CRM",
-  integrations: "Integration",
-  custom: "Something else",
+  crm: "CRM / Internal Tool",
+  integrations: "API / Integration",
+  custom: "Custom Software",
+};
+
+/** Maps a need back to a capability so contextual CTAs can remember intent. */
+export const needCapability: Record<Need, Capability> = {
+  "SaaS / MVP": "product",
+  "Web Application": "product",
+  "AI System": "ai",
+  Automation: "automation",
+  "CRM / Internal Tool": "crm",
+  "API / Integration": "integrations",
+  "Custom Software": "custom",
+  "Not sure": "custom",
 };
 
 /** Ask the Builder to preselect a need (used by CTAs outside the Builder). */
-export function presetBuilder(need: string) {
+export function presetBuilder(need: Need) {
   try {
     window.dispatchEvent(new CustomEvent("seb:builder-preset", { detail: need }));
+    saveIntent(needCapability[need]);
   } catch {}
 }

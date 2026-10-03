@@ -24,7 +24,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1024, 768], [768, 1024], [430, 
     const vw = document.documentElement.clientWidth; const out = [];
     for (const el of document.querySelectorAll("body *")) {
       const r = el.getBoundingClientRect();
-      if (r.width > 0 && (r.right > vw + 2 || r.left < -2) && !el.closest(".dcar, .rail, .hero__stage, .ix, .xstage, .final__thumbs, .ui__stage, .mstage, .ipsec__stage, .explorer__list, .fit, .sheet, .skip-link, .ghost, .final__ghost, .bstrip, .work, .proof, .nav")) out.push(el.className?.toString().slice(0, 40) || el.tagName);
+      if (r.width > 0 && (r.right > vw + 2 || r.left < -2) && !el.closest(".dcar, .rail, .hero__stage, .ix, .xstage, .final__thumbs, .ui__stage, .mstage, .ipsec__stage, .fit, .sheet, .skip-link, .ghost, .final__ghost, .bstrip, .work, .proof, .nav")) out.push(el.className?.toString().slice(0, 40) || el.tagName);
     }
     return [...new Set(out)].slice(0, 6);
   });

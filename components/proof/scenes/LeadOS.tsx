@@ -1,55 +1,59 @@
 "use client";
-import { Calendar, Sparkles } from "lucide-react";
-import { Bubble, Line, Pill } from "@/components/ui/mock";
+import { Calendar, MessageSquare, Sparkles } from "lucide-react";
+import { Avatar, Bubble, Pill } from "@/components/ui/mock";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { useCount, useSteps } from "@/lib/useSteps";
 import { Dock, SceneWindow, type SceneProps } from "./shared";
 
-const COLS = ["NEW", "QUALIFIED", "FOLLOW-UP", "BOOKED"];
+const COLS = ["NEW", "QUALIFIED", "FOLLOW UP", "BOOKED"];
 
 export function LeadOS({ playing, reduced }: SceneProps) {
-  const s = useSteps([0, 900, 2100, 3300, 4500, 5600], playing, reduced);
-  const score = useCount(s >= 1 ? 82 : 0, 900, reduced);
-  const col = s >= 5 ? 3 : s >= 2 ? 1 : 0;
-  const booked = s >= 4;
+  const s = useSteps([0, 800, 1600, 2500, 3400, 4300, 5200, 6100], playing, reduced);
+  const score = useCount(s >= 2 ? 82 : 0, 800, reduced);
+  const col = s >= 6 ? 3 : s >= 4 ? 2 : s >= 3 ? 1 : 0;
+  const tone = s >= 6 ? "green" : s >= 3 ? "blue" : s >= 2 ? "amber" : "muted";
+  const label = s >= 6 ? "MEETING BOOKED" : s >= 4 ? "FOLLOW UP SENT" : s >= 3 ? "QUALIFIED" : s >= 2 ? "SCORING" : "NEW LEAD";
   return (
     <div className="dm">
-      <SceneWindow title="LeadOS · Pipeline" status={<StatusChip tone={s >= 5 ? "green" : s >= 2 ? "blue" : "muted"}>{s >= 5 ? "BOOKED" : s >= 2 ? "ROUTED" : "NEW LEAD"}</StatusChip>}>
+      <SceneWindow title="LeadOS" status={<StatusChip tone={tone}>{label}</StatusChip>}>
         <div className="dm-board" style={{ ["--c" as string]: col }}>
           {COLS.map((c, i) => (
             <div key={c} className="dm-col">
               <span className="mono mono--muted">{c}</span>
               <div className="dm-slot" />
-              {i === 0 && <><div className="mk-card">Northwind · 3 seats</div><div className="mk-card">Studio 12</div></>}
+              {i === 0 && <><div className="mk-card">Northwind</div><div className="mk-card">Studio 12</div></>}
               {i === 1 && <div className="mk-card">Acme workspace</div>}
               {i === 2 && <div className="mk-card">Orbit retail</div>}
-              {i === 3 && <div className="mk-card">Kite & Co</div>}
+              {i === 3 && <div className="mk-card">Kite and Co</div>}
             </div>
           ))}
-          <div className="dm-lead" data-on>
-            <div className="mk-row"><b>Maya Chen</b>{s >= 1 && <Pill tone="cyan">{score}/100</Pill>}</div>
-            <span className="mk-sub">Web form · pricing question</span>
-            {s >= 3 && <Pill tone="amber">Follow-up · Thu 14:00</Pill>}
+          <div className="dm-lead" data-open={s >= 1}>
+            <div className="mk-row"><b>Maya Chen</b>{s >= 2 && <Pill tone="cyan">{score}/100</Pill>}</div>
+            <span className="mk-sub">Website form</span>
+            {s >= 3 && <span className="dm-owner"><Avatar>S</Avatar>Sam</span>}
           </div>
         </div>
       </SceneWindow>
-      <Dock on={s >= 1} className="dm-a">
+      <Dock on={s >= 4} className="dm-a">
         <div className="mk-mini mk-mini--col">
-          <span className="mono mono--muted"><Sparkles className="mk-inl" /> AI QUALIFICATION</span>
-          <b className="dm-big tnum">{score}<small>/100</small></b>
-          <div className="dm-meter"><i style={{ width: `${score}%` }} /></div>
+          <span className="mono mono--muted"><MessageSquare className="mk-inl" /> WHATSAPP</span>
+          <Bubble tone="green">Hi Maya, thanks for reaching out. Does Thursday at 14:00 work?</Bubble>
         </div>
       </Dock>
-      <Dock on={s >= 2} className="dm-b">
+      <Dock on={s >= 5} className="dm-b">
         <div className="mk-mini mk-mini--col">
-          <span className="mono mono--muted">MESSAGE PREVIEW</span>
-          <Bubble tone="green">Hi Maya — thanks for reaching out. Does Thursday 14:00 work?</Bubble>
+          <span className="mono mono--muted"><Calendar className="mk-inl" /> THURSDAY 14:00</span>
+          <div className="mk-row"><b>Intro call</b><Pill tone={s >= 6 ? "green" : "amber"}>{s >= 6 ? "Booked" : "Held"}</Pill></div>
         </div>
       </Dock>
-      <Dock on={s >= 3} className="dm-c">
+      <Dock on={s >= 2} className="dm-c">
         <div className="mk-mini mk-mini--col">
-          <span className="mono mono--muted"><Calendar className="mk-inl" /> CALENDAR · THU 14:00</span>
-          <div className="mk-row"><Line w="55%" tone="strong" /><Pill tone={booked ? "green" : "amber"}>{booked ? "Booked" : "Pending"}</Pill></div>
+          <span className="mono mono--muted"><Sparkles className="mk-inl" /> ACTIVITY</span>
+          <div className="dm-actlog">
+            {["Lead received", "Scored 82 out of 100", "Assigned to Sam", "Follow up sent", "Meeting booked"].map((t, i) => (
+              <p key={t} data-on={s >= [0, 2, 3, 4, 6][i]}><i />{t}</p>
+            ))}
+          </div>
         </div>
       </Dock>
     </div>

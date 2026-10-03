@@ -6,14 +6,19 @@ import * as THREE from "three";
 import { makeSideTexture, makeTopTexture } from "./circuitTexture";
 import type { HeroModule } from "./modules";
 
-/** Mutable bus written by DOM/GSAP code, read inside the render loop (never React state). */
-export type HeroBus = { explode: number; px: number; py: number; invalidate?: () => void };
+/**
+ * Mutable bus written by DOM/GSAP code and read inside the render loop (never React state).
+ * explode 0..1 (small, contained separation), zoom 0..1 (camera closer), active slab index (-1 none),
+ * pulse 0..1 (bottom to top), settle 0..1 (final 6 degree turn).
+ */
+export type HeroBus = { explode: number; zoom: number; active: number; pulse: number; settle: number; px: number; py: number; invalidate?: () => void };
 
 const W = 1.6;
 const H = 0.19;
 const D = 1.6;
 const SEAM = 0.012;
-const GAP = 0.3;
+/** Max extra gap per slab: about 16px at the default stage size, so the stack stays inside its frame. */
+const GAP = 0.07;
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
@@ -31,8 +36,10 @@ type Props = {
   onDegrade?: () => void;
 };
 
-function Slab({ index, mod, seed, hovered, onHover, innerRef, stillMode }: {
-  index: number; mod: HeroModule; seed: number; hovered: boolean; stillMode: boolean;
+type Accent = { a: THREE.MeshBasicMaterial | null; b: THREE.MeshBasicMaterial | null };
+
+function Slab({ index, mod, seed, hovered, onHover, innerRef, stillMode, accents }: {
+  index: number; mod: HeroModule; seed: number; hovered: boolean; stillMode: boolean; accents: React.MutableRefObject<Accent[]>;
   onHover: (i: number | null) => void; innerRef: (g: THREE.Group | null) => void;
 }) {
   const invalidate = useThree((s) => s.invalidate);
@@ -81,14 +88,13 @@ function Slab({ index, mod, seed, hovered, onHover, innerRef, stillMode }: {
       <lineSegments geometry={edges}>
         <lineBasicMaterial color="#EDF1F5" transparent opacity={0.5} />
       </lineSegments>
-      {/* edge accent: a thin emissive line on the two front top edges only */}
       <mesh position={[0, H / 2 - 0.005, D / 2 + 0.003]}>
         <boxGeometry args={[W - 0.06, 0.008, 0.004]} />
-        <meshBasicMaterial color={mod.accent} transparent opacity={mod.accentOpacity} toneMapped={false} />
+        <meshBasicMaterial ref={(m) => { (accents.current[index] ??= { a: null, b: null }).a = m; }} color={mod.accent} transparent opacity={mod.accentOpacity} toneMapped={false} />
       </mesh>
       <mesh position={[W / 2 + 0.003, H / 2 - 0.005, 0]}>
         <boxGeometry args={[0.004, 0.008, D - 0.06]} />
-        <meshBasicMaterial color={mod.accent} transparent opacity={mod.accentOpacity} toneMapped={false} />
+        <meshBasicMaterial ref={(m) => { (accents.current[index] ??= { a: null, b: null }).b = m; }} color={mod.accent} transparent opacity={mod.accentOpacity} toneMapped={false} />
       </mesh>
       {hovered && (
         <Html position={[W / 2 + 0.2, 0.05, D / 2 - 0.1]} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
@@ -106,8 +112,11 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
   const invalidate = useThree((s) => s.invalidate);
   const n = modules.length;
   const rig = useRef<THREE.Group>(null);
+  const pulse = useRef<THREE.Mesh>(null);
   const slabs = useRef<(THREE.Group | null)[]>([]);
+  const accents = useRef<Accent[]>([]);
   const hoverAmt = useRef<number[]>(Array(n).fill(0));
+  const actAmt = useRef<number[]>(Array(n).fill(0));
   const rot = useRef({ x: 0, y: 0 });
   const t0 = useRef<number | null>(null);
   const frames = useRef(0);
@@ -128,39 +137,43 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
     let busy = false;
     if (t0.current === null) t0.current = state.clock.elapsedTime;
     const t = state.clock.elapsedTime - t0.current;
-
-    // camera rig: damped pointer rotation (X ±2.5°, Y ±5°)
     const k = 1 - Math.pow(1 - 0.06, dt * 60);
+
+    // pointer response: 2 to 3 degrees maximum
     const tx = still ? 0 : bus.py * THREE.MathUtils.degToRad(2.5);
-    const ty = still ? 0 : bus.px * THREE.MathUtils.degToRad(5);
+    const ty = still ? 0 : bus.px * THREE.MathUtils.degToRad(3) + (still ? 0 : bus.settle) * THREE.MathUtils.degToRad(6);
     rot.current.x += (tx - rot.current.x) * k;
     rot.current.y += (ty - rot.current.y) * k;
     if (Math.abs(tx - rot.current.x) > 1e-4 || Math.abs(ty - rot.current.y) > 1e-4) busy = true;
 
-    const breath = still ? 0 : Math.sin((state.clock.elapsedTime / 12) * Math.PI * 2) * 0.004;
+    const breath = still ? 0 : Math.sin((state.clock.elapsedTime / 12) * Math.PI * 2) * 0.003;
+    const act = still ? -1 : bus.active;
 
     for (let i = 0; i < n; i++) {
       const g = slabs.current[i];
       if (!g) continue;
       const fromBottom = n - 1 - i;
-      // explode: top slab leads
-      const e = clamp01(rawE * (1 + 0.04 * (n - 1)) - 0.04 * i);
-      const ee = e * e * (3 - 2 * e);
+      const ee = rawE * rawE * (3 - 2 * rawE);
       let y = fromBottom * (H + SEAM + breath) + fromBottom * GAP * ee;
-      // assemble-in
       if (animateIn && !still) {
         const a = clamp01((t - fromBottom * 0.07) / 0.9);
         if (a < 1) busy = true;
         y += (1 - easeOut(a)) * 1.2;
       }
-      // hover lift + neighbour shift
       const target = hv === i ? 1 : 0;
       hoverAmt.current[i] += (target - hoverAmt.current[i]) * (1 - Math.pow(1 - 0.18, dt * 60));
       if (Math.abs(target - hoverAmt.current[i]) > 0.002) busy = true;
-      y += hoverAmt.current[i] * 0.16;
-      if (hv !== null) {
-        const nb = i < hv ? 0.02 : i > hv ? -0.02 : 0;
-        y += nb * (hv !== null ? 1 : 0);
+      y += hoverAmt.current[i] * 0.12;
+      // activation: the active layer lifts a touch and its edge light brightens
+      const at = act === i ? 1 : 0;
+      actAmt.current[i] += (at - actAmt.current[i]) * (1 - Math.pow(1 - 0.2, dt * 60));
+      if (Math.abs(at - actAmt.current[i]) > 0.003) busy = true;
+      y += actAmt.current[i] * 0.03;
+      const ac = accents.current[i];
+      if (ac) {
+        const o = Math.min(1, modules[i].accentOpacity + actAmt.current[i] * 0.55);
+        if (ac.a) ac.a.opacity = o;
+        if (ac.b) ac.b.opacity = o;
       }
       g.position.y += (y - g.position.y) * (still || !animateIn ? 1 : 1 - Math.pow(1 - 0.35, dt * 60));
       if (Math.abs(y - g.position.y) > 0.0008) busy = true;
@@ -169,9 +182,17 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
     if (rig.current) {
       rig.current.rotation.x = rot.current.x;
       rig.current.rotation.y = rot.current.y;
-      const s = 1 - 0.16 * rawE;
-      rig.current.scale.setScalar(s);
-      rig.current.position.y = -0.62 * rawE;
+      rig.current.scale.setScalar(1 + 0.05 * (still ? 0 : bus.zoom));
+      // keep the opened stack centred in its frame
+      rig.current.position.y = -0.5 * (n - 1) * GAP * (rawE * rawE * (3 - 2 * rawE));
+    }
+    if (pulse.current) {
+      const on = !still && bus.pulse > 0.001 && bus.pulse < 0.999 && rawE > 0.5;
+      pulse.current.visible = on;
+      if (on) {
+        const top = (n - 1) * (H + SEAM) + (n - 1) * GAP * rawE;
+        pulse.current.position.y = top * bus.pulse;
+      }
     }
     frames.current++;
     if (frames.current === 3 && !readyFired.current) {
@@ -190,11 +211,17 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
           mod={m}
           seed={i + 1}
           stillMode={!!still}
+          accents={accents}
           hovered={hovered === i}
           onHover={onHover}
           innerRef={(g) => { slabs.current[i] = g; if (g && g.position.y === 0) g.position.y = (n - 1 - i) * (H + SEAM) + (still ? 0 : 1.2); }}
         />
       ))}
+      {/* data pulse travelling through the layers: a thin cyan plane, no arrows */}
+      <mesh ref={pulse} visible={false}>
+        <boxGeometry args={[W + 0.04, 0.005, D + 0.04]} />
+        <meshBasicMaterial color="#52D2FF" transparent opacity={0.28} toneMapped={false} depthWrite={false} />
+      </mesh>
     </group>
   );
 }
@@ -204,7 +231,7 @@ export default function HeroObject(props: Props) {
   return (
     <Canvas
       frameloop={frameloop}
-      dpr={[1, dpr]}
+      dpr={[1, Math.min(dpr, 1.5)]}
       camera={{ fov: 28, position: [4.6, 3.7, 4.6], near: 0.1, far: 50 }}
       gl={{ alpha: true, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: !!still }}
       onCreated={({ camera }) => camera.lookAt(0, 0.7, 0)}

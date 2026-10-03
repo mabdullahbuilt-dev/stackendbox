@@ -7,7 +7,7 @@ import type { HeroBus } from "@/components/hero/HeroObject";
 const HeroObject = dynamic(() => import("@/components/hero/HeroObject"), { ssr: false });
 
 export function PosterRender() {
-  const bus = useRef<HeroBus>({ explode: 0, px: 0, py: 0 });
+  const bus = useRef<HeroBus>({ explode: 0, zoom: 0, active: -1, pulse: 0, settle: 0, px: 0, py: 0 });
   const [done, setDone] = useState(false);
   const explode = typeof window === "undefined" ? 0 : Number(new URLSearchParams(location.search).get("e") ?? 0);
   return (

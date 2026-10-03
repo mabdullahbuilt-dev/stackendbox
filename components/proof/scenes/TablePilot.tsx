@@ -6,7 +6,7 @@ import { Dock, SceneWindow, type SceneProps } from "./shared";
 
 const TIMES = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30"];
 const TABLES = ["T1", "T2", "T3", "T4", "T5", "T6"];
-// pre-filled cells: table index → set of time indices
+// pre-filled cells: table index to set of time indices
 const TAKEN: Record<number, number[]> = { 0: [0, 1, 4], 1: [2, 3], 2: [1], 3: [0, 5], 4: [3, 4], 5: [2] };
 
 export function TablePilot({ playing, reduced }: SceneProps) {

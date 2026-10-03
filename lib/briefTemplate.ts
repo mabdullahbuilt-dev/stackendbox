@@ -1,32 +1,33 @@
 import type { BriefInput } from "./briefSchema";
 
 const NEED_MODULES: Record<string, string[]> = {
-  Product: ["App UI", "Auth", "Billing", "Database"],
-  AI: ["Model", "Context", "Approval"],
+  "SaaS / MVP": ["App UI", "Auth", "Billing", "Database"],
+  "Web Application": ["App UI", "Auth", "API", "Database"],
+  "AI System": ["Model", "Retrieval", "Tool API", "Approval", "Output"],
   Automation: ["Triggers", "Scheduler", "Messaging"],
-  CRM: ["Pipeline", "Contacts", "Tasks"],
-  Integration: ["Connectors", "Webhooks", "Sync"],
-  "Internal system": ["Admin", "Roles", "Reports"],
-  "Booking system": ["Calendar", "Availability", "Reminders"],
-  "Something else": ["Custom module"],
+  "CRM / Internal Tool": ["Pipeline", "Contacts", "Tasks", "Admin"],
+  "API / Integration": ["Connectors", "Webhooks", "Sync"],
+  "Custom Software": ["Custom module"],
+  "Not sure": ["Discovery"],
 };
 
 const STAGE_FOUNDATION: Record<string, { label: string; extra?: string }> = {
   Idea: { label: "Blank foundation" },
   Prototype: { label: "Harden prototype", extra: "Tests" },
-  "Manual workflow": { label: "Manual input" },
-  "Existing application": { label: "Existing system", extra: "Connector" },
-  Production: { label: "Production system", extra: "Monitoring" },
+  "Existing Product": { label: "Existing app", extra: "Connector" },
+  "Manual Process": { label: "Manual input" },
+  "Production System": { label: "Production system", extra: "Monitoring" },
 };
 
 const GOAL_ACCENT: Record<string, string> = {
   Launch: "DEPLOY",
   Automate: "AUTOMATION",
   Scale: "QUEUE · CACHE",
-  "Improve reliability": "TESTS · MONITORING",
   "Add AI": "AI MODULE",
-  "Connect systems": "CONNECTORS",
+  Integrate: "CONNECTORS",
   "Improve UX": "UX REVIEW",
+  "Improve Reliability": "TESTS · MONITORING",
+  "Something else": "CUSTOM GOAL",
 };
 
 export type BriefParts = {

@@ -18,7 +18,7 @@ export const processVisuals: Record<string, React.ReactNode> = {
   ),
   build: (
     <div className="pv pv-build">
-      <div className="pv-ui"><div className="mk-row"><b>Bookings</b><Pill tone="cyan">+ feature</Pill></div><div className="pv-ui__rows"><Line w="90%" /><Line w="75%" /><Line w="82%" /></div></div>
+      <div className="pv-ui"><div className="mk-row"><b>Bookings</b><Pill tone="cyan">New feature</Pill></div><div className="pv-ui__rows"><Line w="90%" /><Line w="75%" /><Line w="82%" /></div></div>
       <div className="pv-status"><span className="mono">BUILD</span><span className="pv-amber"><Pill tone="amber">RUNNING</Pill></span><span className="pv-green"><Pill tone="green">PASSED</Pill></span></div>
     </div>
   ),
@@ -34,7 +34,7 @@ export const processVisuals: Record<string, React.ReactNode> = {
   ),
   ship: (
     <div className="pv pv-ship">
-      <div className="pv-card"><div className="mk-row"><b className="mono">Deploy</b><span className="pv-live"><Pill tone="green">LIVE</Pill></span></div><Line w="70%" /><span className="mk-sub">Production build ✓</span></div>
+      <div className="pv-card"><div className="mk-row"><b className="mono">Deploy</b><span className="pv-live"><Pill tone="green">LIVE</Pill></span></div><Line w="70%" /><span className="mk-sub">Production build passed</span></div>
       <div className="pv-card"><b className="mono">Monitoring</b><div className="pv-mon">{[40, 55, 48, 62, 52, 58, 50, 64].map((h, i) => <i key={i} style={{ height: `${h}%`, ["--d" as string]: `${i * 60}ms` }} />)}</div></div>
     </div>
   ),

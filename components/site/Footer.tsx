@@ -4,7 +4,7 @@ import { siteConfig } from "@/site.config";
 import { Logo } from "./Logo";
 import { MotionToggle } from "./MotionToggle";
 
-const solutions = ["Product / SaaS", "AI applications", "Automation", "CRM & internal systems", "APIs & integrations", "Custom software"];
+const services = ["SaaS & MVPs", "Web Applications", "AI Systems", "Automation", "CRM & Internal Tools", "APIs & Integrations", "Custom Software"];
 
 export function Footer() {
   const social = [
@@ -23,26 +23,20 @@ export function Footer() {
           </div>
           <nav className="footer__cols" aria-label="Footer">
             <div>
-              <h2 className="mono mono--muted">Solutions</h2>
-              <ul>
-                {solutions.map((s) => (
-                  <li key={s}>
-                    <Link href="/#explorer">{s}</Link>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="mono mono--muted">Services</h2>
+              <ul>{services.map((s) => <li key={s}><Link href="/#services">{s}</Link></li>)}</ul>
             </div>
             <div>
               <h2 className="mono mono--muted">Work</h2>
               <ul>
-                <li><Link href="/#proof">Demo systems</Link></li>
-                <li><Link href="/#work">Engineering work</Link></li>
+                <li><Link href="/#work">Selected Builds</Link></li>
+                <li><Link href="/#labs">StackEndBox Labs</Link></li>
               </ul>
             </div>
             <div>
               <h2 className="mono mono--muted">Company</h2>
               <ul>
-                <li><Link href="/#process">Process</Link></li>
+                <li><Link href="/#process">How We Build</Link></li>
                 <li><Link href="/#start">Contact</Link></li>
               </ul>
             </div>
@@ -51,11 +45,9 @@ export function Footer() {
               <ul>
                 <li><Link href="/#start">Start a Project</Link></li>
                 {siteConfig.contactEmail && <li><a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a></li>}
-                {siteConfig.schedulingUrl && <li><a href={siteConfig.schedulingUrl} target="_blank" rel="noopener noreferrer">Schedule a Call</a></li>}
-                {siteConfig.whatsappUrl && <li><a href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">Message us</a></li>}
-                {social.map((s) => (
-                  <li key={s.label}><a href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a></li>
-                ))}
+                {siteConfig.schedulingUrl && <li><a href={siteConfig.schedulingUrl} target="_blank" rel="noopener noreferrer">Book a Call</a></li>}
+                {siteConfig.whatsappUrl && <li><a href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>}
+                {social.map((s) => <li key={s.label}><a href={s.href} target="_blank" rel="noopener noreferrer">{s.label}</a></li>)}
               </ul>
             </div>
           </nav>

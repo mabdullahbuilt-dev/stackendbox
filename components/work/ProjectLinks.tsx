@@ -6,10 +6,10 @@ import { track } from "@/lib/analytics";
 export function ProjectLinks({ slug, liveUrl, githubUrl, cta }: { slug: string; liveUrl?: string; githubUrl?: string; cta: string }) {
   if (!liveUrl && !githubUrl) return null;
   return (
-    <div className="wcard__links">
+    <div className="wk__links">
       {liveUrl && (
-        <a className="link-cta" href={liveUrl} target="_blank" rel="noopener noreferrer" onClick={() => track("project_view_click", { project: slug })}>
-          {cta}
+        <a className="link-cta" href={liveUrl} target="_blank" rel="noopener noreferrer" onClick={() => track("project_opened", { project: slug })}>
+          {cta}<ArrowUpRight aria-hidden />
         </a>
       )}
       {githubUrl && (

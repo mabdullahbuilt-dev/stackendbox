@@ -37,7 +37,7 @@ const ok = (c, m) => { console.log(c ? "PASS" : "FAIL", m); if (!c) process.exit
   await p.waitForTimeout(600);
   await p.focus(".dcar__track");
   await p.keyboard.press("ArrowRight"); await p.waitForTimeout(500);
-  ok((await p.locator('.dcard[data-active="true"]').getAttribute("aria-label")).startsWith("TablePilot"), "Carousel ArrowRight → TablePilot");
+  ok((await p.locator('.dcard[data-active="true"]').getAttribute("aria-label")).startsWith("TablePilot"), "Carousel ArrowRight to TablePilot");
   ok((await p.locator(".dcard[aria-hidden='true']").count()) >= 1 && (await p.locator('.dcard[aria-hidden="false"]').count()) === 1, "only active slide exposed to AT");
   // nav: compress and anchors
   await p.evaluate(() => window.scrollTo(0, 400)); await p.waitForTimeout(500);
@@ -62,9 +62,9 @@ const ok = (c, m) => { console.log(c ? "PASS" : "FAIL", m); if (!c) process.exit
   const pins = await p.evaluate(() => document.querySelectorAll(".pin-spacer").length);
   ok(pins === 0, `reduced-motion: no pinned scenes (pin-spacers=${pins})`);
   await p.evaluate(() => document.getElementById("manual").scrollIntoView()); await p.waitForTimeout(800);
-  ok((await p.locator(".mcollage").count()) === 1 && (await p.locator(".mphases li").count()) === 5, "reduced-motion: Manual→Automated static before/after + 5 captions");
+  ok((await p.locator(".mcollage").count()) === 1 && (await p.locator(".mphases li").count()) === 5, "reduced-motion: ManualtoAutomated static before/after + 5 captions");
   await p.evaluate(() => document.getElementById("product").scrollIntoView()); await p.waitForTimeout(800);
-  ok((await p.locator(".ipframe").count()) === 3, "reduced-motion: Idea→Product three static frames");
+  ok((await p.locator(".ipframe").count()) === 3, "reduced-motion: IdeatoProduct three static frames");
   await p.evaluate(() => document.getElementById("process").scrollIntoView()); await p.waitForTimeout(500);
   ok((await p.locator("ol.proc__static > li").count()) === 5, "reduced-motion: Process stacked list");
   ok(await p.evaluate(() => document.documentElement.dataset.motion === "reduced"), "html[data-motion=reduced]");

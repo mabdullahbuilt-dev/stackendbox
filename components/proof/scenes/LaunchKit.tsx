@@ -22,7 +22,7 @@ export function LaunchKit({ playing, reduced }: SceneProps) {
             </div>
           </div>
           <div className="dm-dash">
-            <div className="mk-row"><b>Workspace</b><Pill tone="cyan">SAMPLE</Pill></div>
+            <div className="mk-row"><b>Workspace</b><Pill tone="cyan">TEMPLATE</Pill></div>
             <div className="mk-tiles"><Tile label="MEMBERS" value="8" /><Tile label="PROJECTS" value="24" tone="cyan" /><Tile label="SEATS" value="8/10" /></div>
             <div className="mk-trow"><Avatar>M</Avatar><span>Maya Chen</span><Pill tone="blue">Owner</Pill></div>
             <div className="mk-trow"><Avatar>S</Avatar><span>Sam Ortiz</span><Pill>Editor</Pill></div>

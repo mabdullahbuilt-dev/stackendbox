@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     return json({ ok: false, error: "validation", fields }, 422);
   }
 
-  const { attempted, delivered } = await deliver(briefText(parsed.data), parsed.data.email, `New brief — ${parsed.data.needs.join(", ")} (${parsed.data.stage})`);
+  const { attempted, delivered } = await deliver(briefText(parsed.data), parsed.data.email, `New brief: ${parsed.data.needs.join(", ")} (${parsed.data.stage})`);
   if (!attempted) return json({ ok: false, error: "not_configured" }, 503);
   if (!delivered) return json({ ok: false, error: "delivery_failed" }, 502);
   return json({ ok: true });

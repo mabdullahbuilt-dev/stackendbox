@@ -4,7 +4,7 @@
  * Source: https://reactbits.dev/components/spotlight-card (github.com/DavidHDev/react-bits, src/content/Components/SpotlightCard)
  * Copied/adapted: 2026-10-03
  * Changes: rAF-throttled pointer tracking, pointer-fine gating, spotlight colour rgba(65,105,255,.14) at 320px,
- * renders an element with a 1px border-glow layer; reduced motion → static border. Styling lives in styles/sections.css (.spot).
+ * renders an element with a 1px border-glow layer; reduced motion gives a static border. Styling lives in styles/sections.css (.spot).
  */
 import { useRef, type ReactNode } from "react";
 

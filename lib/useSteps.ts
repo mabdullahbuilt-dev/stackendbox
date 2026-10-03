@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 /**
  * Tiny scripted-timeline state machine for demo scenes.
  * `times` = ms offsets at which step k begins (times[0] should be 0).
- * Not playing (inactive / offscreen) or reduced motion → the final frame.
+ * Not playing (inactive / offscreen) or reduced motion gives the final frame.
  */
 export function useSteps(times: number[], playing: boolean, reduced: boolean, hold = 2600) {
   const last = times.length - 1;

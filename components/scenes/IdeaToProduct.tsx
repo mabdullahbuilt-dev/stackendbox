@@ -13,41 +13,49 @@ import { FitBox } from "@/components/ui/FitBox";
 import { Line, Pill } from "@/components/ui/mock";
 import { IdeaStage } from "./IdeaStage";
 
-const THRESH = [0, 0.1, 0.25, 0.45, 0.55, 0.75, 0.85, 0.95];
+const THRESH = [0, 0.08, 0.18, 0.3, 0.42, 0.52, 0.62, 0.72, 0.84, 0.94];
 
 function build(gsap: typeof import("gsap").gsap, root: HTMLElement) {
   const q = gsap.utils.selector(root);
   const tl = gsap.timeline({ paused: true, defaults: { ease: "power2.inOut" } });
+  gsap.set(q(".ip-flow li"), { autoAlpha: 0, x: 24 });
   gsap.set(q(".ip-wire"), { autoAlpha: 0, scale: 0.92 });
   gsap.set(q(".ip-ui"), { clipPath: "inset(0 100% 0 0)" });
-  gsap.set(q(".ip-edge"), { autoAlpha: 0, left: 60 });
+  gsap.set(q(".ip-edge"), { autoAlpha: 0, left: 40 });
   gsap.set(q(".ip-schema"), { autoAlpha: 0, y: 0, scale: 1 });
   gsap.set(q(".ip-auth"), { autoAlpha: 0, y: -18 });
   gsap.set(q(".ip-api"), { autoAlpha: 0, x: 30 });
   gsap.set(q(".ip-bill"), { autoAlpha: 0, y: 24 });
   gsap.set(q(".ip-admin"), { autoAlpha: 0, x: -30, scale: 0.92 });
+  gsap.set(q(".ip-phone"), { autoAlpha: 0, x: 60, y: 20 });
+  gsap.set(q(".ip-deploy"), { autoAlpha: 0, y: 14 });
   gsap.set(q(".ip-live"), { autoAlpha: 0 });
   gsap.set(q(".ip-briefdone"), { autoAlpha: 0 });
-  // 01 BRIEF → compress; 02 WIREFRAME
-  tl.to(q(".ip-brief"), { scale: 0.32, x: -270, y: -150, autoAlpha: 0, duration: 0.15 }, 0.1);
-  tl.to(q("[data-lo]"), { autoAlpha: 0, scale: 0.9, duration: 0.12, stagger: 0.01 }, 0.1);
-  tl.to(q(".ip-briefdone"), { autoAlpha: 1, duration: 0.05 }, 0.22);
-  tl.to(q(".ip-wire"), { autoAlpha: 1, scale: 1, duration: 0.15 }, 0.12);
-  // 03 INTERFACE: mask wipe left → right with a 1px blue edge
-  tl.to(q(".ip-ui"), { clipPath: "inset(0 0% 0 0)", duration: 0.2, ease: "power2.inOut" }, 0.25);
-  tl.fromTo(q(".ip-edge"), { autoAlpha: 1, left: 60 }, { autoAlpha: 0, left: 700, duration: 0.2, ease: "power2.inOut", immediateRender: false }, 0.25);
-  tl.to(q(".ip-wire"), { autoAlpha: 0, duration: 0.05 }, 0.44);
-  // 04 DATA: schema slides behind
-  tl.to(q(".ip-schema"), { autoAlpha: 0.75, y: 28, scale: 0.94, duration: 0.14 }, 0.45);
-  // 05 ACCESS + API
-  tl.to(q(".ip-auth"), { autoAlpha: 1, y: 0, duration: 0.12, ease: "power3.out" }, 0.55);
-  tl.to(q(".ip-api"), { autoAlpha: 1, x: 0, duration: 0.12, ease: "power3.out" }, 0.65);
-  // 06 BILLING
-  tl.to(q(".ip-bill"), { autoAlpha: 1, y: 0, duration: 0.12, ease: "power3.out" }, 0.75);
-  // 07 ADMIN
-  tl.to(q(".ip-admin"), { autoAlpha: 1, x: 48, scale: 0.92, duration: 0.1 }, 0.85);
-  // 08 LIVE
-  tl.to(q(".ip-live"), { autoAlpha: 1, duration: 0.05 }, 0.95);
+  // 02 STRUCTURE
+  tl.to(q(".ip-flow li"), { autoAlpha: 1, x: 0, duration: 0.07, stagger: 0.016, ease: "power3.out" }, 0.08);
+  // 03 WIREFRAME: brief compresses, structure resolves into screens
+  tl.to(q(".ip-brief"), { scale: 0.32, x: -150, y: -140, autoAlpha: 0, duration: 0.1 }, 0.18);
+  tl.to(q(".ip-flow li"), { autoAlpha: 0, duration: 0.08, stagger: 0.008 }, 0.2);
+  tl.to(q(".ip-briefdone"), { autoAlpha: 1, duration: 0.04 }, 0.27);
+  tl.to(q(".ip-wire"), { autoAlpha: 1, scale: 1, duration: 0.11 }, 0.2);
+  // 04 INTERFACE: mask wipe with a thin edge
+  tl.to(q(".ip-ui"), { clipPath: "inset(0 0% 0 0)", duration: 0.12, ease: "power2.inOut" }, 0.3);
+  tl.fromTo(q(".ip-edge"), { autoAlpha: 1, left: 40 }, { autoAlpha: 0, left: 600, duration: 0.12, ease: "power2.inOut", immediateRender: false }, 0.3);
+  tl.to(q(".ip-wire"), { autoAlpha: 0, duration: 0.04 }, 0.4);
+  // 05 BACKEND
+  tl.to(q(".ip-schema"), { autoAlpha: 0.9, y: 28, scale: 0.96, duration: 0.07 }, 0.42);
+  tl.to(q(".ip-api"), { autoAlpha: 1, x: 0, duration: 0.07, ease: "power3.out" }, 0.46);
+  // 06 ACCESS
+  tl.to(q(".ip-auth"), { autoAlpha: 1, y: 0, duration: 0.08, ease: "power3.out" }, 0.52);
+  // 07 BILLING
+  tl.to(q(".ip-bill"), { autoAlpha: 1, y: 0, duration: 0.08, ease: "power3.out" }, 0.62);
+  // 08 ADMIN
+  tl.to(q(".ip-admin"), { autoAlpha: 1, x: 48, scale: 0.94, duration: 0.09 }, 0.72);
+  // 09 MOBILE
+  tl.to(q(".ip-phone"), { autoAlpha: 1, x: 0, y: 0, duration: 0.09, ease: "power3.out" }, 0.84);
+  // 10 LIVE
+  tl.to(q(".ip-deploy"), { autoAlpha: 1, y: 0, duration: 0.04 }, 0.94);
+  tl.to(q(".ip-live"), { autoAlpha: 1, duration: 0.03 }, 0.95);
   tl.to({}, { duration: 0 }, 1);
   return tl;
 }
@@ -56,15 +64,15 @@ function Stepper() {
   const { reduced } = useMotionPreference();
   const [s, setS] = useState(0);
   const frames = [
-    { cap: "01 BRIEF · 02 WIREFRAME", node: (
-      <div className="ipm"><div className="ipm-card"><b className="mono">Brief.md</b><ul><li>Customers book and pay online</li><li>Staff manage bookings</li><li>Admin sees reports</li></ul></div>
+    { cap: "01 BRIEF, 02 STRUCTURE, 03 WIREFRAME", node: (
+      <div className="ipm"><div className="ipm-card"><b className="mono">BRIEF</b><p>{copy.product.brief}</p></div>
       <div className="ipm-card ipm-wire"><i className="wb wb--h" /><i className="wb wb--t" /><i className="wb wb--big" /></div></div>) },
-    { cap: "03 INTERFACE · 04 DATA", node: (
-      <div className="ipm"><div className="ipm-card"><div className="mk-row"><b>Workspace</b><Pill tone="cyan">SAMPLE</Pill></div><div className="mk-tiles"><div className="mk-tile"><span className="mono mono--muted">MEMBERS</span><b>8</b></div><div className="mk-tile"><span className="mono mono--muted">PROJECTS</span><b>24</b></div><div className="mk-tile"><span className="mono mono--muted">SEATS</span><b>8/10</b></div></div><Line w="80%" /><Line w="60%" /></div>
-      <div className="ipm-card"><div className="mk-row"><b className="mono">SCHEMA</b><Pill tone="cyan">postgres</Pill></div><span className="mk-sub">users · plans · bookings · invoices</span></div></div>) },
-    { cap: "05 ACCESS · 06 BILLING · 07 ADMIN · 08 LIVE", node: (
-      <div className="ipm"><div className="ipm-card"><div className="mk-row"><b>Workspace</b><Pill tone="green">LIVE</Pill></div><span className="mk-sub">Production build ✓</span></div>
-      <div className="ipm-chips"><Pill tone="blue">ACCESS · ROLES</Pill><Pill tone="green">API · 200</Pill><Pill tone="green">BILLING · ACTIVE</Pill><Pill>ADMIN</Pill></div></div>) },
+    { cap: "04 INTERFACE, 05 BACKEND", node: (
+      <div className="ipm"><div className="ipm-card"><div className="mk-row"><b>Book an appointment</b><Pill tone="blue">Tuesday</Pill></div><div className="ip-book__slots"><div>{["09:00", "10:30", "13:00", "14:30"].map((t, i) => <span key={t} data-on={i === 3}>{t}</span>)}</div><u>Confirm and pay</u></div></div>
+      <div className="ipm-card"><div className="mk-row"><b className="mono">DATABASE</b><Pill tone="cyan">postgres</Pill></div><span className="mk-sub">customers · services · bookings · payments</span></div></div>) },
+    { cap: "06 ACCESS to 10 LIVE", node: (
+      <div className="ipm"><div className="ipm-card"><div className="mk-row"><b>Booking product</b><Pill tone="green">LIVE</Pill></div><span className="mk-sub">Production build passed</span></div>
+      <div className="ipm-chips"><Pill tone="blue">ACCESS</Pill><Pill tone="green">API 200</Pill><Pill tone="green">PAYMENTS</Pill><Pill>ADMIN</Pill><Pill>MOBILE</Pill></div></div>) },
   ];
   const go = (n: number) => { setS(n); track("scene_replay", { scene: "idea_to_product" }); };
   return (
@@ -126,7 +134,7 @@ export function IdeaToProduct() {
         let done = false;
         const desktop = window.matchMedia("(min-width: 1024px)").matches;
         ScrollTrigger.create({
-          trigger: pin.current, start: "top top", end: desktop ? "+=150%" : "+=120%", pin: true, anticipatePin: 1, scrub: 0.6, invalidateOnRefresh: true, animation: tl,
+          trigger: pin.current, start: "top top", end: desktop ? "+=140%" : "+=110%", pin: true, anticipatePin: 1, scrub: 0.6, invalidateOnRefresh: true, animation: tl,
           onUpdate: (self) => {
             let a = 0;
             THRESH.forEach((t, i) => { if (self.progress >= t) a = i; });
@@ -142,7 +150,7 @@ export function IdeaToProduct() {
 
   return (
     <section id="product" className="ipsec" aria-labelledby="product-title">
-      <a href="#integrations" className="skip-link">Skip product scene</a>
+      <a href="#founders" className="skip-link">Skip product scene</a>
       <div className="ipsec__pin" ref={pin}>
         <div className="container">
           <div className="ipsec__head">
@@ -152,25 +160,25 @@ export function IdeaToProduct() {
           </div>
 
           <div className="ipsec__body">
-            <ol className="iprail mono" ref={rail} data-active="7" aria-label="Stages">
+            <ol className="iprail mono" ref={rail} data-active="9" aria-label="Stages">
               {copy.product.captions.map((c) => <li key={c}>{c}</li>)}
             </ol>
             <div className="ipsec__stage" ref={stage}>
               {mode === "stepper" ? <Stepper /> : mode === "static" ? (
                 <div className="ipframes">
                   <Frozen at={0.02} label="01 BRIEF" />
-                  <Frozen at={0.46} label="03 INTERFACE · 04 DATA" />
-                  <Frozen at={1} label="08 LIVE" />
+                  <Frozen at={0.5} label="04 INTERFACE, 05 BACKEND" />
+                  <Frozen at={1} label="10 LIVE" />
                 </div>
               ) : (
                 <div aria-hidden><FitBox><IdeaStage /></FitBox></div>
               )}
-              <p className="sr-only">From a written brief, to a wireframe, to a finished interface with a database behind it, sign-in and roles, an API, billing and an admin area — then live in production. Shown with sample data.</p>
+              <p className="sr-only">From a written brief, to a wireframe, to a finished interface with a database behind it, sign-in and roles, an API, billing and an admin area, then live in production. Shown with sample data.</p>
             </div>
           </div>
 
           <div className="ipsec__foot">
-            <Link href="/#start" className="link-cta" onClick={() => { track("capability_intent_cta_click", { capability: "product", placement: "idea" }); presetBuilder("Product"); }}>{copy.product.cta}</Link>
+            <Link href="/#start" className="btn btn--primary" onClick={() => { track("mvp_cta", { placement: "idea" }); presetBuilder("SaaS / MVP"); }}>{copy.product.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
         </div>
       </div>

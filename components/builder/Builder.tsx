@@ -39,7 +39,7 @@ function Field({ id, label, error, textarea, optional, ...p }: {
   return (
     <div className="field" data-invalid={!!error}>
       <Tag id={id} placeholder=" " aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} {...(p as object)} />
-      <label htmlFor={id}>{label}{optional && <em> · optional</em>}</label>
+      <label htmlFor={id}>{label}{optional && <em> (optional)</em>}</label>
       {error && <p id={`${id}-err`} className="field__err">{error}</p>}
     </div>
   );
@@ -67,7 +67,7 @@ export function Builder() {
   const startedTrack = useCallback(() => {
     if (!started.current) {
       started.current = true;
-      track("builder_start", { prefilled: prefilled.current });
+      track("builder_started", { prefilled: prefilled.current });
     }
   }, []);
 
@@ -114,12 +114,11 @@ export function Builder() {
       return;
     }
     setErr("");
-    track("builder_step_complete", { step: step + 1, selection: step === 0 ? needs.join("|") : step === 1 ? stage : goal });
+    track("builder_step_completed", { step: step + 1, selection: step === 0 ? needs.join("|") : step === 1 ? stage : goal });
     setDir(1);
     if (step < 2) setStep(step + 1);
     else {
       setPhase("brief");
-      track("builder_complete", { needs: needs.join("|"), stage, goal });
     }
   };
   const back = () => {
@@ -147,7 +146,7 @@ export function Builder() {
     setErrors({});
     setStatus("sending");
     setServerErr("");
-    track("builder_submit", { needs: needs.join("|"), stage, goal });
+    track("builder_submitted", { needs: needs.join("|"), stage, goal });
     try {
       const res = await fetch("/api/brief", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(r.data) });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; fields?: Record<string, string> };
@@ -237,11 +236,11 @@ export function Builder() {
                         <div><dt className="mono mono--muted">GOAL</dt><dd>{brief.goal}</dd></div>
                       </dl>
                       <p className="brief__line">{lines.line2}</p>
-                      <p className="body-s mono--muted">We&apos;ll review this and come back with questions, not a pitch.</p>
+                      <p className="body-s mono--muted">We review every brief and reply with questions, not a pitch.</p>
                       <div className="brief__actions">
                         <Button size="lg" onClick={() => { setDir(1); setPhase("contact"); }}>Discuss This Project</Button>
                         {siteConfig.schedulingUrl && (
-                          <a className="btn btn--lg btn--secondary" href={siteConfig.schedulingUrl} target="_blank" rel="noopener noreferrer" onClick={() => track("schedule_call_click", { placement: "builder" })}>
+                          <a className="btn btn--lg btn--secondary" href={siteConfig.schedulingUrl} target="_blank" rel="noopener noreferrer" onClick={() => track("contact_clicked", { placement: "builder-call" })}>
                             Book a Call
                           </a>
                         )}
@@ -266,7 +265,7 @@ export function Builder() {
                       </div>
                       <Field id={`${uid}-context`} name="context" textarea rows={3} label="Anything we should know?" value={form.context} onChange={set("context")} error={errors.context} optional />
                       <fieldset className="timeline">
-                        <legend className="mono mono--muted">TIMELINE · OPTIONAL</legend>
+                        <legend className="mono mono--muted">TIMELINE (OPTIONAL)</legend>
                         <div className="timeline__opts">
                           {TIMELINES.map((t) => (
                             <label key={t} data-checked={form.timeline === t}>
@@ -281,7 +280,7 @@ export function Builder() {
                       </div>
                       <p className="body-s mono--muted">By sending this you agree to be contacted about your project.</p>
                       <Button type="submit" size="lg" loading={status === "sending"} aria-disabled={status === "sending"} onClick={status === "sending" ? (e) => e.preventDefault() : undefined}>
-                        {status === "sending" ? "Sending…" : "Send brief"}
+                        {status === "sending" ? "Sending..." : "Send brief"}
                       </Button>
                     </form>
                   )}
