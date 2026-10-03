@@ -17,6 +17,7 @@ const icons: Record<string, LucideIcon> = {
   lock: Lock, send: Send, spark: Sparkles, "check-user": UserCheck, user: UserRound, headset: Headset, receipt: Receipt,
 };
 const I = (k: string) => icons[k] ?? Building2;
+function Glyph({ k }: { k: string }) { const C = icons[k] ?? Building2; return <C aria-hidden />; }
 
 // Fixed before positions (percent of the stage). The same six tiles are reused by every story.
 const POS = [[15, 27, -3], [44, 17, 2], [74, 28, -2], [24, 71, 3], [55, 68, -3], [84, 74, 2]] as const;
@@ -84,7 +85,6 @@ export function Transformation() {
     else if (e.key === "ArrowLeft" || e.key === "ArrowUp") i = (tab - 1 + n) % n;
     if (i >= 0) { e.preventDefault(); pick(i); tabs.current[i]?.focus(); }
   };
-  const ObjIcon = I(sc.object.icon);
 
   return (
     <section id="transform" className="section tf" aria-labelledby="tf-title">
@@ -143,9 +143,9 @@ export function Transformation() {
             })}
 
             <div className="mt-origin" ref={origin} aria-hidden />
-            <span className="mt-ghost mt-ghost--1" aria-hidden><ObjIcon />{sc.object.label}<X /></span>
-            <span className="mt-ghost mt-ghost--2" aria-hidden><ObjIcon />{sc.object.label}<X /></span>
-            <div className="mt-token" ref={token} data-done={step >= N} aria-hidden><ObjIcon /><b>{sc.object.label}</b>{step >= N && <Check />}</div>
+            <span className="mt-ghost mt-ghost--1" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
+            <span className="mt-ghost mt-ghost--2" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
+            <div className="mt-token" ref={token} data-done={step >= N} aria-hidden><Glyph k={sc.object.icon} /><b>{sc.object.label}</b>{step >= N && <Check />}</div>
           </div>
           <div className="tf__foot">
             <p className="body-l" aria-live="polite">{sc.line}</p>

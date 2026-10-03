@@ -18,7 +18,7 @@ const noX = (p) => p.evaluate(() => document.documentElement.scrollWidth - docum
   ok((await p.locator("#testimonials").count()) === 0, "testimonials hidden (no verified entries)");
   ok((await p.locator("a[href='#']").count()) === 0, "no dead # links");
   const html = await p.content();
-  ok(!html.includes("—"), "no em dash in rendered HTML");
+  ok(!html.includes("\u2014"), "no em dash in rendered HTML");
   // tablists: arrow keys
   for (const [sel, label] of [["#intent [role=tablist]", "intent"], ["#transform [role=tablist]", "transform"], ["#labs [role=tablist]", "labs"], ["#process [role=tablist]", "process"]]) {
     await p.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "center" }), sel);

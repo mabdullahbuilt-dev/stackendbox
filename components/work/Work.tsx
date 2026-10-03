@@ -4,7 +4,6 @@ import { copy } from "@/content/copy";
 import { projectImage, projects, type Project } from "@/content/projects";
 import { Reveal } from "@/components/ui/Reveal";
 import { Chip } from "@/components/ui/StatusChip";
-import { ProjectComposition } from "./compositions";
 import { ProjectLinks } from "./ProjectLinks";
 
 function Card({ p, big }: { p: Project; big?: boolean }) {
@@ -13,7 +12,7 @@ function Card({ p, big }: { p: Project; big?: boolean }) {
     <article className="wk" data-big={big} aria-labelledby={`wk-${p.slug}`}>
       <div className="wk__media">
         <div className="wk__frame">
-          {img ? <Image src={img} alt={p.imageAlt} fill sizes={big ? "(max-width: 900px) 92vw, 640px" : "(max-width: 900px) 92vw, 420px"} className="wk__img" loading="lazy" /> : <div className="wk__comp" role="img" aria-label={p.imageAlt}><ProjectComposition slug={p.slug} /></div>}
+          {img ? <Image src={img} alt={p.imageAlt} fill sizes={big ? "(max-width: 900px) 92vw, 640px" : "(max-width: 900px) 92vw, 420px"} className="wk__img" loading="lazy" /> : null}
         </div>
       </div>
       <div className="wk__body">
@@ -27,8 +26,10 @@ function Card({ p, big }: { p: Project; big?: boolean }) {
 }
 
 export function Work() {
-  const feat = projects.filter((p) => p.featured);
-  const rest = projects.filter((p) => !p.featured);
+  // Only projects with a real screenshot are shown; a project without one is omitted rather than faked.
+  const shown = projects.filter((p) => projectImage(p.slug));
+  const feat = shown.filter((p) => p.featured);
+  const rest = shown.filter((p) => !p.featured);
   return (
     <section id="work" className="section work" aria-labelledby="work-title">
       <div className="container">
