@@ -3,7 +3,7 @@ import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { ButtonLink } from "@/components/ui/Button";
 
-export const metadata = { title: "Page not found — StackEndBox", robots: { index: false } };
+export const metadata = { title: "Page not found | StackEndBox", robots: { index: false } };
 
 export default function NotFound() {
   return (

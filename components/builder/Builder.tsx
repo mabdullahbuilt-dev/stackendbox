@@ -11,7 +11,9 @@ import { intentNeed, readIntent } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
+import { CalButton } from "@/components/ui/CalButton";
 import { BuilderStage } from "./BuilderStage";
+import { Turnstile } from "./Turnstile";
 
 type Phase = "q" | "brief" | "contact" | "done";
 const QUESTIONS = [
@@ -39,7 +41,7 @@ function Field({ id, label, error, textarea, optional, ...p }: {
   return (
     <div className="field" data-invalid={!!error}>
       <Tag id={id} placeholder=" " aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} {...(p as object)} />
-      <label htmlFor={id}>{label}{optional && <em> · optional</em>}</label>
+      <label htmlFor={id}>{label}{optional && <em> (optional)</em>}</label>
       {error && <p id={`${id}-err`} className="field__err">{error}</p>}
     </div>
   );
@@ -59,6 +61,8 @@ export function Builder() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
   const [serverErr, setServerErr] = useState("");
+  const [turnstile, setTurnstile] = useState("");
+  const onToken = useCallback((t: string) => setTurnstile(t), []);
   const started = useRef(false);
   const prefilled = useRef(false);
   const focusRef = useRef<HTMLElement>(null);
@@ -67,7 +71,7 @@ export function Builder() {
   const startedTrack = useCallback(() => {
     if (!started.current) {
       started.current = true;
-      track("builder_start", { prefilled: prefilled.current });
+      track("builder_started", { prefilled: prefilled.current });
     }
   }, []);
 
@@ -79,11 +83,12 @@ export function Builder() {
       setNeeds((n) => (n.length ? n : [intentNeed[i]]));
     }
     const on = (e: Event) => {
-      const need = (e as CustomEvent<string>).detail;
+      const { need, stage: st } = (e as CustomEvent<{ need: string; stage?: string }>).detail;
       prefilled.current = true;
       setPhase("q");
       setStep(0);
       setNeeds((n) => (n.includes(need) ? n : [...n, need].slice(-3)));
+      if (st) setStage(st);
     };
     window.addEventListener("seb:builder-preset", on);
     return () => window.removeEventListener("seb:builder-preset", on);
@@ -114,12 +119,11 @@ export function Builder() {
       return;
     }
     setErr("");
-    track("builder_step_complete", { step: step + 1, selection: step === 0 ? needs.join("|") : step === 1 ? stage : goal });
+    track("builder_step_completed", { step: step + 1, selection: step === 0 ? needs.join("|") : step === 1 ? stage : goal });
     setDir(1);
     if (step < 2) setStep(step + 1);
     else {
       setPhase("brief");
-      track("builder_complete", { needs: needs.join("|"), stage, goal });
     }
   };
   const back = () => {
@@ -132,7 +136,12 @@ export function Builder() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { needs, stage, goal, ...form, timeline: form.timeline || undefined };
+    const payload = {
+      needs, stage, goal, ...form, timeline: form.timeline || undefined,
+      source: `${location.pathname}${location.hash}`.slice(0, 200),
+      referrer: document.referrer ? new URL(document.referrer).origin : "",
+      turnstileToken: turnstile,
+    };
     // Validation library is loaded on demand so it never weighs on the initial page load.
     const { briefSchema } = await import("@/lib/briefSchema");
     const r = briefSchema.safeParse(payload);
@@ -147,7 +156,7 @@ export function Builder() {
     setErrors({});
     setStatus("sending");
     setServerErr("");
-    track("builder_submit", { needs: needs.join("|"), stage, goal });
+    track("builder_submitted", { needs: needs.join("|"), stage, goal });
     try {
       const res = await fetch("/api/brief", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(r.data) });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; fields?: Record<string, string> };
@@ -160,7 +169,9 @@ export function Builder() {
       }
       if (body.fields) setErrors(body.fields);
       setServerErr(
-        body.error === "rate_limited"
+        body.error === "verification_failed"
+          ? "We couldn't verify this request. Please refresh the check and try again."
+          : body.error === "rate_limited"
           ? "Too many attempts. Please wait a few minutes and try again."
           : body.error === "validation"
             ? "Please check the highlighted fields."
@@ -237,14 +248,10 @@ export function Builder() {
                         <div><dt className="mono mono--muted">GOAL</dt><dd>{brief.goal}</dd></div>
                       </dl>
                       <p className="brief__line">{lines.line2}</p>
-                      <p className="body-s mono--muted">We&apos;ll review this and come back with questions, not a pitch.</p>
+                      <p className="body-s mono--muted">We review every brief and reply with questions, not a pitch.</p>
                       <div className="brief__actions">
                         <Button size="lg" onClick={() => { setDir(1); setPhase("contact"); }}>Discuss This Project</Button>
-                        {siteConfig.schedulingUrl && (
-                          <a className="btn btn--lg btn--secondary" href={siteConfig.schedulingUrl} target="_blank" rel="noopener noreferrer" onClick={() => track("schedule_call_click", { placement: "builder" })}>
-                            Book a Call
-                          </a>
-                        )}
+                        <CalButton placement="builder-brief" />
                       </div>
                     </div>
                   )}
@@ -266,7 +273,7 @@ export function Builder() {
                       </div>
                       <Field id={`${uid}-context`} name="context" textarea rows={3} label="Anything we should know?" value={form.context} onChange={set("context")} error={errors.context} optional />
                       <fieldset className="timeline">
-                        <legend className="mono mono--muted">TIMELINE · OPTIONAL</legend>
+                        <legend className="mono mono--muted">TIMELINE (OPTIONAL)</legend>
                         <div className="timeline__opts">
                           {TIMELINES.map((t) => (
                             <label key={t} data-checked={form.timeline === t}>
@@ -279,9 +286,10 @@ export function Builder() {
                       <div className="hp" aria-hidden>
                         <label>Website<input tabIndex={-1} autoComplete="off" name="website" value={form.website} onChange={set("website")} /></label>
                       </div>
+                      <Turnstile onToken={onToken} />
                       <p className="body-s mono--muted">By sending this you agree to be contacted about your project.</p>
                       <Button type="submit" size="lg" loading={status === "sending"} aria-disabled={status === "sending"} onClick={status === "sending" ? (e) => e.preventDefault() : undefined}>
-                        {status === "sending" ? "Sending…" : "Send brief"}
+                        {status === "sending" ? "Sending..." : "Send brief"}
                       </Button>
                     </form>
                   )}
@@ -290,11 +298,15 @@ export function Builder() {
                     <div className="done" role="status">
                       <span className="done__tick" aria-hidden><Check /></span>
                       <h3 ref={focusRef as React.RefObject<HTMLHeadingElement>} tabIndex={-1} className="builder__q">Brief received.</h3>
-                      <p className="body-l">We&apos;ll review the system you described and reply using the contact details you provided.</p>
-                      <p className="body-s">{lines.line1}</p>
-                      {siteConfig.whatsappUrl && (
-                        <a className="link-cta" href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">Message us</a>
-                      )}
+                      <p className="body-l">We have the context. Choose what you want to do next.</p>
+                      <div className="done__sub"><span className="mono mono--muted">SUBMITTED</span><b>{brief.needs.join(" + ")}</b></div>
+                      <div className="brief__actions">
+                        <CalButton placement="builder-done" className="btn btn--lg btn--primary" />
+                        <a className="btn btn--lg btn--secondary" href="/">Back to StackEndBox</a>
+                        {siteConfig.whatsappUrl && (
+                          <a className="link-cta" href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">Message us</a>
+                        )}
+                      </div>
                     </div>
                   )}
                 </m.div>

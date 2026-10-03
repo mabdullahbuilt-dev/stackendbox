@@ -24,15 +24,24 @@ function lowEnd() {
   return n.connection?.saveData === true || (n.deviceMemory !== undefined && n.deviceMemory <= 4);
 }
 
-const mapExplode = (p: number) => {
-  if (p < 0.12) return 0;
-  if (p < 0.55) {
-    const t = (p - 0.12) / 0.43;
-    return t * t * (3 - 2 * t);
-  }
-  if (p < 0.8) return 1;
-  return 1 - (p - 0.8) / 0.2;
-};
+const ss = (t: number) => { const x = Math.min(1, Math.max(0, t)); return x * x * (3 - 2 * x); };
+const seg = (p: number, a: number, b: number) => ss((p - a) / (b - a));
+
+/** Scroll progress p (0..1) to the 3D state. Every phase stays inside the hero stage. */
+function stateAt(p: number, n: number) {
+  const open = seg(p, 0.08, 0.25) * (1 - seg(p, 0.7, 0.85));
+  const zoom = seg(p, 0.04, 0.2) * (1 - seg(p, 0.7, 0.88));
+  const t = Math.min(0.999, Math.max(0, (p - 0.25) / 0.45));
+  const inAct = p >= 0.25 && p < 0.7;
+  const fromBottom = Math.floor(t * n);
+  return {
+    explode: open,
+    zoom,
+    active: inAct ? n - 1 - fromBottom : -1,
+    pulse: inAct ? (t * 2.2) % 1 : 0,
+    settle: seg(p, 0.7, 0.9),
+  };
+}
 
 export function HeroVisual() {
   const { reduced } = useMotionPreference();
@@ -40,7 +49,8 @@ export function HeroVisual() {
   const wrap = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
-  const bus = useRef<HeroBus>({ explode: 0, px: 0, py: 0 });
+  const capRef = useRef<HTMLDivElement>(null);
+  const bus = useRef<HeroBus>({ explode: 0, zoom: 0, active: -1, pulse: 0, settle: 0, px: 0, py: 0 });
   const [Obj, setObj] = useState<ComponentType<ObjProps> | null>(null);
   const [ready, setReady] = useState(false);
   const [degraded, setDegraded] = useState(false);
@@ -55,14 +65,25 @@ export function HeroVisual() {
   // Load the 3D chunk after first paint when the device qualifies.
   useEffect(() => {
     if (reduced || degraded || Obj) return;
-    if (lowEnd() || !webglOK()) return;
+    if (lowEnd() || !webglOK() || window.matchMedia("(max-width: 767px)").matches) return; // phones keep the poster
     let cancelled = false;
     const load = () => import("./HeroObject").then((m) => !cancelled && setObj(() => m.default));
-    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-    const id = ric ? ric(load, { timeout: 1500 }) : window.setTimeout(load, 600);
+    // Mount the 3D scene on first real interaction (or after a long idle). Keeps the main thread free during load.
+    const events = ["pointerdown", "pointermove", "wheel", "keydown", "touchstart", "scroll"] as const;
+    let started = false;
+    const go = () => {
+      if (started) return;
+      started = true;
+      off();
+      const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+      if (ric) ric(load, { timeout: 800 }); else window.setTimeout(load, 200);
+    };
+    const off = () => { events.forEach((e) => window.removeEventListener(e, go)); clearTimeout(fallback); };
+    events.forEach((e) => window.addEventListener(e, go, { passive: true, once: true }));
+    const fallback = window.setTimeout(go, 9000);
     return () => {
       cancelled = true;
-      if (!ric) clearTimeout(id);
+      off();
     };
   }, [reduced, degraded, Obj]);
 
@@ -77,7 +98,7 @@ export function HeroVisual() {
     return () => { a.disconnect(); b.disconnect(); };
   }, []);
 
-  // Scroll-scrubbed explode / recompose. GSAP writes into refs only.
+  // Scroll-scrubbed choreography. GSAP only writes into refs and the DOM, never React state.
   useEffect(() => {
     if (reduced) return;
     const track_ = wrap.current?.closest<HTMLElement>("[data-hero-track]");
@@ -85,10 +106,11 @@ export function HeroVisual() {
     let kill: (() => void) | undefined;
     let cancelled = false;
     (async () => {
-      const { gsap, ScrollTrigger } = await loadGsap();
+      const { ScrollTrigger } = await loadGsap();
       if (cancelled) return;
-      const amp = window.matchMedia("(max-width: 767px)").matches ? 0.6 : 1;
-      const copyEl = track_.querySelector<HTMLElement>("[data-hero-copy]");
+      const n = () => (window.matchMedia("(max-width: 767px)").matches ? heroModulesMobile.length : heroModules.length);
+      const mods = () => (window.matchMedia("(max-width: 767px)").matches ? heroModulesMobile : heroModules);
+      let lastActive = -2;
       const st = ScrollTrigger.create({
         trigger: track_,
         start: "top top",
@@ -96,23 +118,17 @@ export function HeroVisual() {
         scrub: 0.6,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
-          const p = self.progress;
-          const e = mapExplode(p) * amp;
-          bus.current.explode = e;
+          const s = stateAt(self.progress, n());
+          Object.assign(bus.current, s);
           bus.current.invalidate?.();
-          const fade = p > 0.8 ? 1 - (p - 0.8) / 0.2 : 1;
-          if (stage.current) {
-            stage.current.style.opacity = String(Math.max(0, fade));
-            stage.current.style.transform = `translate3d(0, ${(-6 * (1 - fade)).toFixed(2)}%, 0)`;
+          if (s.active !== lastActive) {
+            lastActive = s.active;
+            const m = s.active >= 0 ? mods()[s.active] : null;
+            if (capRef.current) {
+              capRef.current.dataset.on = m ? "true" : "false";
+              if (m) capRef.current.innerHTML = `<strong>${m.name}</strong><span>${m.sub}</span>`;
+            }
           }
-          if (copyEl) {
-            const q = p < 0.55 ? 0 : Math.min(1, (p - 0.55) / 0.25);
-            copyEl.style.opacity = String(1 - 0.65 * q);
-            copyEl.style.transform = `translate3d(0, ${(-24 * q).toFixed(1)}px, 0)`;
-          }
-          list.current?.querySelectorAll<HTMLElement>("li").forEach((li, i, all) => {
-            li.style.setProperty("--o", String(Math.min(1, Math.max(0, mapExplode(p) * (all.length + 1) - i))));
-          });
         },
       });
       kill = () => st.kill();
@@ -187,6 +203,7 @@ export function HeroVisual() {
           </div>
         )}
       </div>
+      <div ref={capRef} className="hero__cap" data-on="false" aria-hidden />
       <ul
         ref={list}
         className={`module-list ${staticList ? "module-list--static" : ""}`}

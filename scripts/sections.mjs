@@ -12,7 +12,7 @@ p.on("pageerror", (e) => errs.push("pageerror: " + e.message));
 await p.goto(url, { waitUntil: "networkidle" });
 await p.addStyleTag({ content: "html{scroll-behavior:auto!important}" });
 await p.waitForTimeout(1500);
-const ids = ["explorer", "proof", "manual", "bridge", "product", "integrations", "work", "depth", "breadth", "start", "process", "trust", "final"];
+const ids = ["hero","services","intent","transform","labs","product","rescue","ai","integrations","work","depth","process","delivery","start","final"];
 // slow scroll through page first so observers fire
 const total = await p.evaluate(() => document.documentElement.scrollHeight);
 for (let y = 0; y < total; y += 600) { await p.evaluate((y) => window.scrollTo(0, y), y); await p.waitForTimeout(60); }
@@ -20,7 +20,7 @@ await p.evaluate(() => window.scrollTo(0, 0));
 await p.waitForTimeout(500);
 for (const id of ids) {
   await p.evaluate((id) => { const e = document.getElementById(id); if (e) { const r = e.getBoundingClientRect(); window.scrollTo(0, window.scrollY + r.top); } }, id);
-  await p.waitForTimeout(1800);
+  await p.waitForTimeout(2600);
   await p.screenshot({ path: `${out}/${id}.png` });
 }
 await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));

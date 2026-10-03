@@ -25,7 +25,7 @@ export function OpsBoard({ playing, reduced }: SceneProps) {
         </div>
       </SceneWindow>
       <Dock on={s >= 2} className="dm-a">
-        <div className="mk-mini mk-mini--col"><span className="mono mono--muted">ROUTING RULE</span><Pill tone="blue">category = vendor → Finance</Pill></div>
+        <div className="mk-mini mk-mini--col"><span className="mono mono--muted">ROUTING RULE</span><Pill tone="blue">category = vendor to Finance</Pill></div>
       </Dock>
       <Dock on={s >= 3} className="dm-b">
         <div className="mk-mini mk-mini--col"><span className="mono mono--muted">APPROVAL</span><div className="mk-row"><b>Vendor onboarding</b><Pill tone={approved ? "green" : "amber"}>{approved ? "Approved" : "Pending"}</Pill></div></div>

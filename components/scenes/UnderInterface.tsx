@@ -1,4 +1,5 @@
 "use client";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { copy } from "@/content/copy";
@@ -40,22 +41,20 @@ export function UnderInterface() {
         gsap.set(wrap.current!, { "--rx": 0, "--rz": 0, "--sc": 1 });
         gsap.set(labels, { opacity: 0, x: -12 });
         const tl = gsap.timeline({ paused: true, defaults: { ease: "power2.inOut" } });
-        tl.to(wrap.current!, { "--rx": 58, "--rz": -38, "--sc": 0.7, duration: 0.45 }, 0.1);
-        tl.to(pls, { "--g": gapFinal, duration: 0.4, stagger: 0.035 }, 0.1);
-        tl.to(labels, { opacity: 1, x: 0, duration: 0.2, stagger: 0.035, ease: "power3.out" }, 0.35);
-        pls.forEach((p, i) => {
-          tl.to(p, { "--scan": 1, duration: 0.03, yoyo: true, repeat: 1, ease: "none" }, 0.76 + i * (0.12 / pls.length));
-        });
+        tl.to(wrap.current!, { "--rx": 58, "--rz": -38, "--sc": 0.7, duration: 0.3 }, 0.08);
+        tl.to(pls, { "--g": gapFinal, duration: 0.3, stagger: 0.02 }, 0.08);
+        tl.to(labels, { opacity: 1, x: 0, duration: 0.15, stagger: 0.02, ease: "power3.out" }, 0.2);
         tl.to(labels, { opacity: 0, x: -12, duration: 0.08 }, 0.88);
         tl.to(pls, { "--g": 0, duration: 0.12 }, 0.88);
         tl.to(wrap.current!, { "--rx": 0, "--rz": 0, "--sc": 1, duration: 0.12 }, 0.88);
         tl.to({}, { duration: 0 }, 1);
         let done = false;
+        let lastK = -2;
         const mobileNow = window.matchMedia("(max-width: 599px)").matches;
         ScrollTrigger.create({
           trigger: pin.current,
           start: mobileNow ? "top 70%" : "top top",
-          end: mobileNow ? "bottom 40%" : window.matchMedia("(min-width: 1024px)").matches ? "+=160%" : "+=130%",
+          end: mobileNow ? "bottom 40%" : window.matchMedia("(min-width: 1024px)").matches ? "+=110%" : "+=100%",
           pin: !mobileNow,
           anticipatePin: 1,
           scrub: 0.6,
@@ -63,6 +62,14 @@ export function UnderInterface() {
           animation: tl,
           onUpdate: (self) => {
             if (!done && self.progress >= 0.9) { done = true; track("scene_complete", { scene: "under_interface" }); }
+            // the layer being "inspected" brightens, and its description moves to the side panel
+            const p = self.progress;
+            const k = p > 0.34 && p < 0.86 ? Math.min(pls.length - 1, Math.floor(((p - 0.34) / 0.5) * pls.length)) : -1;
+            if (k !== lastK) {
+              lastK = k;
+              pls.forEach((el, i) => { el.dataset.on = String(i === k); });
+              labels.forEach((el, i) => { el.dataset.on = String(i === k); });
+            }
           },
         });
       }, wrap.current!);
@@ -93,7 +100,7 @@ export function UnderInterface() {
   const staticMode = reduced;
   return (
     <section id="depth" className="ui section--alt" aria-labelledby="depth-title">
-      <a href="#breadth" className="skip-link">Skip engineering depth scene</a>
+      <a href="#process" className="skip-link">Skip engineering depth scene</a>
       <div className="ui__pin" ref={pin}>
         <div className="container">
           <div className="ui__head">
@@ -106,7 +113,7 @@ export function UnderInterface() {
 
           <div className="ui__body" ref={wrap} data-static={staticMode} style={{ ["--n" as string]: n, ["--gf" as string]: `${gapFinal}px` }}>
             <div className="ui__stage" ref={stack}>
-              <div className="ui__persp" role="img" aria-label="Nine layers of an application, from interface to deployment">
+              <div className="ui__persp" role="img" aria-label="Layers of an application, from interface to deployment">
                 <div className="ui__tilt">
                   {items.map((p, i) => (
                     <div
@@ -135,7 +142,7 @@ export function UnderInterface() {
           </div>
 
           <div className="ui__foot">
-            <Link href="/#start" className="link-cta" onClick={() => { track("capability_intent_cta_click", { capability: "product", placement: "depth" }); presetBuilder("Product"); }}>{copy.depth.cta}</Link>
+            <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "depth" }); presetBuilder("Web Application"); }}>{copy.depth.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
           {mobile && null}
         </div>

@@ -1,111 +1,50 @@
 "use client";
-import { BarChart3, Calendar, Cpu, CreditCard, Database, Mail, MessageSquare, RotateCcw, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, RotateCcw, Workflow } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
+import { stack, systems } from "@/content/integrations";
 import { track } from "@/lib/analytics";
+import { useInView } from "@/lib/hooks";
 import { presetBuilder } from "@/lib/intent";
-import { loadGsap } from "@/lib/gsap";
 import { useMotionPreference } from "@/lib/useMotionPreference";
+import { BrandIcon } from "@/components/ui/BrandIcon";
 import { Reveal } from "@/components/ui/Reveal";
-import { Pill } from "@/components/ui/mock";
 
-const TILES: { icon: LucideIcon; label: string; cap: string; s: [number, number, number] }[] = [
-  { icon: CreditCard, label: "PAYMENTS", cap: "payments · webhooks · reconciliation", s: [-34, -16, -3] },
-  { icon: Users, label: "CRM", cap: "contacts · pipeline · sync", s: [-26, 40, 4] },
-  { icon: Calendar, label: "CALENDAR", cap: "availability · bookings · reminders", s: [6, -44, -2] },
-  { icon: Mail, label: "EMAIL", cap: "transactional · sequences", s: [34, -20, 3] },
-  { icon: MessageSquare, label: "MESSAGING", cap: "chat · notifications · bots", s: [-36, 4, 2] },
-  { icon: Database, label: "DATABASE", cap: "schemas · sync · backups", s: [30, 42, -4] },
-  { icon: BarChart3, label: "ANALYTICS", cap: "events · dashboards", s: [38, 6, -2] },
-  { icon: Cpu, label: "AI", cap: "models · agents · retrieval", s: [4, 46, 3] },
-];
+const N = systems.length;
+const pt = (i: number, r: number) => {
+  const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+  return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+};
 
 export function Integrations() {
   const { reduced } = useMotionPreference();
   const root = useRef<HTMLDivElement>(null);
-  const tlRef = useRef<gsap.core.Timeline | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const [done, setDone] = useState(false);
-  const [announce, setAnnounce] = useState("");
+  const inView = useInView(root, "-20% 0px -20% 0px");
+  const [docked, setDocked] = useState(true);
+  const [run, setRun] = useState(0);
+  const [sel, setSel] = useState<number | null>(null);
   const played = useRef(false);
 
-  useEffect(() => setMounted(true), []);
-
   useEffect(() => {
-    const el = root.current;
-    if (!mounted || reduced || !el) return;
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-    (async () => {
-      const { gsap } = await loadGsap();
-      if (cancelled) return;
-      const compact = window.matchMedia("(max-width: 599px)").matches;
-      const ctx = gsap.context(() => {
-        const q = gsap.utils.selector(el);
-        const tiles = q<HTMLElement>(".ix-tile");
-        const slots = q<HTMLElement>(".ix-slot");
-        const rows = q<HTMLElement>(".ix-ev");
-        gsap.set(tiles, { x: 0, y: 0, rotation: 0 });
-        const panel = el.getBoundingClientRect();
-        tiles.forEach((t, i) => {
-          const r = slots[i].getBoundingClientRect();
-          const s = TILES[i].s;
-          const cx = r.left + r.width / 2 - panel.left;
-          const cy = r.top + r.height / 2 - panel.top;
-          const tx = panel.width / 2 + (s[0] / 100) * panel.width;
-          const ty = panel.height / 2 + (s[1] / 100) * panel.height;
-          gsap.set(t, { x: tx - cx, y: ty - cy, rotation: s[2], scale: 1.04 });
-        });
-        gsap.set(q(".ix-chrome"), { opacity: 0 });
-        gsap.set(rows, { opacity: 0, y: 14 });
-        gsap.set(q(".ix-dot"), { backgroundColor: "#FFB454" });
-        gsap.set(q(".ix-state"), { opacity: 0 });
-        gsap.set(q(".ix-slot"), { borderStyle: "dashed" });
-
-        const tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
-        tlRef.current = tl;
-        const D = compact ? 1.4 : 2.2;
-        const u = D / 100;
-        tl.to(tiles, { x: 0, y: 0, rotation: 0, scale: 1, duration: 40 * u, stagger: 4 * u, ease: "power2.inOut" }, 15 * u);
-        tl.set(q(".ix-slot"), { borderStyle: "solid" }, 56 * u);
-        tl.to(q(".ix-chrome"), { opacity: 1, duration: 8 * u }, 55 * u);
-        rows.forEach((row, i) => {
-          const at = (65 + i * 5) * u;
-          tl.to(row, { opacity: 1, y: 0, duration: 6 * u }, at);
-          tl.to(row.querySelector(".ix-dot"), { backgroundColor: "#38D39F", duration: 4 * u, ease: "none" }, at + 7 * u);
-          tl.to(row.querySelector(".ix-pill-a"), { opacity: 0, duration: 2 * u }, at + 7 * u);
-          tl.to(row.querySelector(".ix-pill-b"), { opacity: 1, duration: 2 * u }, at + 8 * u);
-        });
-        tl.to(q(".ix-state"), { opacity: 1, duration: 4 * u }, 95 * u);
-        tl.call(() => { setDone(true); if (played.current) setAnnounce("All connected."); }, undefined, D);
-        tl.to({}, { duration: 0 }, D);
-
-        const io = new IntersectionObserver(([e]) => {
-          if (e.isIntersecting && !played.current) {
-            played.current = true;
-            tl.play(0);
-            track("scene_complete", { scene: "integrations" });
-          }
-        }, { threshold: 0.5 });
-        io.observe(el);
-        cleanup = () => io.disconnect();
-      }, el);
-      const prev = cleanup;
-      cleanup = () => { prev?.(); tlRef.current = null; ctx.revert(); };
-    })();
-    return () => { cancelled = true; cleanup?.(); };
-  }, [mounted, reduced]);
-
-  const replay = useCallback(() => {
+    if (reduced) return;
+    if (!played.current) setDocked(false);
+  }, [reduced]);
+  useEffect(() => {
+    if (reduced || !inView || played.current) return;
     played.current = true;
-    setDone(false);
-    setAnnounce("Replaying connection sequence.");
-    track("scene_replay", { scene: "integrations" });
-    tlRef.current?.restart();
-  }, []);
+    const t = setTimeout(() => { setDocked(true); track("scene_complete", { scene: "integrations" }); }, 500);
+    return () => clearTimeout(t);
+  }, [inView, reduced]);
 
-  const staticFinal = !mounted || reduced;
+  const replay = () => {
+    played.current = true;
+    setDocked(false);
+    setRun((r) => r + 1);
+    track("scene_replay", { scene: "integrations" });
+    setTimeout(() => setDocked(true), 600);
+  };
+  const pick = (i: number) => { setSel(i); track("integration_selected", { system: systems[i].key }); };
 
   return (
     <section id="integrations" className="section ix-sec" aria-labelledby="int-title">
@@ -116,44 +55,51 @@ export function Integrations() {
           <p className="body-l">{copy.integrations.support}</p>
         </Reveal>
 
-        <div className="ix" ref={root} data-static={staticFinal} aria-hidden>
-          <div className="ix-hub">
-            <div className="ix-chrome" />
-            <div className="ix-hub__bar mono"><span>ONE SYSTEM</span><span className="ix-state"><Pill tone="green">ALL CONNECTED</Pill></span></div>
-            <div className="ix-hub__body">
-              <div className="ix-slots">
-                {TILES.map((t) => (
-                  <div key={t.label} className="ix-slot">
-                    <div className="ix-tile">
-                      <t.icon />
-                      <span className="mono">{t.label}</span>
-                      <span className="ix-tile__cap mono">{t.cap}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <ul className="ix-events">
-                {copy.integrations.events.map((e) => (
-                  <li key={e} className="ix-ev">
-                    <i className="ix-dot" />
-                    <span className="mono">{e}</span>
-                    <span className="ix-pills"><span className="ix-pill-a"><Pill tone="amber">PENDING</Pill></span><span className="ix-pill-b"><Pill tone="green">VERIFIED</Pill></span></span>
-                  </li>
-                ))}
-              </ul>
+        <div className="ixw" ref={root}>
+          <div className="ixw__stage" data-docked={docked} key={run}>
+            <div className="ixw__hub" aria-hidden><Workflow /><span>Your system</span></div>
+            {systems.map((s, i) => {
+              const o = pt(i, 41);
+              const n = pt(i, 28);
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  className="ixw__node"
+                  data-sel={sel === i}
+                  aria-label={`${s.label}: ${s.action}`}
+                  aria-pressed={sel === i}
+                  style={{ ["--i" as string]: i, ["--ox" as string]: o.x, ["--oy" as string]: o.y, ["--nx" as string]: n.x, ["--ny" as string]: n.y }}
+                  onPointerEnter={(e) => { if (e.pointerType === "mouse") setSel(i); }}
+                  onFocus={() => pick(i)}
+                  onClick={() => pick(i)}
+                >
+                  <BrandIcon name={s.key} size={26} />
+                  <span className="ixw__tip">{s.action}</span>
+                  <i className="ixw__pulse" aria-hidden />
+                </button>
+              );
+            })}
+          </div>
+          <div className="ixw__side">
+            <p className="mono mono--muted">{copy.integrations.label.toUpperCase()}</p>
+            <ul className="ixw__events" aria-label="Example automated events">
+              {copy.integrations.events.map((e, i) => (
+                <li key={e} data-on={docked} style={{ ["--i" as string]: i }}><Check aria-hidden /><span>{e}</span></li>
+              ))}
+            </ul>
+            <p className="ixw__live" aria-live="polite">{sel !== null ? <><b>{systems[sel].label}</b>{systems[sel].action}</> : "Select a system to see an example action."}</p>
+            <div className="ixw__foot">
+              <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "integrations" }); presetBuilder("API / Integration"); }}>{copy.integrations.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+              {!reduced && <button type="button" className="chip chip--mono ix-replay" onClick={replay}><RotateCcw aria-hidden /> Replay</button>}
             </div>
           </div>
         </div>
-        <ul className="sr-only">{copy.integrations.events.map((e) => <li key={e}>{e}</li>)}</ul>
-        <p className="sr-only" role="status" aria-live="polite">{announce}</p>
-
-        <div className="ix-foot">
-          <Link href="/#start" className="link-cta" onClick={() => { track("capability_intent_cta_click", { capability: "integrations", placement: "integrations" }); presetBuilder("Integration"); }}>{copy.integrations.cta}</Link>
-          {!staticFinal && (
-            <button type="button" className="chip chip--mono ix-replay" onClick={replay} disabled={!done && played.current}>
-              <RotateCcw aria-hidden /> Replay
-            </button>
-          )}
+        <div className="ixw__tech">
+          <p className="mono mono--muted">{copy.integrations.techLabel}</p>
+          <ul aria-label="Technology we build with">
+            {stack.map((t) => <li key={t.key}><BrandIcon name={t.key} size={18} />{t.label}</li>)}
+          </ul>
         </div>
       </div>
     </section>

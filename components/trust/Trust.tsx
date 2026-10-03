@@ -1,52 +1,37 @@
-import Link from "next/link";
+import { CircleCheck, FlaskConical, Map, Plug, Server, Smartphone, type LucideIcon } from "lucide-react";
 import { copy } from "@/content/copy";
-import { demos } from "@/content/demos";
 import { Reveal } from "@/components/ui/Reveal";
-import { Chip } from "@/components/ui/StatusChip";
 import { SpotlightCard } from "@/components/vendor/SpotlightCard";
-import { LogoWall, MetricStrip, TestimonialSlot } from "./slots";
+
+const cards: { id: string; icon: LucideIcon; title: string; text: string }[] = [
+  { id: "scope", icon: Map, title: "Clear scope", text: "We map the system before the build starts." },
+  { id: "progress", icon: CircleCheck, title: "Working progress", text: "You see functional progress during development." },
+  { id: "responsive", icon: Smartphone, title: "Responsive by default", text: "Desktop, tablet and mobile are planned together." },
+  { id: "integ", icon: Plug, title: "Integrations included", text: "We account for the external systems the product depends on." },
+  { id: "verify", icon: FlaskConical, title: "Verification", text: "Critical workflows and edge cases are tested before release." },
+  { id: "deploy", icon: Server, title: "Deployment support", text: "We help move the build into a live environment." },
+];
 
 export function Trust() {
   return (
-    <section id="trust" className="section section--alt trust" aria-labelledby="trust-title">
+    <section id="delivery" className="section section--alt trust" aria-labelledby="trust-title">
       <div className="container">
         <Reveal className="sec-head">
           <p className="eyebrow">{copy.trust.eyebrow}</p>
           <h2 id="trust-title" className="h2">{copy.trust.title}</h2>
           <p className="body-l">{copy.trust.support}</p>
         </Reveal>
-
-        <div className="trust__grid">
-          <Reveal className="trust__a">
-            <SpotlightCard className="tcard">
-              <p className="mono mono--muted">LIVE DEMO SYSTEMS</p>
-              <h3 className="h3">Six demo systems you can explore right now.</h3>
-              <div className="tcard__chips">{demos.map((d) => <Chip key={d.id} mono>{d.name}</Chip>)}</div>
-              <Link href="/#proof" className="link-cta">See the systems running →</Link>
-            </SpotlightCard>
-          </Reveal>
-          <Reveal className="trust__b" delay={0.06}>
-            <SpotlightCard className="tcard">
-              <p className="mono mono--muted">ENGINEERING WORK</p>
-              <h3 className="h3">Products with real architecture behind them.</h3>
-              <Link href="/#work" className="link-cta">Selected work →</Link>
-            </SpotlightCard>
-          </Reveal>
-          <Reveal className="trust__c" delay={0.12}>
-            <SpotlightCard className="tcard tcard--wide">
-              <div>
-                <p className="mono mono--muted">TECHNICAL DEPTH</p>
-                <h3 className="h3">Auth, APIs, data, tests and deployment — all in scope.</h3>
-              </div>
-              <div className="tcard__chips">{["Auth", "APIs", "Data", "AI", "Integrations", "Tests", "Deployment"].map((c) => <Chip key={c} mono>{c}</Chip>)}</div>
-              <Link href="/#depth" className="link-cta">What&apos;s underneath →</Link>
-            </SpotlightCard>
-          </Reveal>
+        <div className="trust__bento">
+          {cards.map((c, i) => (
+            <Reveal key={c.id} className="tb" delay={Math.min(i, 3) * 0.05}>
+              <SpotlightCard className="tcard2">
+                <span className="tcard2__ic"><c.icon aria-hidden /></span>
+                <h3 className="tcard2__t">{c.title}</h3>
+                <p className="body-s">{c.text}</p>
+              </SpotlightCard>
+            </Reveal>
+          ))}
         </div>
-
-        <TestimonialSlot />
-        <LogoWall />
-        <MetricStrip />
       </div>
     </section>
   );

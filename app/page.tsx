@@ -1,20 +1,21 @@
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { Hero } from "@/components/hero/Hero";
-import { Explorer } from "@/components/explorer/Explorer";
-import { ProofStage } from "@/components/proof/ProofStage";
-import { ManualToAutomated } from "@/components/scenes/ManualToAutomated";
-import { Bridge } from "@/components/scenes/Bridge";
+import { Services } from "@/components/services/Services";
+import { Intent } from "@/components/intent/Intent";
+import { Transformation } from "@/components/transformation/Transformation";
+import { Labs } from "@/components/labs/Labs";
 import { IdeaToProduct } from "@/components/scenes/IdeaToProduct";
+import { ProductRescue } from "@/components/rescue/ProductRescue";
+import { AiSection } from "@/components/ai/AiSection";
 import { Integrations } from "@/components/scenes/Integrations";
+import { Work } from "@/components/work/Work";
 import { UnderInterface } from "@/components/scenes/UnderInterface";
-import { EngineeringWork } from "@/components/work/EngineeringWork";
-import { Breadth } from "@/components/breadth/Breadth";
 import { Process } from "@/components/process/Process";
+import { Testimonials } from "@/components/testimonials/Testimonials";
 import { Trust } from "@/components/trust/Trust";
-import { FinalCTA } from "@/components/site/FinalCTA";
 import { Builder } from "@/components/builder/Builder";
-import { copy } from "@/content/copy";
+import { FinalCTA } from "@/components/site/FinalCTA";
 
 export default function Home() {
   return (
@@ -22,19 +23,20 @@ export default function Home() {
       <Nav />
       <main id="main">
         <Hero />
-        <div className="quiet"><p>{copy.transition}</p></div>
-        <Explorer />
-        <ProofStage />
-        <ManualToAutomated />
-        <Bridge />
+        <Services />
+        <Intent />
+        <Transformation />
+        <Labs />
         <IdeaToProduct />
+        <ProductRescue />
+        <AiSection />
         <Integrations />
-        <EngineeringWork />
+        <Work />
         <UnderInterface />
-        <Breadth />
-        <Builder />
         <Process />
+        <Testimonials />
         <Trust />
+        <Builder />
         <FinalCTA />
       </main>
       <Footer />

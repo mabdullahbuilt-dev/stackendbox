@@ -11,7 +11,7 @@ const Ep = ({ m, p, c }: { m: string; p: string; c: string }) => (
 export const planes: Record<string, Plane> = {
   interface: { id: "interface", title: "INTERFACE", sub: "Responsive UI, states, accessibility", art: (
     <div className="mk-app pl-app"><aside><span className="mono">N</span><Lock /><Lock /></aside><div className="mk-app__main"><div className="mk-tiles"><Tile label="MEMBERS" value="8" /><Tile label="PROJECTS" value="24" tone="cyan" /><Tile label="SEATS" value="8/10" /></div><Bars values={[30, 44, 36, 58, 50, 72, 64, 86]} /></div></div>) },
-  logic: { id: "logic", title: "APPLICATION LOGIC", sub: "Rules, workflows, validation", art: (
+  logic: { id: "logic", title: "PRODUCT LOGIC", sub: "Rules, workflows and validation", art: (
     <div className="pl-blocks">{[["VALIDATE", "input · schema"], ["WORKFLOW", "booking · approval"], ["RULES", "pricing · limits"]].map(([a, b]) => <div key={a} className="pl-block"><Pill tone="blue">{a}</Pill><Line w="55%" /><span className="mono mono--muted">{b}</span></div>)}</div>) },
   auth: { id: "auth", title: "AUTHENTICATION", sub: "Sessions, roles, permissions", art: (
     <div className="pl-auth"><div className="pl-locks">{[0, 1, 2, 3, 4, 5].map((i) => <span key={i} data-on={i < 4}>{i < 4 ? <KeyRound /> : <Lock />}</span>)}</div><div className="pl-roles"><Pill tone="blue">OWNER</Pill><Pill>EDITOR</Pill><Pill>VIEWER</Pill><Pill tone="green">SSO</Pill></div></div>) },
