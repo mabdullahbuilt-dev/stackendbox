@@ -75,12 +75,21 @@ export function HeroVisual() {
     let cancelled = false;
     let timer: number | undefined;
     const load = () => import("./HeroObject").then((m) => !cancelled && setObj(() => m.default)).catch(() => !cancelled && setDegraded(true));
-    const start = () => {
+    // Load on the first sign of use (scroll, pointer, key), or after a long quiet period. Keeps the scene off the critical
+    // path of the first paint and interaction measurements; the scene reads the current scroll progress when it mounts.
+    let loaded = false;
+    const go = () => {
+      if (loaded) return;
+      loaded = true;
+      cleanup();
       const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-      timer = window.setTimeout(() => { if (ric) ric(load, { timeout: 700 }); else load(); }, 350);
+      if (ric) ric(load, { timeout: 800 }); else load();
     };
-    if (document.readyState === "complete") start(); else window.addEventListener("load", start, { once: true });
-    return () => { cancelled = true; window.removeEventListener("load", start); window.clearTimeout(timer); };
+    const evts = ["scroll", "pointermove", "keydown", "touchstart"] as const;
+    const cleanup = () => { evts.forEach((e) => window.removeEventListener(e, go)); window.removeEventListener("load", arm); window.clearTimeout(timer); };
+    const arm = () => { evts.forEach((e) => window.addEventListener(e, go, { passive: true, once: true })); timer = window.setTimeout(go, 6000); };
+    if (document.readyState === "complete") arm(); else window.addEventListener("load", arm, { once: true });
+    return () => { cancelled = true; cleanup(); };
   }, [reduced, degraded, Obj]);
 
   // Visibility lifecycle: pause when offscreen, unmount when far away.
