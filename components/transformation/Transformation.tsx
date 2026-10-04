@@ -82,7 +82,6 @@ export function Transformation() {
             <button aria-pressed={state === "before"} onClick={() => { setState("before"); seen.current = true; }}>{copy.transform.before}</button>
             <button aria-pressed={state === "after"} onClick={() => { setState("after"); seen.current = true; }}>{copy.transform.after}</button>
           </div>
-          <button type="button" className="btn btn--ghost tf__replay" onClick={replay}>Replay</button>
         </div>
 
         <div className="mt" ref={stage} data-state={state} data-sc="operations" role="img" aria-label="Vendor approval #204 moving from scattered email, spreadsheets and chat into one custom internal application">

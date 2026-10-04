@@ -33,6 +33,7 @@ type Props = {
   animateIn?: boolean;
   frameloop?: "demand" | "never";
   dpr?: number;
+  lite?: boolean;
   onReady?: () => void;
   onDegrade?: () => void;
 };
@@ -235,14 +236,18 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
 }
 
 export default function HeroObject(props: Props) {
-  const { dpr = 1.5, frameloop = "demand", still, onDegrade } = props;
+  const { dpr = 1.5, frameloop = "demand", still, onDegrade, lite } = props;
   return (
     <Canvas
       frameloop={frameloop}
       dpr={[1, Math.min(dpr, 1.5)]}
       camera={{ fov: 28, position: [4.6, 3.7, 4.6], near: 0.1, far: 50 }}
       gl={{ alpha: true, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: !!still }}
-      onCreated={({ camera }) => camera.lookAt(0, 0.7, 0)}
+      onCreated={({ camera, gl }) => {
+        camera.lookAt(0, 0.7, 0);
+        // a lost WebGL context drops back to the poster instead of a blank or looping canvas
+        gl.domElement.addEventListener("webglcontextlost", (e) => { e.preventDefault(); onDegrade?.(); }, { once: true });
+      }}
       onPointerMissed={() => props.onHover(null)}
       aria-hidden
       style={{ background: "transparent" }}
@@ -250,7 +255,7 @@ export default function HeroObject(props: Props) {
       {!still && onDegrade && <PerformanceMonitor flipflops={2} onDecline={onDegrade} bounds={() => [40, 120]} />}
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 6, 2]} intensity={0.6} />
-      <Environment resolution={128} frames={1}>
+      <Environment resolution={lite ? 64 : 128} frames={1}>
         <Lightformer form="rect" intensity={7} color="#f4f1ea" position={[4, 5, 3]} scale={[10, 5, 1]} rotation-x={-0.9} />
         <Lightformer form="rect" intensity={0.5} color="#ff7a1a" position={[-6, 2, -1]} scale={[6, 6, 1]} rotation-y={1.2} />
         <Lightformer form="ring" intensity={1.2} color="#ffffff" position={[0, 8, 0]} scale={4} rotation-x={Math.PI / 2} />

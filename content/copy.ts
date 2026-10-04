@@ -19,13 +19,12 @@ export const copy = {
     cta: "Start a Project",
   },
   hero: {
-    eyebrow: "PRODUCT ENGINEERING · AI · CUSTOM SOFTWARE",
-    lines: ["Build the product.", "Engineer the platform.", "Connect the stack."],
+    eyebrow: "PRODUCT ENGINEERING · SOFTWARE · AI · SYSTEMS",
+    lines: ["Build the product.", "Engineer the system.", "Take it to production."],
     support:
-      "We design, build and ship SaaS products, web applications, internal platforms, AI systems and specialized software, from first brief to production.",
+      "StackEndBox designs and builds SaaS, web applications, custom software, AI systems, integrations and specialized platforms from first brief to production.",
     primary: "Start a Project",
     secondary: "Book a Call",
-    chips: ["SaaS", "MVPs", "Web Apps", "Internal Software", "AI", "APIs", "Data"],
   },
   services: {
     eyebrow: "WHAT WE BUILD",
@@ -57,9 +56,9 @@ export const copy = {
     cta: "Discuss Custom Software",
   },
   specialized: {
-    eyebrow: "SPECIALIZED SOFTWARE",
-    title: "When off the shelf does not exist, we engineer it.",
-    support: "Market and data platforms, Web3 applications and developer tools, each designed around its own domain.",
+    eyebrow: "SPECIALIZED SYSTEMS",
+    title: "Some problems need software that does not exist yet.",
+    support: "Market systems, Web3 products, developer tools and specialist platforms, engineered around the domain.",
     cta: "Scope Specialized Software",
   },
   product: {
@@ -72,8 +71,8 @@ export const copy = {
   },
   rescue: {
     eyebrow: "EXISTING PRODUCTS",
-    titleA: "Already have something?",
-    titleB: "We can take it further.",
+    titleA: "Already have a product?",
+    titleB: "We can make it stronger.",
     cta: "Improve an Existing Product",
   },
   founders: {
@@ -99,7 +98,7 @@ export const copy = {
   },
   work: {
     eyebrow: "ENGINEERED WORK",
-    title: "Selected builds.",
+    title: "Shipped products.",
     support: "Products, systems and technical tools engineered from end to end.",
     cta: "View project",
   },
@@ -119,15 +118,15 @@ export const copy = {
   why: { eyebrow: "WHY STACKENDBOX", title: "Why teams bring StackEndBox in." },
   builder: {
     eyebrow: "CONTACT US",
-    title: "Tell us what you need.",
-    support: "Tell us what you want to build, improve, automate or connect. Send a quick brief, email us directly, or book a call.",
+    title: "Tell us what needs to work.",
+    support: "Describe the product, system or problem. We can take it from there.",
     time: "No account needed. Type it in your own words.",
   },
   final: {
     eyebrow: "LET'S TALK",
-    a: "Have something in mind?",
-    b: "Let's figure out how to build it.",
-    support: "Tell us what you want to build, launch, improve or connect.",
+    a: "Bring us the problem.",
+    b: "We will engineer what it needs.",
+    support: "Send a brief, email us, or book a call.",
     primary: "Start a Project",
     secondary: "See Our Work",
   },

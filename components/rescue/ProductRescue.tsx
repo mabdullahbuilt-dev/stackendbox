@@ -53,7 +53,6 @@ export function ProductRescue() {
           <h2 id="rescue-title" className="h2">{r.titleA}<br />{r.titleB}</h2>
           <div className="rescue__ctas">
             <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "rescue" }); goToBuilder(e, "Custom Software", "Existing Product"); }}>{r.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-            {!reduced && <button type="button" className="chip chip--mono" onClick={() => { track("scene_replay", { scene: "rescue" }); play(); }}>Replay</button>}
           </div>
         </div>
 

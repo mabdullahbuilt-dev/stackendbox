@@ -132,7 +132,7 @@ export function AiSection() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [paint]);
-  useEffect(() => { if (inView) startDrift(9000); else { cancelAnimationFrame(drift.current.raf); drift.current.raf = 0; } }, [inView, startDrift]);
+  useEffect(() => { if (inView) startDrift(2200); else { cancelAnimationFrame(drift.current.raf); drift.current.raf = 0; } }, [inView, startDrift]);
   useEffect(() => () => cancelAnimationFrame(drift.current.raf), []);
   // when the run finishes the capability returns to its orbit and the scene settles
   useEffect(() => {

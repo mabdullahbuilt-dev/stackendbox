@@ -58,7 +58,7 @@
   .hero__grid { grid-template-columns: minmax(0, 52fr) minmax(0, 48fr); column-gap: clamp(16px, 2vw, 40px); }
   .hero__copy { grid-column: 1; grid-row: 1; padding-bottom: 24px; position: relative; z-index: 2; }
   .hero__visual { grid-row: 1; grid-column: 2; max-height: none; width: 100%; margin-right: -2%; justify-self: end; aspect-ratio: 1 / 1; }
-  .hero { height: calc(100svh + 70vh); }
+  .hero { height: calc(100svh + 40vh); }
   .hero__sticky { position: sticky; top: 0; height: 100svh; }
 }
 @media (min-width: 1280px) { .hero__h1 .line:last-child .line__in { white-space: nowrap; } }
@@ -142,7 +142,7 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 .final__mark { display: block; margin-bottom: 8px; } .final__mark img { width: 61px; height: 72px; }
 .final__in .eyebrow { margin: 0; } .final__in h2 .block { display: block; } .final__in .body-l { max-width: 46ch; }
 .final__ctas { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 8px; }
-.final__thumbs { position: absolute; inset: 0; pointer-events: none; z-index: 1; display: grid; place-items: center; }
+.final__thumbs { position: absolute; inset: 0; pointer-events: none; z-index: 1; display: grid; place-items: center; overflow: clip; }
 .fthumb { position: absolute; width: 200px; height: 130px; border-radius: 14px; border: 1px solid var(--border-strong); background: var(--surface-raised); overflow: hidden; visibility: hidden; }
 .fthumb__in { position: absolute; inset: 0; padding: 12px; display: grid; gap: 8px; align-content: start; }
 .fthumb__in i { display: block; border-radius: 6px; background: rgba(255, 255, 255, 0.12); }
@@ -266,3 +266,4 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 .ct__ic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-text); } .ct__ic svg { width: 20px; height: 20px; }
 .ct__mail { font-weight: 500; font-size: 1.0625rem; color: var(--text-primary); text-decoration: underline; text-decoration-color: rgba(255, 122, 26, 0.6); text-underline-offset: 3px; overflow-wrap: anywhere; }
 .ct__done { display: grid; gap: 12px; justify-items: start; } .ct__done h3 { margin: 0; font-size: var(--fs-h3); } .ct__done p { margin: 0; color: var(--text-secondary); max-width: 52ch; } .ct__doneic { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--success-soft); color: var(--green-400); } .ct__doneic svg { width: 24px; height: 24px; } .ct__actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.work { margin-top: clamp(64px, 8vw, 120px); }

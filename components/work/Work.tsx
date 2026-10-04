@@ -25,23 +25,22 @@ function Card({ p, big }: { p: Project; big?: boolean }) {
   );
 }
 
-export function Work() {
+/** Real shipped products, shown inside the Work & Proof chapter (one chapter, not two). */
+export function WorkGallery() {
   // Only projects with a real screenshot are shown; a project without one is omitted rather than faked.
   const shown = projects.filter((p) => projectImage(p.slug));
   const feat = shown.filter((p) => p.featured);
   const rest = shown.filter((p) => !p.featured);
   return (
-    <section id="work" className="section work" aria-labelledby="work-title">
-      <div className="container">
-        <Reveal className="sec-head">
-          <p className="eyebrow">{copy.work.eyebrow}</p>
-          <h2 id="work-title" className="h2">{copy.work.title}</h2>
-          <p className="body-l">{copy.work.support}</p>
-        </Reveal>
-        <div className="work__feat">{feat.map((p) => <Reveal key={p.slug}><Card p={p} big /></Reveal>)}</div>
-        <div className="work__rest">{rest.map((p, i) => <Reveal key={p.slug} delay={i * 0.05}><Card p={p} /></Reveal>)}</div>
-        <span className="sr-only"><ArrowUpRight aria-hidden /></span>
-      </div>
-    </section>
+    <div id="work" className="work" aria-labelledby="work-title">
+      <Reveal className="sec-head">
+        <p className="eyebrow">{copy.work.eyebrow}</p>
+        <h3 id="work-title" className="h2">{copy.work.title}</h3>
+        <p className="body-l">{copy.work.support}</p>
+      </Reveal>
+      <div className="work__feat">{feat.map((p) => <Reveal key={p.slug}><Card p={p} big /></Reveal>)}</div>
+      <div className="work__rest">{rest.map((p, i) => <Reveal key={p.slug} delay={i * 0.05}><Card p={p} /></Reveal>)}</div>
+      <span className="sr-only"><ArrowUpRight aria-hidden /></span>
+    </div>
   );
 }

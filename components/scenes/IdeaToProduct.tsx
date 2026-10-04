@@ -61,7 +61,6 @@ export function IdeaToProduct() {
     return () => clearInterval(id);
   }, [inView, reduced]);
 
-  const replay = () => { played.current = false; setStage(0); track("scene_replay", { scene: "idea-to-product" }); setTimeout(() => { played.current = false; }, 0); };
 
   return (
     <section id="product" ref={root} className="ipv" aria-labelledby="product-title" data-s={stage}>
@@ -79,7 +78,6 @@ export function IdeaToProduct() {
             </ol>
             <div className="ipv__ctas">
               <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("mvp_cta", { placement: "product" }); goToBuilder(e, "SaaS / MVP", "Idea"); }}>{copy.product.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-              {!reduced && <button type="button" className="chip chip--mono ipv__replay" onClick={replay}>Replay</button>}
             </div>
           </div>
 
