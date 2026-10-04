@@ -1,9 +1,9 @@
 "use client";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { Component, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { track } from "@/lib/analytics";
 import { useMedia, FINE_POINTER } from "@/lib/hooks";
-import { loadGsap } from "@/lib/gsap";
+import { perfTier, type Tier } from "@/lib/perfTier";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { heroModules, heroModulesMobile } from "./modules";
 import type { HeroBus } from "./HeroObject";
@@ -19,9 +19,12 @@ function webglOK() {
   }
 }
 
-function lowEnd() {
-  const n = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
-  return n.connection?.saveData === true || (n.deviceMemory !== undefined && n.deviceMemory <= 4);
+/** A failure inside the 3D scene must never blank the hero: fall back to the poster. */
+class SceneBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(e: unknown) { if (process.env.NODE_ENV !== "production") console.warn("[hero] 3D scene failed, using poster", e); this.props.onError(); }
+  render() { return this.state.failed ? null : this.props.children; }
 }
 
 const ss = (t: number) => { const x = Math.min(1, Math.max(0, t)); return x * x * (3 - 2 * x); };
@@ -48,12 +51,12 @@ export function HeroVisual() {
   const mobile = useMedia("(max-width: 767px)");
   const wrap = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
-  const list = useRef<HTMLUListElement>(null);
   const capRef = useRef<HTMLDivElement>(null);
   const bus = useRef<HeroBus>({ explode: 0, zoom: 0, active: -1, pulse: 0, settle: 0, px: 0, py: 0 });
   const [Obj, setObj] = useState<ComponentType<ObjProps> | null>(null);
   const [ready, setReady] = useState(false);
   const [degraded, setDegraded] = useState(false);
+  const [tier, setTier] = useState<Tier>("C");
   const [near, setNear] = useState(true);
   const [visible, setVisible] = useState(true);
   const [hovered, setHovered] = useState<number | null>(null);
@@ -62,29 +65,22 @@ export function HeroVisual() {
   const live = !!Obj && !reduced && !degraded && near;
   const modules = live && mobile ? heroModulesMobile : heroModules;
 
-  // Load the 3D chunk after first paint when the device qualifies.
+  // Load the 3D chunk automatically once the page has painted and the main thread is idle. No interaction needed,
+  // so a visitor who scrolls straight away still gets the real scene (it reads the current scroll progress on mount).
   useEffect(() => {
     if (reduced || degraded || Obj) return;
-    if (lowEnd() || !webglOK() || window.matchMedia("(max-width: 767px)").matches) return; // phones keep the poster
+    const t = perfTier();
+    setTier(t);
+    if (t === "C" || !webglOK()) return; // phones, save-data and low memory keep the poster
     let cancelled = false;
-    const load = () => import("./HeroObject").then((m) => !cancelled && setObj(() => m.default));
-    // Mount the 3D scene on first real interaction (or after a long idle). Keeps the main thread free during load.
-    const events = ["pointerdown", "pointermove", "wheel", "keydown", "touchstart", "scroll"] as const;
-    let started = false;
-    const go = () => {
-      if (started) return;
-      started = true;
-      off();
+    let timer: number | undefined;
+    const load = () => import("./HeroObject").then((m) => !cancelled && setObj(() => m.default)).catch(() => !cancelled && setDegraded(true));
+    const start = () => {
       const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
-      if (ric) ric(load, { timeout: 800 }); else window.setTimeout(load, 200);
+      timer = window.setTimeout(() => { if (ric) ric(load, { timeout: 700 }); else load(); }, 350);
     };
-    const off = () => { events.forEach((e) => window.removeEventListener(e, go)); clearTimeout(fallback); };
-    events.forEach((e) => window.addEventListener(e, go, { passive: true, once: true }));
-    const fallback = window.setTimeout(go, 9000);
-    return () => {
-      cancelled = true;
-      off();
-    };
+    if (document.readyState === "complete") start(); else window.addEventListener("load", start, { once: true });
+    return () => { cancelled = true; window.removeEventListener("load", start); window.clearTimeout(timer); };
   }, [reduced, degraded, Obj]);
 
   // Visibility lifecycle: pause when offscreen, unmount when far away.
@@ -98,42 +94,46 @@ export function HeroVisual() {
     return () => { a.disconnect(); b.disconnect(); };
   }, []);
 
-  // Scroll-scrubbed choreography. GSAP only writes into refs and the DOM, never React state.
+  // Scroll to scene state. One normalized progress drives everything (no timers, no catch-up), so any scroll jump,
+  // refresh mid-page or reverse scroll renders the correct state for that position directly.
   useEffect(() => {
     if (reduced) return;
     const track_ = wrap.current?.closest<HTMLElement>("[data-hero-track]");
     if (!track_) return;
-    let kill: (() => void) | undefined;
-    let cancelled = false;
-    (async () => {
-      const { ScrollTrigger } = await loadGsap();
-      if (cancelled) return;
-      const n = () => (window.matchMedia("(max-width: 767px)").matches ? heroModulesMobile.length : heroModules.length);
-      const mods = () => (window.matchMedia("(max-width: 767px)").matches ? heroModulesMobile : heroModules);
-      let lastActive = -2;
-      const st = ScrollTrigger.create({
-        trigger: track_,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 0.6,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => {
-          const s = stateAt(self.progress, n());
-          Object.assign(bus.current, s);
-          bus.current.invalidate?.();
-          if (s.active !== lastActive) {
-            lastActive = s.active;
-            const m = s.active >= 0 ? mods()[s.active] : null;
-            if (capRef.current) {
-              capRef.current.dataset.on = m ? "true" : "false";
-              if (m) capRef.current.innerHTML = `<strong>${m.name}</strong><span>${m.sub}</span>`;
-            }
+    let raf = 0;
+    let lastActive = -2;
+    let on = false;
+    const mods = () => (window.matchMedia("(max-width: 767px)").matches ? heroModulesMobile : heroModules);
+    const apply = () => {
+      raf = 0;
+      const r = track_.getBoundingClientRect();
+      const total = track_.offsetHeight - window.innerHeight;
+      const p = total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : 0;
+      const m = mods();
+      const s = stateAt(p, m.length);
+      Object.assign(bus.current, s);
+      bus.current.invalidate?.();
+      if (s.active !== lastActive) {
+        lastActive = s.active;
+        const mod = s.active >= 0 ? m[s.active] : null;
+        if (capRef.current) {
+          capRef.current.dataset.on = mod ? "true" : "false";
+          capRef.current.textContent = "";
+          if (mod) {
+            const a = document.createElement("strong"); a.textContent = mod.name;
+            const b = document.createElement("span"); b.textContent = mod.sub;
+            capRef.current.append(a, b);
           }
-        },
-      });
-      kill = () => st.kill();
-    })();
-    return () => { cancelled = true; kill?.(); };
+        }
+      }
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(apply); };
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !on) { on = true; apply(); window.addEventListener("scroll", onScroll, { passive: true }); window.addEventListener("resize", onScroll, { passive: true }); }
+      else if (!e.isIntersecting && on) { on = false; apply(); window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); }
+    }, { rootMargin: "20% 0px 20% 0px" });
+    io.observe(track_);
+    return () => { io.disconnect(); window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, [reduced]);
 
   const onMove = useCallback((e: React.PointerEvent) => {
@@ -160,19 +160,6 @@ export function HeroVisual() {
     }
   }, [modules]);
 
-  const onKey = (e: React.KeyboardEvent) => {
-    const items = Array.from(list.current?.querySelectorAll<HTMLButtonElement>("button") ?? []);
-    const cur = items.indexOf(document.activeElement as HTMLButtonElement);
-    let next = -1;
-    if (e.key === "ArrowDown" || e.key === "ArrowRight") next = (cur + 1) % items.length;
-    if (e.key === "ArrowUp" || e.key === "ArrowLeft") next = (cur - 1 + items.length) % items.length;
-    if (next >= 0) {
-      e.preventDefault();
-      items.forEach((b, i) => (b.tabIndex = i === next ? 0 : -1));
-      items[next].focus();
-    }
-  };
-
   const staticList = reduced; // reduced motion: module list is plain visible text. Never toggled by canvas load (avoids CLS).
 
   return (
@@ -190,22 +177,24 @@ export function HeroVisual() {
         </div>
         {live && Obj && (
           <div className="hero__canvas" data-ready={ready}>
+            <SceneBoundary onError={() => setDegraded(true)}>
             <Obj
               bus={bus.current}
               modules={modules}
               hovered={hovered}
               onHover={(i) => hover(i)}
               frameloop={visible ? "demand" : "never"}
-              dpr={mobile ? 1.25 : 1.5}
+              dpr={tier === "A" ? 1.5 : 1.1}
+              lite={tier === "B"}
               onReady={() => setReady(true)}
               onDegrade={() => setDegraded(true)}
             />
+            </SceneBoundary>
           </div>
         )}
       </div>
       <div ref={capRef} className="hero__cap" data-on="false" aria-hidden />
       <ul
-        ref={list}
         className={`module-list ${staticList ? "module-list--static" : ""}`}
         aria-label="StackEndBox capabilities"
       >

@@ -30,9 +30,6 @@ export function HeroCopy() {
           <Mail aria-hidden />Or email us at <a href={`mailto:${siteConfig.contactEmail}`} onClick={() => track("contact_clicked", { placement: "hero", kind: "email" })}>{siteConfig.contactEmail}</a>
         </p>
       )}
-      <ul className="hero__chips hero-in" style={{ ["--d" as string]: "560ms" }} aria-label="What we build">
-        {h.chips.map((c) => <li key={c}>{c}</li>)}
-      </ul>
     </div>
   );
 }

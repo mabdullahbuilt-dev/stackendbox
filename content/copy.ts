@@ -19,13 +19,12 @@ export const copy = {
     cta: "Start a Project",
   },
   hero: {
-    eyebrow: "PRODUCT ENGINEERING · AI · CUSTOM SOFTWARE",
-    lines: ["Build the product.", "Engineer the platform.", "Connect the stack."],
+    eyebrow: "PRODUCT ENGINEERING · SOFTWARE · AI · SYSTEMS",
+    lines: ["Build the product.", "Engineer the system.", "Take it to production."],
     support:
-      "We design, build and ship SaaS products, web applications, internal platforms, AI systems and specialized software, from first brief to production.",
+      "StackEndBox designs and builds SaaS, web applications, custom software, AI systems, integrations and specialized platforms from first brief to production.",
     primary: "Start a Project",
     secondary: "Book a Call",
-    chips: ["SaaS", "MVPs", "Web Apps", "Internal Software", "AI", "APIs", "Data"],
   },
   services: {
     eyebrow: "WHAT WE BUILD",
@@ -57,9 +56,9 @@ export const copy = {
     cta: "Discuss Custom Software",
   },
   specialized: {
-    eyebrow: "SPECIALIZED SOFTWARE",
-    title: "When off the shelf does not exist, we engineer it.",
-    support: "Market and data platforms, Web3 applications and developer tools, each designed around its own domain.",
+    eyebrow: "SPECIALIZED SYSTEMS",
+    title: "Some problems need software that does not exist yet.",
+    support: "Market systems, Web3 products, developer tools and specialist platforms, engineered around the domain.",
     cta: "Scope Specialized Software",
   },
   product: {

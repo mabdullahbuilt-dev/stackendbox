@@ -78,9 +78,10 @@
   --z-content: 1;
   --z-stage: 10;
   --z-float: 20;
+  --z-bg: 0; --z-env: 2; --z-visual: 5; --z-controls: 25;
   --z-nav: 100;
   --z-menu: 200;
-  --z-skip: 500;
+  --z-skip: 500; --z-modal: 1000;
 
   --pad-x: clamp(16px, 4vw, 64px);
   --gutter: 16px;

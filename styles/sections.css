@@ -58,7 +58,7 @@
   .hero__grid { grid-template-columns: minmax(0, 52fr) minmax(0, 48fr); column-gap: clamp(16px, 2vw, 40px); }
   .hero__copy { grid-column: 1; grid-row: 1; padding-bottom: 24px; position: relative; z-index: 2; }
   .hero__visual { grid-row: 1; grid-column: 2; max-height: none; width: 100%; margin-right: -2%; justify-self: end; aspect-ratio: 1 / 1; }
-  .hero { height: calc(100svh + 70vh); }
+  .hero { height: calc(100svh + 40vh); }
   .hero__sticky { position: sticky; top: 0; height: 100svh; }
 }
 @media (min-width: 1280px) { .hero__h1 .line:last-child .line__in { white-space: nowrap; } }

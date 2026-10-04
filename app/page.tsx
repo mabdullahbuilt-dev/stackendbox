@@ -1,4 +1,4 @@
-import { ChapterBoundary } from "@/components/site/ChapterBoundary";
+import { ChapterRuntime } from "@/components/site/ChapterRuntime";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { Hero } from "@/components/hero/Hero";
@@ -23,41 +23,26 @@ import { FinalCTA } from "@/components/site/FinalCTA";
 export default function Home() {
   return (
     <>
+      <ChapterRuntime />
       <Nav />
       <main id="main">
         <Hero />
-        <ChapterBoundary type="handoff" />
         <Services />
-        <ChapterBoundary type="compress" />
         <StartingPoint />
-        <ChapterBoundary type="expand" />
         <IdeaToProduct />
-        <ChapterBoundary type="depth" />
         <BusinessSoftware />
-        <ChapterBoundary type="fragment" />
         <Transformation />
-        <ChapterBoundary type="awaken" />
         <AiSection />
-        <ChapterBoundary type="morph" />
         <Integrations />
-        <ChapterBoundary type="handoff" />
         <Specialized />
-        <ChapterBoundary type="expand" />
         <ProofSection />
-        <ChapterBoundary type="continuity" />
         <ProductRescue />
-        <ChapterBoundary type="flatten" />
         <Work />
-        <ChapterBoundary type="depth" />
         <UnderInterface />
-        <ChapterBoundary type="recompress" />
         <Process />
         <Testimonials />
-        <ChapterBoundary type="light" />
         <Why />
-        <ChapterBoundary type="focus" />
         <Builder />
-        <ChapterBoundary type="brand" />
         <FinalCTA />
       </main>
       <Footer />
