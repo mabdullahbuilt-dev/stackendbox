@@ -142,7 +142,7 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 .final__mark { display: block; margin-bottom: 8px; } .final__mark img { width: 61px; height: 72px; }
 .final__in .eyebrow { margin: 0; } .final__in h2 .block { display: block; } .final__in .body-l { max-width: 46ch; }
 .final__ctas { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 8px; }
-.final__thumbs { position: absolute; inset: 0; pointer-events: none; z-index: 1; display: grid; place-items: center; }
+.final__thumbs { position: absolute; inset: 0; pointer-events: none; z-index: 1; display: grid; place-items: center; overflow: clip; }
 .fthumb { position: absolute; width: 200px; height: 130px; border-radius: 14px; border: 1px solid var(--border-strong); background: var(--surface-raised); overflow: hidden; visibility: hidden; }
 .fthumb__in { position: absolute; inset: 0; padding: 12px; display: grid; gap: 8px; align-content: start; }
 .fthumb__in i { display: block; border-radius: 6px; background: rgba(255, 255, 255, 0.12); }

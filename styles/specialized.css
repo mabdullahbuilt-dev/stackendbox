@@ -77,6 +77,7 @@
 .dv__rep { grid-column: 3; grid-row: 1 / span 2; display: grid; gap: calc(var(--u) * 10); align-content: start; } .dv__rep p { margin: 0; display: flex; align-items: center; gap: 8px; padding: calc(var(--u) * 9) calc(var(--u) * 10); border-radius: 8px; border: 1px solid var(--border); color: var(--text-secondary); } .dv__rep p svg { width: 14px; height: 14px; flex: none; } .dv__rep p[data-st="bad"] { border-color: rgba(240, 82, 82, 0.55); background: var(--red-dark); color: var(--text-primary); } .dv__rep p[data-st="bad"] svg { color: var(--red-400); } .dv__rep p[data-st="ok"] { border-color: rgba(47, 210, 122, 0.45); color: var(--text-primary); } .dv__rep p[data-st="ok"] svg { color: var(--green-400); }
 .dv__size { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; color: var(--text-secondary); } .dv__size s { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); overflow: hidden; } .dv__size s i { display: block; height: 100%; background: var(--accent); transition: width 700ms var(--ease-out), background 300ms; }
 
+@media (max-width: 1099px) { .spc__stage { aspect-ratio: auto; height: 600px; min-height: 0; } }
 @media (max-width: 767px) {
   .spc__stage { aspect-ratio: auto; height: 640px; }
   .spc__scene { --u: 0.46px; padding: 10px; font-size: 11px; }
