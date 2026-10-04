@@ -103,7 +103,6 @@ export function UnderInterface() {
             </ol>
             <div className="dpx__ctas">
               <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "depth" }); goToBuilder(e, "Custom Software"); }}>{copy.depth.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-              {!reduced && <button type="button" className="chip chip--mono" onClick={() => { track("scene_replay", { scene: "depth" }); played.current = true; play(); }}>Replay</button>}
             </div>
           </div>
           <div className="dpx__stage" ref={box} aria-hidden>

@@ -127,7 +127,6 @@ export function BusinessSoftware() {
         <div className="bsw__foot">
           <p className="bsw__cap body-l" aria-live="polite">{CAPTIONS[s]}</p>
           <div className="bsw__ctas">
-            <button type="button" className="btn btn--ghost" onClick={() => { track("scene_replay", { scene: "business" }); if (reduced) setStep(N - 1); else run(); }}>Replay</button>
             <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "business" }); goToBuilder(e, "CRM / Internal Tool"); }}>{copy.business.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
         </div>

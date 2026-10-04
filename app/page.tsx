@@ -7,12 +7,12 @@ import { Specialized } from "@/components/specialized/Specialized";
 import { Services } from "@/components/services/Services";
 import { StartingPoint } from "@/components/start/StartingPoint";
 import { Transformation } from "@/components/transformation/Transformation";
+import { WorkGallery } from "@/components/work/Work";
 import { ProofSection } from "@/components/proof/ProofSection";
 import { IdeaToProduct } from "@/components/scenes/IdeaToProduct";
 import { ProductRescue } from "@/components/rescue/ProductRescue";
 import { AiSection } from "@/components/ai/AiSection";
 import { Integrations } from "@/components/scenes/Integrations";
-import { Work } from "@/components/work/Work";
 import { UnderInterface } from "@/components/scenes/UnderInterface";
 import { Process } from "@/components/process/Process";
 import { Testimonials } from "@/components/testimonials/Testimonials";
@@ -35,9 +35,8 @@ export default function Home() {
         <AiSection />
         <Integrations />
         <Specialized />
-        <ProofSection />
+        <ProofSection><WorkGallery /></ProofSection>
         <ProductRescue />
-        <Work />
         <UnderInterface />
         <Process />
         <Testimonials />

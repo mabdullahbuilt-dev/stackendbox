@@ -20,7 +20,7 @@ import { SupportGrid } from "./apps/SupportGrid";
 const APPS: Record<ProofId, (p: { step: number }) => React.JSX.Element> = { launchkit: LaunchKit, opsboard: OpsBoard, supportgrid: SupportGrid, connecthub: ConnectHub, chaindesk: ChainDesk, marketdesk: MarketDesk };
 const ICONS: Record<ProofId, LucideIcon> = { launchkit: Rocket, opsboard: Building2, supportgrid: Bot, connecthub: Plug, chaindesk: Boxes, marketdesk: BarChart3 };
 
-export function ProofSection() {
+export function ProofSection({ children }: { children?: React.ReactNode }) {
   const { reduced } = useMotionPreference();
   const [active, setActive] = useState(0);
   const [replay, setReplay] = useState(0);
@@ -78,13 +78,13 @@ export function ProofSection() {
                 <p className="proof__brief"><span className="mono">WHAT THE BUILD HAD TO SOLVE</span>{item.brief}</p>
                 <div className="proof__ctas">
                   <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "proof", product: item.id }); goToBuilder(e, item.need); }}>{item.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-                  {!reduced && <button type="button" className="chip chip--mono" onClick={() => { track("scene_replay", { scene: item.id }); setReplay((r) => r + 1); }}>Replay</button>}
                 </div>
               </div>
             </div>
             <p className="proof__meta mono mono--muted">BUILT BY STACKENDBOX</p>
           </div>
         </div>
+        {children}
       </div>
     </section>
   );
