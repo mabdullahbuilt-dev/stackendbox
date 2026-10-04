@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#ffffff">
+<text x="121" y="26" opacity="1">&amp;lt;Workspace plan="pro" live /&amp;gt;</text>
+<text x="66" y="54" opacity="0.7">tests: 128 passed · build ok</text>
+<text x="242" y="82" opacity="1">tests: 128 passed · build ok</text>
+<text x="33" y="110" opacity="1">const stack = build(product, data);</text>
+<text x="240" y="138" opacity="0.7">&amp;lt;Workspace plan="pro" live /&amp;gt;</text>
+<text x="119" y="166" opacity="0.5">map(payload) =&amp;gt; account.id</text>
+<text x="240" y="194" opacity="1">kubectl rollout status deploy/api</text>
+<text x="281" y="222" opacity="0.7">type Role = 'admin' | 'member';</text>
+<text x="327" y="250" opacity="0.5">  if (!verify(sig)) return 401;</text>
+<text x="325" y="278" opacity="0.5">kubectl rollout status deploy/api</text>
+<text x="267" y="306" opacity="0.7">map(payload) =&amp;gt; account.id</text>
+<text x="7" y="334" opacity="1">git diff --stat main..release</text>
+<text x="32" y="362" opacity="0.5">git diff --stat main..release</text>
+<text x="302" y="390" opacity="0.5">SELECT id, status FROM orders;</text>
+<text x="399" y="418" opacity="0.5">kubectl rollout status deploy/api</text>
+<text x="137" y="446" opacity="0.7">tests: 128 passed · build ok</text>
+</svg>

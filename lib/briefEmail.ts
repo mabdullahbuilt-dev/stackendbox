@@ -9,19 +9,18 @@ export type BriefMail = { subject: string; text: string; html: string };
 
 export function internalEmail(input: BriefInput, when = new Date()): BriefMail {
   const b = buildBrief(input.needs, input.stage, input.goal);
-  const type = b.needs.join(", ");
+  const type = b.needs.join(", ") || "Not specified";
   const subject = `New StackEndBox Project Brief: ${type} from ${oneLine(input.name)}`.slice(0, 200);
   const rows: [string, string][] = [
     ["Name", oneLine(input.name)],
     ["Email", input.email],
     ...(input.company ? ([["Company", oneLine(input.company)]] as [string, string][]) : []),
     ["Project type", type],
-    ["Current stage", b.stage],
-    ["Primary goal", b.goal],
+    ...(b.stage ? ([["Current stage", b.stage]] as [string, string][]) : []),
+    ...(b.goal ? ([["Primary goal", b.goal]] as [string, string][]) : []),
     ...(input.timeline ? ([["Timeline", input.timeline]] as [string, string][]) : []),
     ...(input.url ? ([["Website, product or repository", input.url]] as [string, string][]) : []),
-    ["Selected service", type],
-    ...(input.source ? ([["Page source", input.source]] as [string, string][]) : []),
+        ...(input.source ? ([["Page source", input.source]] as [string, string][]) : []),
     ...(input.referrer ? ([["Referrer", input.referrer]] as [string, string][]) : []),
     ["Submitted", when.toISOString()],
   ];
@@ -30,8 +29,8 @@ export function internalEmail(input: BriefInput, when = new Date()): BriefMail {
     "",
     "Builder selections",
     `Need: ${type}`,
-    `Stage: ${b.stage}`,
-    `Goal: ${b.goal}`,
+    ...(b.stage ? [`Stage: ${b.stage}`] : []),
+    ...(b.goal ? [`Goal: ${b.goal}`] : []),
     "",
     "Contact and details",
     ...rows.map(([k, v]) => `${k}: ${v}`),
@@ -46,7 +45,7 @@ export function internalEmail(input: BriefInput, when = new Date()): BriefMail {
 <h2 style="margin:0 0 4px">New project brief</h2>
 <p style="margin:0 0 20px;color:#667085">${esc(type)} for ${esc(oneLine(input.name))}</p>
 <table style="border-collapse:collapse;margin-bottom:20px"><tr><td colspan="2" style="padding:0 0 6px;font-weight:bold">Builder selections</td></tr>
-${tr("Need", type)}${tr("Stage", b.stage)}${tr("Goal", b.goal)}</table>
+${tr("Need", type)}${b.stage ? tr("Stage", b.stage) : ""}${b.goal ? tr("Goal", b.goal) : ""}</table>
 <table style="border-collapse:collapse;margin-bottom:20px"><tr><td colspan="2" style="padding:0 0 6px;font-weight:bold">Contact and details</td></tr>
 ${rows.map(([k, v]) => tr(k, v)).join("")}</table>
 <p style="margin:0 0 4px;font-weight:bold">Context</p>

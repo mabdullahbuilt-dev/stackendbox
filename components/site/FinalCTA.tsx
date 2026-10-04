@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { copy } from "@/content/copy";
+import { goToBuilder } from "@/lib/intent";
 import { track } from "@/lib/analytics";
 import { loadGsap } from "@/lib/gsap";
 import { useMedia } from "@/lib/hooks";
@@ -91,7 +92,7 @@ export function FinalCTA() {
         </h2>
         <p className="body-l">{copy.final.support}</p>
         <div className="final__ctas">
-          <Magnet><ButtonLink href="/#start" size="lg" onClick={() => track("cta_click", { placement: "final" })}>{copy.final.primary}</ButtonLink></Magnet>
+          <Magnet><ButtonLink href="/#start" size="lg" onClick={(e) => { track("cta_click", { placement: "final" }); goToBuilder(e); }}>{copy.final.primary}</ButtonLink></Magnet>
           {siteConfig.calUrl ? (
             <CalButton placement="final" />
           ) : (

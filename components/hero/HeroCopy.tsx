@@ -1,7 +1,10 @@
 "use client";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
+import { goToBuilder } from "@/lib/intent";
+import { siteConfig } from "@/site.config";
+import { CalButton } from "@/components/ui/CalButton";
 import { ButtonLink } from "@/components/ui/Button";
 import { Magnet } from "@/components/vendor/Magnet";
 
@@ -18,12 +21,15 @@ export function HeroCopy() {
       <p className="body-l hero-in" style={{ ["--d" as string]: "380ms" }}>{h.support}</p>
       <div className="hero__ctas hero-in" style={{ ["--d" as string]: "480ms" }}>
         <Magnet>
-          <ButtonLink href="/#start" size="lg" onClick={() => track("hero_start_project")}>{h.primary}</ButtonLink>
+          <ButtonLink href="/#start" size="lg" onClick={(e) => { track("hero_start_project"); goToBuilder(e); }}>{h.primary}</ButtonLink>
         </Magnet>
-        <ButtonLink href="/#work" variant="secondary" size="lg" arrow={false} onClick={() => track("hero_view_work")}>
-          {h.secondary}<ArrowRight className="arrow" aria-hidden />
-        </ButtonLink>
+        <CalButton placement="hero" />
       </div>
+      {siteConfig.contactEmail && (
+        <p className="hero__mail hero-in" style={{ ["--d" as string]: "520ms" }}>
+          <Mail aria-hidden />Or email us at <a href={`mailto:${siteConfig.contactEmail}`} onClick={() => track("contact_clicked", { placement: "hero", kind: "email" })}>{siteConfig.contactEmail}</a>
+        </p>
+      )}
       <ul className="hero__chips hero-in" style={{ ["--d" as string]: "560ms" }} aria-label="What we build">
         {h.chips.map((c) => <li key={c}>{c}</li>)}
       </ul>

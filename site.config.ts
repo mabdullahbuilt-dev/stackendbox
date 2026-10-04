@@ -8,9 +8,9 @@ export const siteConfig = {
   companyName: "StackEndBox",
   domain: "www.stackendbox.com",
   url: env(process.env.NEXT_PUBLIC_SITE_URL) ?? "https://www.stackendbox.com",
-  contactEmail: env(process.env.NEXT_PUBLIC_COMPANY_EMAIL),
+  contactEmail: env(process.env.NEXT_PUBLIC_COMPANY_EMAIL) ?? "hello@stackendbox.com",
   /** Cal.com event URL. Opens as a popup, with a new-tab fallback. */
-  calUrl: env(process.env.NEXT_PUBLIC_CAL_URL),
+  calUrl: env(process.env.NEXT_PUBLIC_CAL_URL) ?? "https://cal.com/stackendbox/work-with-stackendbox",
   turnstileSiteKey: env(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
   whatsappUrl: env(process.env.NEXT_PUBLIC_WHATSAPP_URL),
   githubUrl: env(process.env.NEXT_PUBLIC_GITHUB_URL),

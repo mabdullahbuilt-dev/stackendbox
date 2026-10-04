@@ -15,6 +15,7 @@ for (const [name, e] of jobs) {
   const page = await browser.newPage({ viewport: { width: 1600, height: 1600 }, deviceScaleFactor: 1 });
   page.on("console", (m) => m.type() === "error" && console.log("console:", m.text()));
   await page.goto(`${base}/poster?e=${e}`);
+  await page.addStyleTag({ content: "html,body,main,#__next,[data-poster]{background:transparent!important}" });
   await page.waitForSelector('[data-done="true"]', { timeout: 60000 });
   await page.screenshot({ path: `public/hero/${name}.png`, omitBackground: true });
   console.log("wrote", name);

@@ -22,7 +22,7 @@ export default function OpenGraphImage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 76, lineHeight: 1.02, letterSpacing: -3, fontWeight: 600, maxWidth: 980 }}>{copy.meta.ogTitle}</div>
-          <div style={{ fontSize: 28, color: "#A2AAB5", maxWidth: 900 }}>Software, AI and automation, built end to end.</div>
+          <div style={{ fontSize: 28, color: "#A2AAB5", maxWidth: 900 }}>Product engineering, AI and custom software, built end to end.</div>
         </div>
         <div style={{ display: "flex", height: 4, width: 160, background: "#ff7a1a" }} />
       </div>

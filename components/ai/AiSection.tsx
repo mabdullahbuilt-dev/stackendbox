@@ -1,32 +1,43 @@
 "use client";
-import { ArrowRight, Bot, Database, Eye, FileText, MessageSquare, Plug, Search, UserCheck, Wrench, type LucideIcon } from "lucide-react";
+import { ArrowRight, Bot, Database, Eye, FileText, Search, UserCheck, Wrench, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
 
-type NodeKey = "vision" | "docs" | "search" | "db" | "api" | "tools" | "approval" | "msg";
+type NodeKey = "vision" | "docs" | "search" | "db" | "tools" | "approval";
 const NODES: { key: NodeKey; label: string; icon: LucideIcon }[] = [
   { key: "vision", label: "Vision", icon: Eye },
   { key: "docs", label: "Documents", icon: FileText },
-  { key: "search", label: "Search", icon: Search },
-  { key: "db", label: "Database", icon: Database },
-  { key: "api", label: "APIs", icon: Plug },
+  { key: "search", label: "Retrieval", icon: Search },
+  { key: "db", label: "Data", icon: Database },
   { key: "tools", label: "Tools", icon: Wrench },
   { key: "approval", label: "Human approval", icon: UserCheck },
-  { key: "msg", label: "Messaging", icon: MessageSquare },
 ];
+/** One orbit system. Two ellipses seen at an angle; six capabilities, each one a real AI building block. */
+const ORBIT: Record<NodeKey, { ring: 0 | 1; a: number }> = {
+  search: { ring: 0, a: 200 }, docs: { ring: 0, a: 335 }, tools: { ring: 0, a: 62 },
+  vision: { ring: 1, a: 262 }, db: { ring: 1, a: 18 }, approval: { ring: 1, a: 152 },
+};
+/** Each scenario is led by the capability that docks into the core. */
+const LEAD: NodeKey[] = ["search", "docs", "vision", "db"];
+const RX = [0.44, 0.26], RY = [0.36, 0.2];
+/** Server-rendered positions (before the first measurement) so the orbit is spread out even without JavaScript. */
+const initialStyle = (k: NodeKey): React.CSSProperties => {
+  const r = ORBIT[k].ring, th = (ORBIT[k].a * Math.PI) / 180, t = (Math.sin(th) + 1) / 2;
+  return { ["--tx" as string]: `${(Math.cos(th) * RX[r] * 640).toFixed(1)}px`, ["--ty" as string]: `${(Math.sin(th) * RY[r] * 440).toFixed(1)}px`, ["--sc" as string]: (0.84 + 0.26 * t).toFixed(3), ["--op" as string]: (0.7 + 0.3 * t).toFixed(2), zIndex: 2 + Math.round(t * 18) };
+};
 type Step = { node: NodeKey; text: string; state?: "blocked" };
 /** A row of the working UI: it appears once `at` steps have played; `flag` shows red until the step after it resolves. */
 type UiRow = { k: string; v: string; at: number; flag?: [number, number] };
 const SCENARIOS: { id: string; tab: string; hub: string; steps: Step[]; cta: string; ui: { title: string; rows: UiRow[]; result: string } }[] = [
   { id: "support", tab: "Support", hub: "Refund request", cta: "Build an AI Support System", steps: [
-    { node: "msg", text: "Request received" }, { node: "search", text: "Policy found" }, { node: "db", text: "Order checked" }, { node: "tools", text: "Refund tool called" },
-    { node: "approval", text: "Over the limit: needs a person", state: "blocked" }, { node: "approval", text: "Approved" }, { node: "msg", text: "Customer notified" } ],
+    { node: "docs", text: "Request received" }, { node: "search", text: "Policy found" }, { node: "db", text: "Order checked" }, { node: "tools", text: "Refund tool called" },
+    { node: "approval", text: "Over the limit: needs a person", state: "blocked" }, { node: "approval", text: "Approved" }, { node: "tools", text: "Customer notified" } ],
     ui: { title: "Ticket 4821: refund request", rows: [{ k: "Customer", v: "Order A-1042, $240", at: 1 }, { k: "Policy", v: "30-day window: eligible", at: 2 }, { k: "Order", v: "Delivered 12 days ago", at: 3 }, { k: "Refund", v: "$240 (agent limit $100)", at: 4, flag: [5, 6] }, { k: "Approval", v: "Approved by a person", at: 6 }], result: "Customer notified" } },
   { id: "documents", tab: "Documents", hub: "Supplier contract", cta: "Build Document Intelligence", steps: [
     { node: "docs", text: "Document uploaded" }, { node: "vision", text: "Pages read" }, { node: "tools", text: "Fields extracted" }, { node: "approval", text: "Missing date: flagged", state: "blocked" },
@@ -34,11 +45,11 @@ const SCENARIOS: { id: string; tab: string; hub: string; steps: Step[]; cta: str
     ui: { title: "Supplier contract.pdf", rows: [{ k: "Supplier", v: "Northfield Logistics", at: 2 }, { k: "Term", v: "24 months", at: 3 }, { k: "Value", v: "$86,400", at: 3 }, { k: "Start date", v: "Missing, then 1 Mar", at: 4, flag: [4, 5] }], result: "Validated and stored" } },
   { id: "media", tab: "Media", hub: "Source video", cta: "Build a Media Pipeline", steps: [
     { node: "docs", text: "Source uploaded" }, { node: "vision", text: "Scenes and frames read" }, { node: "tools", text: "Script drafted" }, { node: "tools", text: "Voice and captions made" },
-    { node: "tools", text: "Clip assembled" }, { node: "approval", text: "Reviewed by a person" }, { node: "api", text: "Published" } ],
+    { node: "tools", text: "Clip assembled" }, { node: "approval", text: "Reviewed by a person" }, { node: "tools", text: "Published" } ],
     ui: { title: "Clip pipeline", rows: [{ k: "Source", v: "Webinar, 42 min", at: 1 }, { k: "Scenes", v: "9 found, 3 selected", at: 2 }, { k: "Script", v: "Draft v1, 45 sec", at: 3 }, { k: "Voice", v: "Captions on", at: 4 }, { k: "Review", v: "Approved", at: 6 }], result: "Published to 3 channels" } },
   { id: "intelligence", tab: "Intelligence", hub: "Opportunity signal", cta: "Build a Data Intelligence System", steps: [
-    { node: "api", text: "Live data in" }, { node: "vision", text: "Charts and images read" }, { node: "db", text: "History compared" }, { node: "tools", text: "Score calculated" },
-    { node: "approval", text: "Risk check passed" }, { node: "msg", text: "Alert sent" } ],
+    { node: "db", text: "Live data in" }, { node: "vision", text: "Charts and images read" }, { node: "db", text: "History compared" }, { node: "tools", text: "Score calculated" },
+    { node: "approval", text: "Risk check passed" }, { node: "tools", text: "Alert sent" } ],
     ui: { title: "Signal 0.82", rows: [{ k: "Feed", v: "Live, 4 sources", at: 1 }, { k: "Charts", v: "Read and tagged", at: 2 }, { k: "History", v: "90 days compared", at: 3 }, { k: "Score", v: "0.82, above threshold", at: 4 }, { k: "Risk check", v: "Passed", at: 5 }], result: "Alert sent" } },
 ];
 const ANG = (i: number) => (i / NODES.length) * Math.PI * 2 - Math.PI / 2;
@@ -55,6 +66,15 @@ export function AiSection() {
   const played = useRef(false);
   const sc = SCENARIOS[tab];
   const N = sc.steps.length;
+  const orb = useRef<HTMLDivElement>(null);
+  const sats = useRef<Partial<Record<NodeKey, HTMLButtonElement | null>>>({});
+  const ang = useRef<Record<NodeKey, number>>({ search: ORBIT.search.a, docs: ORBIT.docs.a, tools: ORBIT.tools.a, vision: ORBIT.vision.a, db: ORBIT.db.a, approval: ORBIT.approval.a });
+  const size = useRef({ w: 640, h: 400 });
+  const [dim, setDim] = useState({ w: 640, h: 400 });
+  const [docked, setDocked] = useState<NodeKey | null>(null);
+  const dockedRef = useRef<NodeKey | null>(null);
+  dockedRef.current = docked;
+  const drift = useRef({ raf: 0, until: 0, last: 0, paused: false });
 
   const play = (n: number) => {
     clearInterval(timer.current);
@@ -66,12 +86,65 @@ export function AiSection() {
   useEffect(() => {
     if (reduced || !inView || played.current) return;
     played.current = true;
-    const t = setTimeout(() => play(N), 400);
+    const t = setTimeout(() => dock(0, LEAD[0]), 500);
     return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView, reduced, N]);
   useEffect(() => () => clearInterval(timer.current), []);
 
-  const pick = (i: number) => { setTab(i); track("scene_replay", { scene: "ai", scenario: SCENARIOS[i].id }); if (reduced) setStep(SCENARIOS[i].steps.length); else play(SCENARIOS[i].steps.length); };
+  const paint = useCallback(() => {
+    const { w, h } = size.current;
+    (Object.keys(ORBIT) as NodeKey[]).forEach((k) => {
+      const el = sats.current[k];
+      if (!el) return;
+      const r = ORBIT[k].ring, th = (ang.current[k] * Math.PI) / 180;
+      const t = (Math.sin(th) + 1) / 2;
+      el.style.setProperty("--tx", `${(Math.cos(th) * RX[r] * w).toFixed(1)}px`);
+      el.style.setProperty("--ty", `${(Math.sin(th) * RY[r] * h).toFixed(1)}px`);
+      el.style.setProperty("--sc", (0.84 + 0.26 * t).toFixed(3));
+      el.style.setProperty("--op", (0.7 + 0.3 * t).toFixed(2));
+      el.style.zIndex = String(2 + Math.round(t * 18));
+    });
+  }, []);
+  const startDrift = useCallback((ms: number) => {
+    if (reduced) return;
+    const d = drift.current;
+    d.until = performance.now() + ms;
+    if (d.raf) return;
+    d.last = performance.now();
+    const tick = (now: number) => {
+      d.raf = 0;
+      const dt = Math.min(48, now - d.last); d.last = now;
+      if (now < d.until && !d.paused && !dockedRef.current) {
+        (Object.keys(ORBIT) as NodeKey[]).forEach((k) => { ang.current[k] += dt * (ORBIT[k].ring === 0 ? 0.0032 : -0.0042); });
+        paint();
+        d.raf = requestAnimationFrame(tick);
+      }
+    };
+    d.raf = requestAnimationFrame(tick);
+  }, [reduced, paint]);
+  useEffect(() => {
+    const el = orb.current;
+    if (!el) return;
+    const measure = () => { const r = el.getBoundingClientRect(); size.current = { w: r.width, h: r.height }; setDim({ w: r.width, h: r.height }); paint(); };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [paint]);
+  useEffect(() => { if (inView) startDrift(9000); else { cancelAnimationFrame(drift.current.raf); drift.current.raf = 0; } }, [inView, startDrift]);
+  useEffect(() => () => cancelAnimationFrame(drift.current.raf), []);
+  // when the run finishes the capability returns to its orbit and the scene settles
+  useEffect(() => {
+    if (docked && step >= N) {
+      const t = setTimeout(() => { setDocked(null); startDrift(2500); }, reduced ? 0 : 1300);
+      return () => clearTimeout(t);
+    }
+  }, [docked, step, N, reduced, startDrift]);
+
+  const dock = (i: number, key: NodeKey) => { setTab(i); setDocked(key); track("scene_replay", { scene: "ai", scenario: SCENARIOS[i].id, node: key }); if (reduced) setStep(SCENARIOS[i].steps.length); else play(SCENARIOS[i].steps.length); };
+  const pick = (i: number) => dock(i, LEAD[i]);
+  const pickByNode = (key: NodeKey) => { const i = LEAD.indexOf(key); dock(i >= 0 ? i : SCENARIOS.findIndex((s) => s.steps.some((x) => x.node === key)), key); };
   const onKey = (e: React.KeyboardEvent) => {
     let i = -1;
     if (e.key === "ArrowDown" || e.key === "ArrowRight") i = (tab + 1) % SCENARIOS.length;
@@ -98,20 +171,21 @@ export function AiSection() {
           <h2 id="ai-title" className="h2">{copy.ai.title}</h2>
         </Reveal>
         <div className="aix">
-          <div className="aix__orbit" ref={box} aria-hidden>
-            <svg viewBox="0 0 100 100" className="aix__lines" preserveAspectRatio="none">
-              {NODES.map((n, i) => { const [x, y] = at(i, 38); const st = nodeState(n.key); return <line key={n.key} x1="50" y1="50" x2={x} y2={y} data-st={st} />; })}
-            </svg>
-            <div className="aix__hub" data-done={step >= N}><Bot /><b>AI system</b><em className="mono">{sc.hub}</em></div>
-            {NODES.map((n, i) => {
-              const [x, y] = at(i, 38);
-              const st = nodeState(n.key);
-              return (
-                <div key={n.key} className="aix__node" data-st={st} style={{ left: `${x}%`, top: `${y}%` }}>
-                  <span><n.icon /></span><b>{n.label}</b>
-                </div>
-              );
-            })}
+          <div className="aorb" ref={box} data-docked={docked ?? ""} onPointerEnter={() => { drift.current.paused = true; }} onPointerLeave={() => { drift.current.paused = false; }}>
+            <div className="aorb__plane" ref={orb}>
+              <svg className="aorb__rings" width={dim.w} height={dim.h} viewBox={`0 0 ${dim.w} ${dim.h}`} aria-hidden>
+                {[0, 1].map((r) => <ellipse key={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * RX[r]} ry={dim.h * RY[r]} data-ring={r} />)}
+              </svg>
+              <div className="aorb__core" data-done={step >= N} data-busy={!!docked && step < N} aria-hidden><Bot /><b>AI capability</b><em className="mono">{sc.hub}</em></div>
+              {NODES.map((n) => {
+                const st = nodeState(n.key);
+                return (
+                  <button key={n.key} ref={(el) => { sats.current[n.key] = el; }} type="button" className="aorb__sat" style={initialStyle(n.key)} data-st={st} data-docked={docked === n.key} aria-label={`${n.label}: run an example that uses it`} onClick={() => pickByNode(n.key)}>
+                    <span><n.icon /></span><b>{n.label}</b>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="aix__side">
             <div className="aix__tabs" role="tablist" aria-label="AI examples" onKeyDown={onKey}>
@@ -137,7 +211,7 @@ export function AiSection() {
               </div>
               <p className="sr-only" aria-live="polite">{current.text}</p>
             </div>
-            <Link href="/#start" className="btn btn--primary" onClick={() => { track("ai_cta", { placement: "ai", scenario: sc.id }); presetBuilder("AI System"); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+            <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("ai_cta", { placement: "ai", scenario: sc.id }); goToBuilder(e, "AI System"); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
         </div>
       </div>

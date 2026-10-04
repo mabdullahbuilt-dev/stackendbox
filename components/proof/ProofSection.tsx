@@ -1,24 +1,24 @@
 "use client";
-import { ArrowRight, BarChart3, Bot, Boxes, Plug, Rocket, Workflow, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, Bot, Boxes, Building2, Plug, Rocket, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { proofItems, type ProofId } from "@/content/proof";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { useScript } from "@/lib/useScript";
 import { Reveal } from "@/components/ui/Reveal";
 import { ChainDesk } from "./apps/ChainDesk";
 import { ConnectHub } from "./apps/ConnectHub";
-import { FlowOps } from "./apps/FlowOps";
+import { OpsBoard } from "./apps/OpsBoard";
 import { LaunchKit } from "./apps/LaunchKit";
 import { MarketDesk } from "./apps/MarketDesk";
 import { SupportGrid } from "./apps/SupportGrid";
 
-const APPS: Record<ProofId, (p: { step: number }) => React.JSX.Element> = { launchkit: LaunchKit, flowops: FlowOps, supportgrid: SupportGrid, connecthub: ConnectHub, chaindesk: ChainDesk, marketdesk: MarketDesk };
-const ICONS: Record<ProofId, LucideIcon> = { launchkit: Rocket, flowops: Workflow, supportgrid: Bot, connecthub: Plug, chaindesk: Boxes, marketdesk: BarChart3 };
+const APPS: Record<ProofId, (p: { step: number }) => React.JSX.Element> = { launchkit: LaunchKit, opsboard: OpsBoard, supportgrid: SupportGrid, connecthub: ConnectHub, chaindesk: ChainDesk, marketdesk: MarketDesk };
+const ICONS: Record<ProofId, LucideIcon> = { launchkit: Rocket, opsboard: Building2, supportgrid: Bot, connecthub: Plug, chaindesk: Boxes, marketdesk: BarChart3 };
 
 export function ProofSection() {
   const { reduced } = useMotionPreference();
@@ -27,6 +27,7 @@ export function ProofSection() {
   const stage = useRef<HTMLDivElement>(null);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const inView = useInView(stage, "-15% 0px -15% 0px");
+  const near = useInView(stage, "900px 0px 900px 0px", true);
   const item = proofItems[active];
   const App = APPS[item.id];
   // Only the visible, selected product runs its one scripted interaction; it then rests.
@@ -63,7 +64,7 @@ export function ProofSection() {
           </div>
           <div id="pf-panel" role="tabpanel" aria-labelledby={`pf-${item.id}`} className="proof__main">
             <div className="proof__stage" ref={stage}>
-              <div className="proof__screen" key={item.id} aria-hidden><App step={step} /></div>
+              {near && <div className="proof__screen" key={item.id} aria-hidden><App step={step} /></div>}
               <p className="sr-only">{item.name}, {item.kind}. {item.text}</p>
             </div>
             <div className="proof__cap" key={"c" + item.id}>
@@ -76,7 +77,7 @@ export function ProofSection() {
               <div className="proof__side">
                 <p className="proof__brief"><span className="mono">WHAT THE BUILD HAD TO SOLVE</span>{item.brief}</p>
                 <div className="proof__ctas">
-                  <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "proof", product: item.id }); presetBuilder(item.need); }}>{item.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+                  <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "proof", product: item.id }); goToBuilder(e, item.need); }}>{item.cta}<ArrowRight className="arrow" aria-hidden /></Link>
                   {!reduced && <button type="button" className="chip chip--mono" onClick={() => { track("scene_replay", { scene: item.id }); setReplay((r) => r + 1); }}>Replay</button>}
                 </div>
               </div>

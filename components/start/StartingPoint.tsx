@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { starts, type StartId } from "@/content/starts";
 import { track } from "@/lib/analytics";
-import { presetBuilder } from "@/lib/intent";
+import { goToBuilder } from "@/lib/intent";
 import { Reveal } from "@/components/ui/Reveal";
 import { startScenes } from "./scenes";
 
@@ -48,7 +48,7 @@ export function StartingPoint() {
             </div>
             <div className="intent__copy" aria-live="polite" key={s.id}>
               <h3 className="intent__h">{s.headline}</h3>
-              <Link href="/#start" className="btn btn--primary" onClick={() => { track("cta_click", { placement: "start", start: s.id }); presetBuilder(s.need, s.stage); }}>{s.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+              <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "start", start: s.id }); goToBuilder(e, s.need, s.stage); }}>{s.cta}<ArrowRight className="arrow" aria-hidden /></Link>
             </div>
           </div>
           <div id="sp-panel" role="tabpanel" aria-labelledby={`sp-${s.id}`} className="intent__stage">

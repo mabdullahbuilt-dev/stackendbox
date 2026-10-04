@@ -12,7 +12,7 @@ p.on("pageerror", (e) => errs.push("pageerror: " + e.message));
 await p.goto(url, { waitUntil: "networkidle" });
 await p.addStyleTag({ content: "html{scroll-behavior:auto!important}" });
 await p.waitForTimeout(1500);
-const ids = ["hero","services","intent","transform","proof","product","rescue","ai","integrations","work","depth","process","delivery","start","final"];
+const ids = ["hero","services","intent","product","business","transform","ai","integrations","specialized","proof","rescue","work","depth","process","delivery","start","final"];
 // slow scroll through page first so observers fire
 const total = await p.evaluate(() => document.documentElement.scrollHeight);
 for (let y = 0; y < total; y += 600) { await p.evaluate((y) => window.scrollTo(0, y), y); await p.waitForTimeout(60); }

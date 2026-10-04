@@ -1,43 +1,29 @@
 "use client";
-import Link from "next/link";
-import { AnimatePresence, m } from "motion/react";
-import { ArrowLeft, Check } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { ArrowRight, CalendarClock, Check, Lightbulb, Mail, Send } from "lucide-react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { copy } from "@/content/copy";
 import { siteConfig } from "@/site.config";
 import { track } from "@/lib/analytics";
-import { GOALS, NEEDS, STAGES, TIMELINES } from "@/lib/briefOptions";
-import { briefLines, buildBrief } from "@/lib/briefTemplate";
+import type { Need } from "@/lib/briefOptions";
 import { intentNeed, readIntent } from "@/lib/intent";
-import { useMotionPreference } from "@/lib/useMotionPreference";
-import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { CalButton } from "@/components/ui/CalButton";
-import { BuilderStage } from "./BuilderStage";
 import { Turnstile } from "./Turnstile";
 
-type Phase = "q" | "brief" | "contact" | "done";
-const QUESTIONS = [
-  { title: "What do you need?", helper: "Choose up to three.", multi: true },
-  { title: "Where are you now?", helper: "Pick the closest match.", multi: false },
-  { title: "What matters most?", helper: "Pick the one that matters most right now.", multi: false },
-] as const;
+const CHIPS: { need: Need; label: string }[] = [
+  { need: "SaaS / MVP", label: "Product / SaaS" },
+  { need: "Web Application", label: "Web App" },
+  { need: "Custom Software", label: "Custom Software" },
+  { need: "AI System", label: "AI" },
+  { need: "Automation", label: "Automation" },
+  { need: "CRM / Internal Tool", label: "Internal Software" },
+  { need: "API / Integration", label: "Integrations" },
+  { need: "Web3 / Blockchain", label: "Web3 / Blockchain" },
+  { need: "Trading / Data Platform", label: "Trading / Data" },
+  { need: "Not sure", label: "Not sure" },
+];
 
-function Choice({ type, name, label, checked, disabled, onChange }: {
-  type: "radio" | "checkbox"; name: string; label: string; checked: boolean; disabled?: boolean; onChange: () => void;
-}) {
-  return (
-    <label className="choice" data-checked={checked} data-disabled={disabled}>
-      <input type={type} name={name} className="sr-only" checked={checked} disabled={disabled} onChange={onChange} />
-      <span>{label}</span>
-      <Check aria-hidden className="choice__check" />
-    </label>
-  );
-}
-
-function Field({ id, label, error, textarea, optional, ...p }: {
-  id: string; label: string; error?: string; textarea?: boolean; optional?: boolean; rows?: number;
-} & React.InputHTMLAttributes<HTMLInputElement & HTMLTextAreaElement>) {
+function Field({ id, label, error, textarea, optional, ...p }: { id: string; label: string; error?: string; textarea?: boolean; optional?: boolean; rows?: number } & React.InputHTMLAttributes<HTMLInputElement & HTMLTextAreaElement>) {
   const Tag = textarea ? "textarea" : "input";
   return (
     <div className="field" data-invalid={!!error}>
@@ -48,287 +34,171 @@ function Field({ id, label, error, textarea, optional, ...p }: {
   );
 }
 
+/** One simple brief: type freely, optionally tag the area, or skip the form and email or book a call. */
 export function Builder() {
   const uid = useId();
-  const { reduced } = useMotionPreference();
-  const [phase, setPhase] = useState<Phase>("q");
-  const [step, setStep] = useState(0);
-  const [dir, setDir] = useState(1);
-  const [needs, setNeeds] = useState<string[]>([]);
-  const [stage, setStage] = useState("");
-  const [goal, setGoal] = useState("");
-  const [err, setErr] = useState("");
-  const [form, setForm] = useState({ name: "", email: "", company: "", context: "", url: "", timeline: "", website: "" });
+  const [needs, setNeeds] = useState<Need[]>([]);
+  const [form, setForm] = useState({ name: "", email: "", company: "", context: "", url: "", website: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "error" | "done">("idle");
   const [serverErr, setServerErr] = useState("");
   const [turnstile, setTurnstile] = useState("");
   const onToken = useCallback((t: string) => setTurnstile(t), []);
-  const started = useRef(false);
-  const prefilled = useRef(false);
-  const focusRef = useRef<HTMLElement>(null);
-  const mounted = useRef(false);
+  const email = siteConfig.contactEmail;
 
-  const startedTrack = useCallback(() => {
-    if (!started.current) {
-      started.current = true;
-      track("builder_started", { prefilled: prefilled.current });
-    }
-  }, []);
-
-  // Personalisation (P2): preselect from remembered intent. User can deselect.
+  // CTAs elsewhere on the page preselect an area and ask us to focus the brief.
   useEffect(() => {
-    const i = readIntent();
-    if (i) {
-      prefilled.current = true;
-      setNeeds((n) => (n.length ? n : [intentNeed[i]]));
-    }
-    const on = (e: Event) => {
-      const { need, stage: st } = (e as CustomEvent<{ need: string; stage?: string }>).detail;
-      prefilled.current = true;
-      setPhase("q");
-      setStep(0);
-      setNeeds((n) => (n.includes(need) ? n : [...n, need].slice(-3)));
-      if (st) setStage(st);
+    const initial = readIntent();
+    if (initial) setNeeds((n) => (n.length ? n : [intentNeed[initial]]));
+    const onPreset = (e: Event) => {
+      const need = (e as CustomEvent<{ need: Need }>).detail?.need;
+      if (need) setNeeds([need]);
     };
-    window.addEventListener("seb:builder-preset", on);
-    return () => window.removeEventListener("seb:builder-preset", on);
-  }, []);
+    const onFocus = () => (document.getElementById(`${uid}-context`) as HTMLElement | null)?.focus({ preventScroll: true });
+    window.addEventListener("seb:builder-preset", onPreset);
+    window.addEventListener("seb:builder-focus", onFocus);
+    return () => { window.removeEventListener("seb:builder-preset", onPreset); window.removeEventListener("seb:builder-focus", onFocus); };
+  }, [uid]);
 
-  useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
-    const t = setTimeout(() => focusRef.current?.focus({ preventScroll: false }), reduced ? 0 : 280);
-    return () => clearTimeout(t);
-  }, [phase, step, reduced]);
-
-  const brief = useMemo(() => buildBrief(needs, stage, goal), [needs, stage, goal]);
-  const lines = briefLines(brief);
-
-  const toggleNeed = (n: string) => {
-    startedTrack();
-    setErr("");
-    setNeeds((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : cur.length >= 3 ? cur : [...cur, n]));
-  };
-
-  const next = () => {
-    const ok = step === 0 ? needs.length > 0 : step === 1 ? !!stage : !!goal;
-    if (!ok) {
-      setErr(step === 0 ? "Choose at least one to continue." : "Pick one to continue.");
-      return;
-    }
-    setErr("");
-    track("builder_step_completed", { step: step + 1, selection: step === 0 ? needs.join("|") : step === 1 ? stage : goal });
-    setDir(1);
-    if (step < 2) setStep(step + 1);
-    else {
-      setPhase("brief");
-    }
-  };
-  const back = () => {
-    setErr("");
-    setDir(-1);
-    if (phase === "contact") setPhase("brief");
-    else if (phase === "brief") setPhase("q");
-    else if (step > 0) setStep(step - 1);
-  };
+  const toggle = (n: Need) => { setNeeds((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n])); track("builder_chip", { need: n }); };
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      needs, stage, goal, ...form, timeline: form.timeline || undefined,
-      source: `${location.pathname}${location.hash}`.slice(0, 200),
-      referrer: document.referrer ? new URL(document.referrer).origin : "",
-      turnstileToken: turnstile,
-    };
-    // Validation library is loaded on demand so it never weighs on the initial page load.
-    const { briefSchema } = await import("@/lib/briefSchema");
-    const r = briefSchema.safeParse(payload);
-    if (!r.success) {
-      const f: Record<string, string> = {};
-      for (const i of r.error.issues) f[String(i.path[0])] ??= i.message;
+    if (status === "sending") return;
+    const f: Record<string, string> = {};
+    if (!form.name.trim()) f.name = "Tell us your name.";
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) f.email = "That email doesn't look right.";
+    if (form.context.trim().length < 5) f.context = "Tell us a little about what you need.";
+    if (form.url.trim() && !/^https?:\/\/\S+\.\S+/i.test(form.url.trim())) f.url = "Enter a full link starting with https://";
+    if (Object.keys(f).length) {
       setErrors(f);
-      track("builder_error", { field: Object.keys(f)[0] });
-      (document.getElementById(`${uid}-${Object.keys(f)[0]}`) as HTMLElement | null)?.focus();
+      const first = Object.keys(f)[0];
+      (document.getElementById(`${uid}-${first}`) as HTMLElement | null)?.focus();
       return;
     }
-    setErrors({});
-    setStatus("sending");
-    setServerErr("");
-    track("builder_submitted", { needs: needs.join("|"), stage, goal });
+    setErrors({}); setStatus("sending"); setServerErr("");
+    track("builder_submitted", { needs: needs.join("|") });
+    const payload = {
+      needs, name: form.name, email: form.email, company: form.company, context: form.context, url: form.url, website: form.website,
+      source: typeof location !== "undefined" ? location.pathname + location.hash : "", referrer: typeof document !== "undefined" && document.referrer ? (() => { try { return new URL(document.referrer).origin; } catch { return ""; } })() : "",
+      turnstileToken: turnstile,
+    };
     try {
-      const res = await fetch("/api/brief", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(r.data) });
+      const res = await fetch("/api/brief", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; fields?: Record<string, string> };
-      if (res.ok && body.ok) {
-        track("contact_submit_success");
-        setStatus("idle");
-        setPhase("done");
-        setDir(1);
-        return;
-      }
+      if (res.ok && body.ok) { track("contact_submit_success"); setStatus("done"); return; }
       if (body.fields) setErrors(body.fields);
       setServerErr(
-        body.error === "verification_failed"
-          ? "We couldn't verify this request. Please refresh the check and try again."
-          : body.error === "rate_limited"
-          ? "Too many attempts. Please wait a few minutes and try again."
-          : body.error === "validation"
-            ? "Please check the highlighted fields."
-            : "We couldn't send this right now. Please try again shortly.",
+        body.error === "verification_failed" ? "We couldn't verify this request. Please refresh the check and try again."
+          : body.error === "rate_limited" ? "Too many attempts. Please wait a few minutes and try again."
+          : body.error === "validation" ? "Please check the highlighted fields."
+          : "We couldn't send this right now. Your message is still here.",
       );
       track("builder_error", { field: body.error ?? "unknown" });
     } catch {
-      setServerErr("We couldn't send this right now. Check your connection and try again.");
+      setServerErr("We couldn't send this right now. Check your connection. Your message is still here.");
       track("builder_error", { field: "network" });
     }
     setStatus("error");
   };
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const slide = reduced ? { duration: 0 } : { duration: 0.26, ease: [0.16, 1, 0.3, 1] as const };
-  const q = QUESTIONS[step];
-  const title = phase === "q" ? q.title : phase === "brief" ? "Your starting brief" : phase === "contact" ? "Where should we reply?" : "Brief received.";
+  const mailto = email ? `mailto:${email}?subject=${encodeURIComponent("Project enquiry")}${form.context.trim() ? `&body=${encodeURIComponent(form.context.trim().slice(0, 1500))}` : ""}` : undefined;
 
   return (
-    <section id="start" className="section section--alt builder" aria-labelledby="start-title">
+    <section id="start" className="section builder" aria-labelledby="builder-title">
       <div className="container">
         <Reveal className="sec-head">
           <p className="eyebrow">{copy.builder.eyebrow}</p>
-          <h2 id="start-title" className="h2">{copy.builder.title}</h2>
+          <h2 id="builder-title" className="h2" tabIndex={-1}>{copy.builder.title}</h2>
           <p className="body-l">{copy.builder.support}</p>
         </Reveal>
 
-        <div className="builder__grid">
-          <div className="builder__left">
-            {phase === "q" && (
-              <div className="builder__progress" role="img" aria-label={`Step ${step + 1} of 3`}>
-                {[0, 1, 2].map((i) => (
-                  <i key={i} data-on={i <= step} />
-                ))}
-                <span className="mono mono--muted">{step + 1} / 3 · {copy.builder.time}</span>
+        <div className="ct">
+          <div className="ct__card">
+            {status === "done" ? (
+              <div className="ct__done" role="status">
+                <span className="ct__doneic"><Check aria-hidden /></span>
+                <h3>Brief received.</h3>
+                <p>We have your message and will review it. If you would rather talk it through, book a call or email us.</p>
+                <div className="ct__actions">
+                  <CalButton placement="done" />
+                  {mailto && <a className="btn btn--lg btn--secondary" href={`mailto:${email}`}><Mail aria-hidden />Email StackEndBox</a>}
+                  <button type="button" className="btn btn--lg btn--ghost" onClick={() => { setStatus("idle"); setForm({ name: "", email: "", company: "", context: "", url: "", website: "" }); setNeeds([]); }}>Send another brief</button>
+                </div>
               </div>
-            )}
+            ) : (
+              <form onSubmit={submit} noValidate aria-describedby={serverErr ? `${uid}-srv` : undefined}>
+                <div className="ct__row">
+                  <Field id={`${uid}-name`} label="Name" name="name" autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} required />
+                  <Field id={`${uid}-email`} label="Work email" name="email" type="email" autoComplete="email" value={form.email} onChange={set("email")} error={errors.email} required />
+                </div>
+                <Field id={`${uid}-company`} label="Company" name="organization" autoComplete="organization" value={form.company} onChange={set("company")} optional />
+                <Field id={`${uid}-context`} label="What do you need built?" textarea rows={6} name="context" value={form.context} onChange={set("context")} error={errors.context} required />
+                <Field id={`${uid}-url`} label="Project link or repository" name="url" inputMode="url" value={form.url} onChange={set("url")} error={errors.url} optional />
 
-            <div className="builder__card">
-              <AnimatePresence mode="wait" initial={false} custom={dir}>
-                <m.div
-                  key={phase === "q" ? `q${step}` : phase}
-                  custom={dir}
-                  initial={{ opacity: 0, x: dir * 28 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: dir * -28 }}
-                  transition={slide}
-                >
-                  {phase === "q" && (
-                    <fieldset className="builder__fs">
-                      <legend ref={focusRef as React.RefObject<HTMLLegendElement>} tabIndex={-1} className="builder__q">{q.title}</legend>
-                      <p className="builder__helper">{q.helper}</p>
-                      <div className="choices" role={q.multi ? "group" : "radiogroup"}>
-                        {step === 0 && NEEDS.map((n) => (
-                          <Choice key={n} type="checkbox" name="need" label={n} checked={needs.includes(n)} disabled={!needs.includes(n) && needs.length >= 3} onChange={() => toggleNeed(n)} />
-                        ))}
-                        {step === 1 && STAGES.map((s) => (
-                          <Choice key={s} type="radio" name="stage" label={s} checked={stage === s} onChange={() => { setStage(s); setErr(""); }} />
-                        ))}
-                        {step === 2 && GOALS.map((g) => (
-                          <Choice key={g} type="radio" name="goal" label={g} checked={goal === g} onChange={() => { setGoal(g); setErr(""); }} />
-                        ))}
-                      </div>
-                      {err && <p role="alert" className="field__err">{err}</p>}
-                    </fieldset>
-                  )}
+                <fieldset className="ct__chips">
+                  <legend className="mono mono--muted">AREA (OPTIONAL, PICK ANY)</legend>
+                  <div className="choices">
+                    {CHIPS.map((c) => (
+                      <button key={c.need} type="button" className="choice choice--btn" aria-pressed={needs.includes(c.need)} data-checked={needs.includes(c.need)} onClick={() => toggle(c.need)}>
+                        <span>{c.label}</span><Check aria-hidden className="choice__check" />
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
 
-                  {phase === "brief" && (
-                    <div className="brief">
-                      <h3 ref={focusRef as React.RefObject<HTMLHeadingElement>} tabIndex={-1} className="mono brief__eyebrow">YOUR STARTING BRIEF</h3>
-                      <dl className="brief__facts">
-                        <div><dt className="mono mono--muted">NEED</dt><dd>{brief.needs.join(" · ")}</dd></div>
-                        <div><dt className="mono mono--muted">STAGE</dt><dd>{brief.stage}</dd></div>
-                        <div><dt className="mono mono--muted">GOAL</dt><dd>{brief.goal}</dd></div>
-                      </dl>
-                      <p className="brief__line">{lines.line2}</p>
-                      <p className="body-s mono--muted">We review every brief and reply with questions, not a pitch.</p>
-                      <div className="brief__actions">
-                        <Button size="lg" onClick={() => { setDir(1); setPhase("contact"); }}>Discuss This Project</Button>
-                        <CalButton placement="builder-brief" />
-                      </div>
-                    </div>
-                  )}
+                <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hp" value={form.website} onChange={set("website")} />
+                <Turnstile onToken={onToken} />
 
-                  {phase === "contact" && (
-                    <form className="contactform" onSubmit={submit} noValidate>
-                      <h3 ref={focusRef as React.RefObject<HTMLHeadingElement>} tabIndex={-1} className="builder__q">{title}</h3>
-                      {(Object.keys(errors).length > 0 || serverErr) && (
-                        <div role="alert" className="form-alert">
-                          {serverErr || "Please check the highlighted fields."}
-                          {serverErr && siteConfig.contactEmail && <> You can also write to <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>.</>}
-                        </div>
-                      )}
-                      <div className="contactform__grid">
-                        <Field id={`${uid}-name`} name="name" label="Name" autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} required />
-                        <Field id={`${uid}-email`} name="email" type="email" label="Work email" autoComplete="email" value={form.email} onChange={set("email")} error={errors.email} required />
-                        <Field id={`${uid}-company`} name="company" label="Company" autoComplete="organization" value={form.company} onChange={set("company")} error={errors.company} optional />
-                        <Field id={`${uid}-url`} name="url" type="url" inputMode="url" label="Link or repository" value={form.url} onChange={set("url")} error={errors.url} optional />
-                      </div>
-                      <Field id={`${uid}-context`} name="context" textarea rows={3} label="Anything we should know?" value={form.context} onChange={set("context")} error={errors.context} optional />
-                      <fieldset className="timeline">
-                        <legend className="mono mono--muted">TIMELINE (OPTIONAL)</legend>
-                        <div className="timeline__opts">
-                          {TIMELINES.map((t) => (
-                            <label key={t} data-checked={form.timeline === t}>
-                              <input type="radio" name="timeline" className="sr-only" checked={form.timeline === t} onChange={() => setForm((f) => ({ ...f, timeline: t }))} />
-                              <span>{t}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </fieldset>
-                      <div className="hp" aria-hidden>
-                        <label>Website<input tabIndex={-1} autoComplete="off" name="website" value={form.website} onChange={set("website")} /></label>
-                      </div>
-                      <Turnstile onToken={onToken} />
-                      <p className="body-s mono--muted">By sending this you agree to be contacted about your project.</p>
-                      <Button type="submit" size="lg" loading={status === "sending"} aria-disabled={status === "sending"} onClick={status === "sending" ? (e) => e.preventDefault() : undefined}>
-                        {status === "sending" ? "Sending..." : "Send brief"}
-                      </Button>
-                    </form>
-                  )}
-
-                  {phase === "done" && (
-                    <div className="done" role="status">
-                      <span className="done__tick" aria-hidden><Check /></span>
-                      <h3 ref={focusRef as React.RefObject<HTMLHeadingElement>} tabIndex={-1} className="builder__q">Brief received.</h3>
-                      <p className="body-l">We have the context. Choose what you want to do next.</p>
-                      <div className="done__sub"><span className="mono mono--muted">SUBMITTED</span><b>{brief.needs.join(" + ")}</b></div>
-                      <div className="brief__actions">
-                        <CalButton placement="builder-done" className="btn btn--lg btn--primary" />
-                        <Link className="btn btn--lg btn--secondary" href="/">Back to StackEndBox</Link>
-                        {siteConfig.whatsappUrl && (
-                          <a className="link-cta" href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">Message us</a>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </m.div>
-              </AnimatePresence>
-            </div>
-
-            {phase !== "done" && (
-              <div className="builder__bar">
-                <button type="button" className="icon-btn" onClick={back} aria-label="Back" disabled={phase === "q" && step === 0}>
-                  <ArrowLeft />
-                </button>
-                {phase === "q" && (
-                  <Button onClick={next} size="lg" className="builder__next">{step === 2 ? "See my brief" : "Continue"}</Button>
+                {serverErr && (
+                  <div id={`${uid}-srv`} className="ct__err" role="alert">
+                    <p>{serverErr}</p>
+                    <p className="ct__alt">
+                      {email && <>You can also email <a href={mailto}>{email}</a></>}
+                      {email && calParts_available() && " or "}
+                      {calParts_available() && <CalButton placement="error" className="ct__link" icon={false}>book a call</CalButton>}.
+                    </p>
+                  </div>
                 )}
-              </div>
+
+                <div className="ct__submit">
+                  <button type="submit" className="btn btn--primary btn--lg" disabled={status === "sending"}>
+                    {status === "sending" ? "Sending" : "Send Project Brief"}<Send className="arrow" aria-hidden />
+                  </button>
+                  <span className="mono mono--muted">{copy.builder.time}</span>
+                </div>
+              </form>
             )}
           </div>
 
-          <BuilderStage needs={needs} stage={stage} goal={goal} />
+          <div className="ct__side">
+            {email && (
+              <div className="ct__opt">
+                <span className="ct__ic"><Mail aria-hidden /></span>
+                <h3>Email us</h3>
+                <a className="ct__mail" href={`mailto:${email}`} onClick={() => track("contact_clicked", { placement: "builder", kind: "email" })}>{email}</a>
+                <p>Send details, files or questions straight to the team.</p>
+                <a className="btn btn--secondary" href={`mailto:${email}`} onClick={() => track("contact_clicked", { placement: "builder-btn", kind: "email" })}>Email StackEndBox</a>
+              </div>
+            )}
+            <div className="ct__opt">
+              <span className="ct__ic"><CalendarClock aria-hidden /></span>
+              <h3>Book a call</h3>
+              <p>Talk the project through with an engineer. Pick a time that suits you.</p>
+              <CalButton placement="builder" className="btn btn--primary" />
+            </div>
+            <div className="ct__opt">
+              <span className="ct__ic"><Lightbulb aria-hidden /></span>
+              <h3>Something custom?</h3>
+              <p>Not sure where it fits? Describe it in your own words in the brief. A rough idea is a fine start.</p>
+              <a className="btn btn--ghost" href="#start" onClick={(e) => { e.preventDefault(); (document.getElementById(`${uid}-context`) as HTMLElement | null)?.focus(); }}>Describe it <ArrowRight className="arrow" aria-hidden /></a>
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
+
+function calParts_available() { return !!siteConfig.calUrl; }

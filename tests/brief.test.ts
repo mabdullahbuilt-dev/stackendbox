@@ -14,13 +14,16 @@ describe("brief template", () => {
 });
 
 describe("brief schema", () => {
-  const ok = { needs: ["Automation"], stage: "Idea", goal: "Launch", name: "A", email: "a@b.co" };
+  const ok = { needs: ["Automation"], stage: "Idea", goal: "Launch", name: "A", email: "a@b.co", context: "We need a portal" };
   it("accepts a valid brief", () => expect(briefSchema.safeParse(ok).success).toBe(true));
-  it("rejects bad email, empty needs, >3 needs and filled honeypot", () => {
+  it("rejects bad email, missing context and filled honeypot", () => {
     expect(briefSchema.safeParse({ ...ok, email: "nope" }).success).toBe(false);
-    expect(briefSchema.safeParse({ ...ok, needs: [] }).success).toBe(false);
-    expect(briefSchema.safeParse({ ...ok, needs: ["Automation", "AI System", "SaaS / MVP", "Not sure"] }).success).toBe(false);
+    expect(briefSchema.safeParse({ ...ok, context: "" }).success).toBe(false);
     expect(briefSchema.safeParse({ ...ok, website: "x" }).success).toBe(false);
+  });
+  it("categories, stage and goal are optional and Web3 / Trading are valid", () => {
+    expect(briefSchema.safeParse({ name: "A", email: "a@b.co", context: "Build a thing" }).success).toBe(true);
+    expect(briefSchema.safeParse({ ...ok, needs: ["Web3 / Blockchain", "Trading / Data Platform", "AI System", "Automation"] }).success).toBe(true);
   });
   it("validates optional url", () => {
     expect(briefSchema.safeParse({ ...ok, url: "" }).success).toBe(true);

@@ -7,7 +7,7 @@ const I = (n: number) => ({ ["--i" as string]: n });
 function Idea() {
   return (
     <div className="sp sp-idea">
-      <div className="sp-note" style={I(0)}><span className="mono">THE IDEA</span><p>An app where studios take bookings and payments<i className="mk-caret" /></p></div>
+      <div className="sp-note" style={I(0)}><span className="mono">THE IDEA</span><p>A portal where clients submit work and pay online<i className="mk-caret" /></p></div>
       <div className="sp-trail" style={I(1)} aria-hidden />
       <div className="sp-phone" style={I(2)}>
         <div className="sp-phone__bar" />

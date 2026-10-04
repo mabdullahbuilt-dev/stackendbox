@@ -3,9 +3,9 @@ import Link from "next/link";
 import { LayoutGroup, m } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
+import { goToBuilder } from "@/lib/intent";
 import { track } from "@/lib/analytics";
 import { useMotionPreference } from "@/lib/useMotionPreference";
-import { ButtonLink } from "@/components/ui/Button";
 import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
 
@@ -51,7 +51,7 @@ export function Nav() {
   }, [reduced]);
 
   useEffect(() => {
-    const ids = copy.nav.links.map((l) => l.id);
+    const ids = [...copy.nav.left, ...copy.nav.right, copy.nav.contact].map((l) => l.id);
     const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
     const vis = new Map<string, number>();
     const io = new IntersectionObserver(
@@ -75,6 +75,27 @@ export function Nav() {
 
   const highlight = hover ?? null;
 
+  const item = (l: { id: string; href: string; label: string }) => (
+    <li key={l.id}>
+      <Link
+        href={l.href}
+        className="nav__link"
+        aria-current={active === l.id ? "true" : undefined}
+        data-active={active === l.id}
+        onPointerEnter={() => setHover(l.id)}
+        onFocus={() => setHover(l.id)}
+        onBlur={() => setHover(null)}
+        onClick={() => track("nav_link_click", { link: l.id })}
+      >
+        {highlight === l.id && (
+          <m.span layoutId="nav-hl" className="nav__hl" transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 30 }} />
+        )}
+        <span className="nav__text">{l.label}</span>
+        {active === l.id && <span className="nav__dot" aria-hidden />}
+      </Link>
+    </li>
+  );
+
   return (
     <header
       ref={headerRef}
@@ -84,52 +105,29 @@ export function Nav() {
       onFocusCapture={() => setHidden(false)}
     >
       <div className="nav__bar">
-        <Link href="/" aria-label="StackEndBox home" className="nav__logo">
-          <Logo markHeight={compact ? 24 : 28} priority />
-        </Link>
-
-        <nav aria-label="Primary" className="nav__links">
-          <LayoutGroup id="nav">
-            <ul onPointerLeave={() => setHover(null)}>
-              {copy.nav.links.map((l) => (
-                <li key={l.id}>
-                  <Link
-                    href={l.href}
-                    className="nav__link"
-                    aria-current={active === l.id ? "true" : undefined}
-                    data-active={active === l.id}
-                    onPointerEnter={() => setHover(l.id)}
-                    onFocus={() => setHover(l.id)}
-                    onBlur={() => setHover(null)}
-                    onClick={() => track("nav_link_click", { link: l.id })}
-                  >
-                    {highlight === l.id && (
-                      <m.span
-                        layoutId="nav-hl"
-                        className="nav__hl"
-                        transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 30 }}
-                      />
-                    )}
-                    <span className="nav__text">{l.label}</span>
-                    {active === l.id && <span className="nav__dot" aria-hidden />}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+        <nav aria-label="Primary" className="nav__links nav__links--l">
+          <LayoutGroup id="nav-l">
+            <ul onPointerLeave={() => setHover(null)}>{copy.nav.left.map(item)}</ul>
           </LayoutGroup>
         </nav>
 
+        <Link href="/" aria-label="StackEndBox home" className="nav__logo">
+          <Logo stacked markHeight={compact ? 26 : 34} priority />
+        </Link>
+
         <div className="nav__right">
-          <span className="nav__cta">
-            <ButtonLink href="/#start" size="md" onClick={() => track("nav_cta_click")}>
-              {copy.nav.cta}
-            </ButtonLink>
-          </span>
-          <span className="nav__cta-compact">
-            <ButtonLink href="/#start" size="sm" arrow={false} onClick={() => track("nav_cta_click")}>
-              Start
-            </ButtonLink>
-          </span>
+          <nav aria-label="Secondary" className="nav__links nav__links--r">
+            <LayoutGroup id="nav-r">
+              <ul onPointerLeave={() => setHover(null)}>
+                {copy.nav.right.map(item)}
+                <li>
+                  <Link href={copy.nav.contact.href} className="nav__pill" aria-current={active === "start" ? "true" : undefined} onClick={(e) => { track("nav_cta_click", { link: "contact" }); goToBuilder(e); }}>
+                    {copy.nav.contact.label}
+                  </Link>
+                </li>
+              </ul>
+            </LayoutGroup>
+          </nav>
           <MobileMenu open={menuOpen} onOpenChange={setMenuOpen} />
         </div>
       </div>

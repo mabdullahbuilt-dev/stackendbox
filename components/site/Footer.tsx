@@ -1,3 +1,4 @@
+import { BuilderLink } from "@/components/ui/BuilderLink";
 import { CalButton } from "@/components/ui/CalButton";
 import Link from "next/link";
 import { copy } from "@/content/copy";
@@ -5,7 +6,7 @@ import { siteConfig } from "@/site.config";
 import { Logo } from "./Logo";
 import { MotionToggle } from "./MotionToggle";
 
-const services = ["SaaS & MVPs", "Web Applications", "AI Systems", "Automation", "CRM & Internal Tools", "APIs & Integrations", "Custom Software"];
+const services = ["SaaS & MVPs", "Web Applications", "Custom & Internal Software", "AI Systems", "APIs & Integrations", "Automation", "Specialized Software"];
 
 export function Footer() {
   const social = [
@@ -31,20 +32,20 @@ export function Footer() {
               <h2 className="mono mono--muted">Work</h2>
               <ul>
                 <li><Link href="/#work">Selected Builds</Link></li>
-                <li><Link href="/#labs">StackEndBox Labs</Link></li>
+                <li><Link href="/#proof">Capability Proof</Link></li>
               </ul>
             </div>
             <div>
               <h2 className="mono mono--muted">Company</h2>
               <ul>
                 <li><Link href="/#process">How We Build</Link></li>
-                <li><Link href="/#start">Contact</Link></li>
+                <li><BuilderLink source="footer-contact">Contact</BuilderLink></li>
               </ul>
             </div>
             <div>
               <h2 className="mono mono--muted">Contact</h2>
               <ul>
-                <li><Link href="/#start">Start a Project</Link></li>
+                <li><BuilderLink source="footer-start">Start a Project</BuilderLink></li>
                 {siteConfig.contactEmail && <li><a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a></li>}
                 {siteConfig.calUrl && <li><CalButton placement="footer" className="link-btn" icon={false} /></li>}
                 {siteConfig.whatsappUrl && <li><a href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>}
