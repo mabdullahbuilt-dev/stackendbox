@@ -90,3 +90,4 @@
 }
 @media (max-width: 899px) { .wb__note { position: static; width: auto; animation: none; } .wb__bench { grid-template-rows: auto; } }
 @media (prefers-reduced-motion: reduce) { .wb__note { animation: none; } }
+.wb__face--note { inset: calc(var(--u) * 8) calc(var(--u) * 8) auto calc(var(--u) * 8); }
