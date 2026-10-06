@@ -24,6 +24,9 @@ const CAPTIONS = [
   "The audit history records the action.",
 ];
 const N = CAPTIONS.length;
+type View = "manager" | "team" | "admin";
+const VIEWS: [View, string, string][] = [["manager", "MANAGER", "Portfolio, workload, status and reporting"], ["team", "TEAM", "Tasks, customer workspace, documents and activity"], ["admin", "ADMIN", "Roles, permissions, audit and settings"]];
+const ROLES = [["Admin", [1, 1, 1, 1]], ["Manager", [1, 1, 1, 0]], ["Staff", [1, 1, 0, 0]], ["Client", [1, 0, 0, 0]]] as const;
 
 /** A dense multi-user business application. The point is management: roles, ownership, records, reporting, audit. */
 export function BusinessSoftware() {
@@ -33,6 +36,8 @@ export function BusinessSoftware() {
   const inView = useInView(box, "-20% 0px -20% 0px", true);
   const near = useInView(box, "900px 0px 900px 0px", true);
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const [view, setView] = useState<View>("manager");
+  const [chk, setChk] = useState<Record<string, boolean>>({ "Prepare scope doc": true });
 
   const run = () => {
     clearInterval(timer.current);
@@ -58,7 +63,15 @@ export function BusinessSoftware() {
           <p className="body-l">{copy.business.support}</p>
         </Reveal>
 
-        <div className="bsw__stage" ref={box} data-s={s} role="img" aria-label="A custom business management application: dashboard, team workload, customer workspace, roles and permissions, tasks, reporting and audit history">
+        <div className="bsw__views" role="tablist" aria-label="Choose a viewpoint">
+          {VIEWS.map(([v, t, d]) => (
+            <button key={v} role="tab" aria-selected={view === v} tabIndex={view === v ? 0 : -1} className="bsw__view" data-active={view === v} onClick={() => { setView(v); track("scene_replay", { scene: "business", view: v }); }}
+              onKeyDown={(e) => { const i = VIEWS.findIndex((x) => x[0] === view); if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); const n = VIEWS[(i + (e.key === "ArrowRight" ? 1 : VIEWS.length - 1)) % VIEWS.length][0]; setView(n); } }}>
+              <b className="mono">{t}</b><em>{d}</em>
+            </button>
+          ))}
+        </div>
+        <div className="bsw__stage" data-view={view} ref={box} data-s={s} role="img" aria-label="A custom business management application: dashboard, team workload, customer workspace, roles and permissions, tasks, reporting and audit history">
           {near && (
           <div className="bsw__scene" aria-hidden>
             {/* background layer: reporting and audit */}
@@ -80,7 +93,7 @@ export function BusinessSoftware() {
               <div className="bsw__bar"><i /><i /><i /><b>Northfield Ops</b><span className="bsw__cmd"><Search />Search anything<kbd><Command />K</kbd></span><Bell className="bsw__bell" /><em>AK</em></div>
               <div className="bsw__grid">
                 <nav className="bsw__nav">{NAV.map(([Ic, t]) => <span key={t} data-on={t === "Projects"}><Ic />{t}</span>)}</nav>
-                <div className="bsw__main">
+                {view === "manager" && (                <div className="bsw__main">
                   <div className="bsw__kpis">
                     <div><em>Active projects</em><b>24</b></div>
                     <div><em>Open tasks</em><b>{s >= 6 ? 137 : 138}</b></div>
@@ -102,6 +115,35 @@ export function BusinessSoftware() {
                     ))}
                   </div>
                 </div>
+                )}
+                {view === "team" && (
+                  <div className="bsw__main bsw__main--alt">
+                    <div className="bsw__panel"><b>My tasks</b>
+                      {["Prepare scope doc", "Review wireframes", "Send onboarding pack", "Update project plan"].map((t) => (
+                        <button type="button" key={t} className="bsw__task" data-done={!!chk[t]} onClick={() => setChk((c) => ({ ...c, [t]: !c[t] }))}><span>{chk[t] ? <Check /> : null}</span>{t}</button>
+                      ))}
+                    </div>
+                    <div className="bsw__panel"><b>Northwind Ltd, documents</b>
+                      {["Statement of work.pdf", "Wireframes v3.fig", "Kickoff notes.md"].map((d) => <div key={d} className="bsw__doc"><FileText />{d}</div>)}
+                    </div>
+                    <div className="bsw__panel"><b>Recent activity</b>
+                      <ol className="bsw__feed">{["Leo commented on Wireframes v3", "Maya uploaded Statement of work", "Task 13 moved to review"].map((t) => <li key={t}>{t}</li>)}</ol>
+                    </div>
+                  </div>
+                )}
+                {view === "admin" && (
+                  <div className="bsw__main bsw__main--alt">
+                    <div className="bsw__panel"><b>Roles and permissions</b>
+                      <table className="bsw__matrix"><thead><tr><th /><th>View</th><th>Edit</th><th>Approve</th><th>Admin</th></tr></thead><tbody>
+                        {ROLES.map(([r, v]) => <tr key={r}><th>{r}</th>{v.map((x, i) => <td key={i} data-on={!!x}>{x ? <Check aria-label="allowed" /> : <span aria-label="no access">-</span>}</td>)}</tr>)}
+                      </tbody></table>
+                    </div>
+                    <div className="bsw__panel"><b>Audit log</b>
+                      <ol className="bsw__feed">{["A. Khan changed Sam to Project lead", "System: Report refreshed", "A. Khan invited a client user", "Role Staff: Edit enabled"].map((t) => <li key={t}>{t}</li>)}</ol>
+                    </div>
+                    <div className="bsw__panel"><b>Settings</b><div className="bsw__chips">{["Single sign-on", "Two-step sign-in", "Data export", "Retention 7 years"].map((t) => <span key={t}><ShieldCheck />{t}</span>)}</div></div>
+                  </div>
+                )}
               </div>
             </div>
 
