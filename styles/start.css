@@ -120,3 +120,6 @@
   .sp-manual .sp-tile { position: relative; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; width: auto; } .sp-manual .sp-copy { position: static; translate: none; grid-column: 1 / -1; justify-self: center; }
   .sp-proto { height: 340px; }
 }
+
+.sp-grid--mods { grid-template-columns: repeat(3, 1fr); } .sp-grid--mods .sp-slot { height: auto; min-height: 74px; display: grid; justify-items: center; gap: 4px; padding: 10px 6px; } .sp-grid--mods .sp-slot b { font-size: 12px; font-weight: 500; } .sp-grid--mods .sp-slot em { font-style: normal; font-size: 9px; color: var(--text-muted); letter-spacing: 0.08em; } .sp-grid--mods .sp-slot[data-on="true"] em { color: var(--orange-300); } .sp-grid--mods .sp-slot[data-lock="true"] em { color: var(--green-400); }
+.sp-cands { display: none; }

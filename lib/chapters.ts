@@ -38,6 +38,16 @@ let resumed = false; // set when a hidden tab becomes visible: returning is not 
 
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 const emit = () => { version++; subs.forEach((f) => f()); };
+const progressSubs = new Map<string, Set<(p: number) => void>>();
+/** Imperative progress listener for one chapter (for timelines that should not re-render React). */
+export function onProgress(id: string, fn: (p: number) => void): () => void {
+  let set = progressSubs.get(id);
+  if (!set) { set = new Set(); progressSubs.set(id, set); }
+  set.add(fn);
+  const it = items.get(id);
+  if (it && it.p >= 0) fn(it.p);
+  return () => { set!.delete(fn); };
+}
 
 function progressOf(el: HTMLElement, r: DOMRect, vh: number) {
   const h = r.height;
@@ -72,7 +82,7 @@ function measure() {
       it.el.style.setProperty("--exit", exit.toFixed(3));
     }
     const p = progressOf(it.el, r, vh);
-    if (Math.abs(p - it.p) > 0.002) { it.p = p; it.el.style.setProperty("--p", p.toFixed(3)); changed = true; }
+    if (Math.abs(p - it.p) > 0.002) { it.p = p; it.el.style.setProperty("--p", p.toFixed(3)); changed = true; progressSubs.get(id)?.forEach((f) => f(p)); }
   });
   if (!pageVisible) best = "";
   if (best !== active) {

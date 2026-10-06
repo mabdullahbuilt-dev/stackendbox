@@ -13,7 +13,7 @@ import { useMotionPreference } from "@/lib/useMotionPreference";
 export function Testimonials() {
   const { reduced } = useMotionPreference();
   const list = testimonials.filter(isPublishable);
-  const [i, setI] = useState(() => Math.max(0, list.findIndex((t) => t.featured)));
+  const [i, setI] = useState(0);
   if (list.length === 0) return null;
   const t = list[i % list.length];
   const dur = reduced ? 0 : 0.35;
@@ -35,15 +35,12 @@ export function Testimonials() {
                 {t.avatar && <Image className="tst__avatar" src={t.avatar} alt="" width={72} height={72} />}
                 <b>{t.name}</b>
                 <span>{t.role}</span>
-                <span>{t.company}</span>
-                {t.companyLogo && <Image className="tst__logo" src={t.companyLogo} alt={t.company} width={120} height={32} />}
-                <em className="mono">{t.service}{t.project ? ` · ${t.project}` : ""}</em>
-              </m.div>
+                              </m.div>
             </AnimatePresence>
             {list.length > 1 && (
               <div className="tst__ctl" role="group" aria-label="Choose testimonial">
                 {list.map((x, k) => (
-                  <button key={x.id} type="button" aria-label={`Show testimonial ${k + 1} of ${list.length}: ${x.company}`} aria-current={k === i % list.length} onClick={() => setI(k)} className="tst__dot" />
+                  <button key={x.id} type="button" aria-label={`Show testimonial ${k + 1} of ${list.length}: ${x.name}`} aria-current={k === i % list.length} onClick={() => setI(k)} className="tst__dot" />
                 ))}
               </div>
             )}
@@ -52,9 +49,9 @@ export function Testimonials() {
             <div className="tst__sup">
               {support.map((x) => (
                 <button key={x.id} type="button" className="tst__small" onClick={() => setI(list.indexOf(x))}>
-                  <span className="mono mono--muted">{x.service}</span>
+                  
                   <span>{x.quote.length > 140 ? `${x.quote.slice(0, 137)}...` : x.quote}</span>
-                  <b>{x.name}, {x.company}</b>
+                  <b>{x.name}{x.role ? `, ${x.role}` : ""}</b>
                 </button>
               ))}
             </div>

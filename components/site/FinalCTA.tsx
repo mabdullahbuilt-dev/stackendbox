@@ -6,6 +6,7 @@ import { copy } from "@/content/copy";
 import { goToBuilder } from "@/lib/intent";
 import { track } from "@/lib/analytics";
 import { loadGsap } from "@/lib/gsap";
+import { onProgress } from "@/lib/chapters";
 import { useMedia } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { ButtonLink } from "@/components/ui/Button";
@@ -70,9 +71,9 @@ export function FinalCTA() {
         });
         tl.to(thumbs, { autoAlpha: 0, duration: 0.2, ease: "none" }, 0.7);
         tl.to(mark, { opacity: 1, scale: 1, duration: 0.2, ease: "none" }, 0.7);
-        const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { tl.play(); io.disconnect(); } }, { threshold: 0.6 });
-        io.observe(el);
-        cleanup = () => io.disconnect();
+        // Scroll drives the convergence and reverses it on the way back up; every visit plays it again.
+        const off = onProgress("final", (p) => tl.progress(Math.min(1, Math.max(0, (p - 0.12) / 0.5))));
+        cleanup = off;
       }, el);
       const prev = cleanup;
       cleanup = () => { prev?.(); ctx.revert(); };

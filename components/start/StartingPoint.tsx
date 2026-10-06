@@ -2,6 +2,7 @@
 import { ArrowRight, Bot, Boxes, Lightbulb, Link2Off, Rocket, Sparkles, SquareStack, Wrench, Workflow, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useChapterCycle } from "@/lib/chapters";
 import { copy } from "@/content/copy";
 import { starts, type StartId } from "@/content/starts";
 import { track } from "@/lib/analytics";
@@ -16,6 +17,8 @@ export function StartingPoint() {
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const stage = useRef<HTMLDivElement>(null);
   const s = starts[active];
+  // each visit to the chapter re-assembles the selected scene
+  const cycle = useChapterCycle("intent");
 
   // Blueprint pointer: a measurement crosshair that follows the pointer over this stage only. One rAF, fine pointer only.
   useEffect(() => {
@@ -67,7 +70,7 @@ export function StartingPoint() {
           </div>
           <div id="sp-panel" role="tabpanel" aria-labelledby={`sp-${s.id}`} className="intent__stage" ref={stage} data-guide="off">
             <i className="sp-guide sp-guide--x" aria-hidden /><i className="sp-guide sp-guide--y" aria-hidden /><i className="sp-ruler sp-ruler--t" aria-hidden /><i className="sp-ruler sp-ruler--l" aria-hidden />
-            <div aria-hidden key={s.id} className="sp-wrap"><Scene /></div>
+            <div aria-hidden key={`${s.id}-${cycle}`} className="sp-wrap"><Scene /></div>
             <p className="sr-only">{s.label}. {s.headline}</p>
           </div>
         </div>

@@ -1,39 +1,32 @@
-import { BarChart3, Building2, ClipboardList, Settings, ShieldCheck, UsersRound } from "lucide-react";
-import { AppShell, Av, Chip } from "./Shell";
+import { Lock } from "lucide-react";
 
 export const OPSBOARD_STEPS = 6;
-const ROWS = [["Harbor redesign", "Maya", "M", "ok", "Active"], ["Atlas migration", "Ines", "I", "ok", "Active"], ["Corvid onboarding", "Leo", "L", "idle", "Planned"], ["Delta handover", "Jo", "J", "ok", "Active"]] as const;
+const COLS = ["Intake", "In progress", "Approval", "Done"] as const;
+/** Column of the moving card for each step. */
+const AT = [0, 0, 1, 2, 2, 3, 3];
 
-/** Business management software: customer records, ownership, roles, tasks, reporting and audit history. */
+/** Operations as a board: one customer project moves through intake, work, approval and done, with owners on cards. */
 export function OpsBoard({ step }: { step: number }) {
-  const log = ["Project opened, A. Khan", "Owner assigned: Sam", "Role changed: Editor to Lead", "Task marked done", "Report refreshed", "Audit entry recorded"];
+  const col = AT[Math.min(step, AT.length - 1)];
+  const others: [number, string, string][] = [[0, "Corvid onboarding", "LE"], [1, "Harbor redesign", "MA"], [1, "Atlas migration", "IN"], [3, "Delta handover", "JO"], [3, "Eastgate audit", "MA"]];
   return (
-    <AppShell
-      name="OpsBoard" active={1} title="Projects"
-      nav={[[Building2, "Customers"], [ClipboardList, "Projects"], [UsersRound, "Team"], [BarChart3, "Reports"], [Settings, "Settings"]]}
-      top={<Chip tone={step >= 5 ? "ok" : "run"}>{step >= 5 ? "Audit recorded" : "Editing"}</Chip>}
-      rail={
-        <>
-          <div className="pa-card"><b className="mono">AUDIT HISTORY</b>
-            <ol className="pa-log">{log.slice(0, step + 1).map((l, i) => <li key={l} data-cur={i === step}>{l}</li>)}</ol>
+    <div className="bw bw-board">
+      <header className="bw-top"><b><i className="bw-dot" />OpsBoard</b><span>Delivery board · 6 projects</span><em data-ok={step >= 6}>{step >= 6 ? "AUDIT LOGGED" : "LIVE BOARD"}</em></header>
+      <div className="bw-cols">
+        {COLS.map((c, i) => (
+          <div key={c} className="bw-col" data-hot={i === col}>
+            <b className="mono">{c.toUpperCase()}<span>{others.filter(([k]) => k === i).length + (i === col ? 1 : 0)}</span></b>
+            {i === col && (
+              <div className="bw-card bw-card--move" key={`m${col}`} data-appr={col === 2}>
+                <strong>Northwind rollout</strong>
+                <span>{col === 0 ? "New request from Northwind Ltd" : col === 1 ? "Sam assigned, 4 tasks" : col === 2 ? "Budget $18,400 needs Finance" : "Approved, delivered, reported"}</span>
+                <div className="bw-card__f">{col === 2 && <em className="bw-lock"><Lock aria-hidden />{step >= 4 ? "Approved" : "Waiting"}</em>}<u data-on={col >= 1}>{col >= 1 ? "SA" : "?"}</u></div>
+              </div>
+            )}
+            {others.filter(([k]) => k === i).map(([, t, o]) => <div key={t} className="bw-card"><strong>{t}</strong><div className="bw-card__f"><u>{o}</u></div></div>)}
           </div>
-          <div className="pa-card"><b className="mono">ON TRACK</b><div className="pa-bars">{[44, 52, 48, 60, 56, step >= 4 ? 86 : 64].map((h, i) => <i key={i} style={{ height: `${h}%` }} data-cur={i === 5} />)}</div></div>
-        </>
-      }
-    >
-      <div className="pa-table">
-        <div className="pa-th"><span>Project</span><span>Customer</span><span>Owner</span><span>Status</span></div>
-        <div className="pa-tr pa-tr--new pa-tr4" data-cur>
-          <span>Northwind rollout</span>
-          <span>Northwind Ltd</span>
-          <span>{step >= 1 ? <><Av tone="accent">S</Av>Sam</> : "Unassigned"}</span>
-          <span><Chip tone={step >= 3 ? "ok" : "run"}>{step >= 3 ? "On track" : "In review"}</Chip></span>
-        </div>
-        {ROWS.map(([n, c, a, t, s]) => (
-          <div key={n} className="pa-tr pa-tr4"><span>{n}</span><span>{c}</span><span><Av>{a}</Av></span><span><Chip tone={t}>{s}</Chip></span></div>
         ))}
       </div>
-      <div className="pa-foot"><span className="pa-note"><ShieldCheck aria-hidden />{step >= 2 ? "Sam can now edit and approve" : "Role: Editor"}</span></div>
-    </AppShell>
+    </div>
   );
 }

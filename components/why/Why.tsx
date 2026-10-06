@@ -6,10 +6,10 @@ import { copy } from "@/content/copy";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 
 const POINTS: { icon: LucideIcon; stop: string; title: string; text: string }[] = [
-  { icon: Layers, stop: "BRIEF", title: "One team across the build.", text: "Product, interface, backend, AI and integrations are designed together, not handed between vendors." },
-  { icon: MonitorPlay, stop: "PRODUCT", title: "Working progress you can see.", text: "You review real software as it takes shape, not only documents and mockups." },
-  { icon: Plug, stop: "SYSTEMS", title: "Built around the real operation.", text: "We work with the tools, data and workflows your team already uses." },
-  { icon: ShieldCheck, stop: "PRODUCTION", title: "Production considered from the start.", text: "Responsive behavior, edge cases, integrations and deployment are part of the build." },
+  { icon: Layers, stop: "BRIEF", title: "One team across the build", text: "Product, interface, backend, AI and integrations are engineered together instead of handed between disconnected vendors." },
+  { icon: MonitorPlay, stop: "PRODUCT", title: "Working software you can see", text: "Review real flows and functioning product states as the build takes shape, not just decks and mockups." },
+  { icon: Plug, stop: "SYSTEMS", title: "Built around the real operation", text: "The product is designed around the workflows, permissions, data and tools your team already uses." },
+  { icon: ShieldCheck, stop: "PRODUCTION", title: "Production from day one", text: "Performance, edge cases, integrations, deployment and operating reality are considered from the start." },
 ];
 
 /** The one light section: a continuous delivery path. Current stop is orange, completed stops are green. */
