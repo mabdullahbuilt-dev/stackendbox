@@ -91,3 +91,26 @@
   .sp-step { width: 64px; } .sp-step > span { width: 50px; height: 50px; } .sp-link { width: 18px; top: 24px; }
   .sp-brand { width: 92px; }
 }
+
+/* BLUEPRINT STAGE: rulers, crop marks, measurement guide that follows the pointer (this stage only) */
+.startpt .intent__stage { position: relative; overflow: hidden; background: radial-gradient(60% 55% at 50% 45%, rgba(255, 122, 26, 0.06), transparent 70%), linear-gradient(rgba(243, 236, 222, 0.035) 1px, transparent 1px) 0 0 / 28px 28px, linear-gradient(90deg, rgba(243, 236, 222, 0.035) 1px, transparent 1px) 0 0 / 28px 28px, var(--surface); }
+.sp-ruler { position: absolute; pointer-events: none; opacity: 0.55; }
+.sp-ruler--t { left: 20px; right: 20px; top: 10px; height: 8px; background: repeating-linear-gradient(90deg, rgba(243, 236, 222, 0.4) 0 1px, transparent 1px 28px), repeating-linear-gradient(90deg, rgba(243, 236, 222, 0.22) 0 1px, transparent 1px 7px) 0 3px / 100% 5px no-repeat; }
+.sp-ruler--l { top: 20px; bottom: 20px; left: 10px; width: 8px; background: repeating-linear-gradient(0deg, rgba(243, 236, 222, 0.4) 0 1px, transparent 1px 28px), repeating-linear-gradient(0deg, rgba(243, 236, 222, 0.22) 0 1px, transparent 1px 7px) 3px 0 / 5px 100% no-repeat; }
+.sp-guide { position: absolute; pointer-events: none; background: rgba(255, 122, 26, 0.5); opacity: 0; transition: opacity 160ms linear; z-index: 3; }
+.sp-guide--x { left: 0; right: 0; top: 0; height: 1px; translate: 0 var(--gy, 0); }
+.sp-guide--y { top: 0; bottom: 0; left: 0; width: 1px; translate: var(--gx, 0) 0; }
+.intent__stage[data-guide="on"] .sp-guide { opacity: 0.55; }
+.sp { max-width: 600px; height: 400px; }
+/* extras */
+.sp-idea { position: relative; } .sp-reqs { position: absolute; left: 4%; bottom: 0; display: flex; gap: 8px; flex-wrap: wrap; max-width: 62%; } .sp-reqs li { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; border: 1px dashed rgba(243, 236, 222, 0.35); color: var(--text-secondary); font-size: 12px; } .sp-reqs i { width: 6px; height: 6px; border-radius: 50%; background: var(--orange-500); }
+.sp-dim { position: absolute; left: 50%; bottom: 8px; translate: -50% 0; font-size: 9px; color: var(--orange-300); }
+.sp-phone { position: relative; }
+.sp-v1 { padding: 14px; border: 1.5px dashed rgba(255, 122, 26, 0.5); border-radius: 14px; background: rgba(255, 122, 26, 0.03); }
+.sp-map > div:not(.sp-v1) { opacity: 0.55; }
+.sp-miss, .sp-mis { position: absolute; font-style: normal; font-size: 9px; padding: 3px 8px; border-radius: 999px; border: 1px solid rgba(240, 82, 82, 0.5); color: var(--red-400); background: var(--surface); } .sp-miss { right: 10px; top: 40%; } .sp-mis { left: 14px; top: 10px; }
+.sp-pin { position: absolute; font-size: 9px; padding: 3px 8px; border-radius: 999px; border: 1px solid rgba(240, 82, 82, 0.55); color: var(--red-400); background: var(--surface); } .sp-pin--a { right: 8px; top: 8px; } .sp-pin--b { left: 8px; bottom: 8px; }
+.sp-app { position: relative; }
+.sp-cands { display: flex; gap: 8px; flex-wrap: wrap; } .sp-cands li { padding: 5px 10px; border-radius: 999px; border: 1px dashed rgba(243, 236, 222, 0.3); color: var(--text-secondary); font-size: 10px; letter-spacing: 0.06em; }
+@media (max-width: 599px) { .sp-ruler { display: none; } .sp-reqs { max-width: 100%; position: static; grid-column: 1 / -1; } .sp { height: auto; min-height: 340px; } .sp-pin--b { bottom: auto; top: 28px; } }
+@media (prefers-reduced-motion: reduce) { .sp-guide { display: none; } }
