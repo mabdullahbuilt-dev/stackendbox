@@ -44,7 +44,7 @@ export function WebVisual({ n }: V) {
         <div className="v-web__main">
           <div className="v-web__top">
             <span className="v-web__search" data-on={n >= 1}><Search aria-hidden />{typed || "Search"}{n >= 1 && n < 3 && <u className="v-caret" />}</span>
-            <span className="v-web__filter" data-on={n >= 4}>Status: Due</span>
+            <span className="v-web__filter" data-on={n >= 4 && n < 5}>Status: Due</span>
           </div>
           <ul className="v-web__list">
             {shown.filter((r) => (n >= 4 ? r[1] === "Due" || r[0] === "Invoice 1042" : true)).slice(0, 3).map(([t, s], i) => (

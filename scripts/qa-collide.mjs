@@ -15,7 +15,9 @@ const ALLOW = [
   ".v-cu__plane", // Custom software card: engineering planes stacked on purpose (layered depth illustration)
 ];
 
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
+// default (GPU-less) headless: text geometry does not need WebGL, and software GL slows frames enough to sample
+// mid-transition
+const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 let total = 0;
 for (const [w, h] of VPS) {
   const ctx = await b.newContext({ viewport: { width: w, height: h }, hasTouch: w < 700, isMobile: w < 700 });

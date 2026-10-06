@@ -79,3 +79,6 @@
 /* pinned frame starts below the fixed nav (nav is about 68px tall) */
 @media (min-width: 1000px) and (min-height: 680px) { .dpx__sticky { padding-top: 100px; } }
 @media (min-width: 1000px) and (max-height: 860px) { .dpx__sticky { padding-top: 88px; } }
+/* only the inspected slab carries its name on the stack (the slabs sit a few pixels apart on screen, so nine
+   labels would overlap); the list and the inspector name every layer */
+#depth .xr-slab:not([data-act="true"]) > b { visibility: hidden; }

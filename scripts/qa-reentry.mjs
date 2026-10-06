@@ -22,7 +22,8 @@ const SIG = {
   delivery: `(() => getComputedStyle(document.querySelector("#delivery .why__obj")).translate + "|" + document.querySelector("#delivery .why__obj b").textContent)()`,
 };
 const TIME = {
-  ai: `(() => [...document.querySelectorAll("#ai .aorb__sat")].map((e) => e.style.getPropertyValue("--tx")).join(","))()`,
+  // orbit motion on desktop; on phones the ring is static, so docking and the scenario's progress are the life signal
+  ai: `(() => [...document.querySelectorAll("#ai .aorb__sat")].map((e) => e.style.getPropertyValue("--tx")).join(",") + "|" + (document.querySelector("#ai .aorb")?.dataset.docked || "") + "|" + (document.querySelector("#ai .aix__trail em")?.textContent || ""))()`,
   specialized: `(() => document.querySelector("#specialized .spc__stage").dataset.mode + "|" + document.querySelector("#specialized .spc__scene").textContent.length)()`,
   proof: `(() => document.querySelector("#proof .proof__tab[data-active=true] b")?.textContent + "|" + document.querySelector("#proof .proof__screen")?.textContent.length)()`,
   work: `(() => { const t = document.querySelector("#work .shw__track, .shw__track"); return t ? getComputedStyle(t).transform + "|" + (document.querySelector(".shw [aria-current=true], .shw__thumb[data-active=true]")?.textContent || "") : "none"; })()`,
@@ -38,8 +39,9 @@ const page = async (opts = {}) => {
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(300);
   return { ctx, p };
 };
-const range = (p, id) => p.evaluate((id) => { const e = document.getElementById(id); const top = scrollY + e.getBoundingClientRect().top; const h = e.offsetHeight; return id === "hero" ? [0, Math.max(1, h - innerHeight)] : e.dataset.scroll === "pin" ? [top, Math.max(1, h - innerHeight)] : [top - innerHeight * 0.55, h + innerHeight * 0.1]; }, id);
-const at = async (p, id, q, wait = 1400) => { const [a, r] = await range(p, id); await p.evaluate((y) => scrollTo(0, y), Math.round(a + r * q)); await p.waitForTimeout(wait); return p.evaluate(SIG[id]); };
+const range = (p, id) => p.evaluate((id) => { const e = document.getElementById(id); const top = scrollY + e.getBoundingClientRect().top; const h = e.offsetHeight; return id === "hero" ? [0, Math.max(1, h - innerHeight)] : e.dataset.scroll === "pin" && getComputedStyle(e.firstElementChild).position === "sticky" ? [top, Math.max(1, h - innerHeight)] : [top - innerHeight * 0.55, h + innerHeight * 0.1]; }, id);
+const norm = (v) => String(v).replace(/-?\d+\.\d+/g, (m) => String(Math.round(+m)));
+const at = async (p, id, q, wait = 1400) => { const [a, r] = await range(p, id); await p.evaluate((y) => scrollTo(0, y), Math.round(a + r * q)); await p.waitForTimeout(wait); return norm(await p.evaluate(SIG[id])); };
 const far = async (p, where) => { await p.evaluate((w) => scrollTo(0, w === "below" ? document.documentElement.scrollHeight : 0), where); await p.waitForTimeout(700); };
 
 { // scroll-narrative chapters
@@ -65,11 +67,16 @@ const far = async (p, where) => { await p.evaluate((w) => scrollTo(0, w === "bel
     await p.waitForTimeout(400);
     await p.evaluate(() => { Object.defineProperty(document, "hidden", { value: false, configurable: true }); document.dispatchEvent(new Event("visibilitychange")); });
     await p.waitForTimeout(600);
-    const t2 = await p.evaluate(SIG[id]);
+    const t2 = norm(await p.evaluate(SIG[id]));
     mark(id, "tab hidden/visible keeps the state", t2 === f2, t2 === f2 ? "" : `${t2.slice(0, 50)} vs ${f2.slice(0, 50)}`);
     // refresh inside the section
     await p.reload({ waitUntil: "networkidle" }); await p.waitForTimeout(1400);
-    const rf = await p.evaluate(SIG[id]);
+    await p.addStyleTag({ content: "html{scroll-behavior:auto!important}" });
+    // after the reload: render every chapter once (a fresh load only knows placeholder heights), return to the same
+    // place inside this section, and compare with the forward pass at that position
+    const tot0 = await p.evaluate(() => document.documentElement.scrollHeight);
+    for (let y = 0; y < tot0; y += 800) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(25); }
+    const rf = await at(p, id, Q[1]);
     mark(id, "refresh inside the section renders that position", rf === f2, rf === f2 ? "" : `${rf.slice(0, 50)} vs ${f2.slice(0, 50)}`);
     await p.addStyleTag({ content: "html{scroll-behavior:auto!important}" });
     // a fresh load only knows placeholder heights for off-screen (content-visibility) chapters: render them again so

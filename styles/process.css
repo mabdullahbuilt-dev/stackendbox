@@ -130,3 +130,5 @@
 @media (min-width: 1000px) and (min-height: 821px) { .proc__sticky { padding-top: 100px; } }
 .wb[data-s="4"] .wb__face--ui { opacity: 0.2; }
 @media (max-width: 899px) { .wb__body .wb__art { min-height: 200px; } }
+/* phones: the stage workspace keeps one height across stages, so scrolling never shifts the page below it */
+@media (max-width: 899px) { .wb__space { min-height: 400px; align-content: start; } }

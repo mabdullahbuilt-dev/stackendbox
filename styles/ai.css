@@ -116,5 +116,5 @@
 .aix .ap [data-on="false"] { opacity: 0.16; translate: 0 0; }
 .aix .ap { padding: 10px 12px; gap: 8px; }
 .aix__ui { margin-top: 8px; padding: 12px; }
-@media (min-width: 1000px) and (max-height: 820px) { .aisec { padding-block: 84px 40px; } .aisec .sec-head { margin-bottom: 8px; } .aix__side { gap: 12px; } }
+@media (min-width: 1000px) and (max-height: 820px) { .aisec { padding-block: 80px 36px; } .aisec .sec-head { margin-bottom: 18px; } .aix__side { gap: 12px; } }
 .aorb[data-compact="true"] .aorb__core { width: calc(var(--k) * 112px); }

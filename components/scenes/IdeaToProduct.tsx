@@ -71,7 +71,7 @@ export function IdeaToProduct() {
               {/* requirements extracted from the brief: frame zero already reads as the start of a real build */}
               <ul className="ipv-req mono" data-on={stage <= 1}>{["ACCOUNTS", "REQUESTS", "DOCUMENTS", "PAYMENTS", "ADMIN", "ROLES"].map((t, i) => <li key={t} style={{ ["--i" as string]: i }}><i />{t}</li>)}</ul>
               {/* 0 brief */}
-              <div className="ipv-brief"><span className="mono">BRIEF</span><p>{copy.product.brief}</p></div>
+              <div className="ipv-brief" data-unit><span className="mono">BRIEF</span><p>{copy.product.brief}</p></div>
               {/* 1 flow */}
               <div className="ipv-flow" data-on={on(stage, 1)}>{["Sign in", "Submit request", "Team review", "Pay invoice"].map((t, i) => <span key={t} style={{ ["--i" as string]: i }}>{t}</span>)}</div>
               {/* 2-3 window: wireframe then interface */}

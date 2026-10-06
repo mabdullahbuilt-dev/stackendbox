@@ -93,3 +93,5 @@
   .ipv-chips { top: calc(var(--u) * 478); }
 }
 @media (max-width: 899px) { .ipv__canvas .ipv-req, .ipv__canvas:not([data-focus="true"]) .ipv-req { left: calc(var(--u) * 12); top: calc(var(--u) * 300); width: calc(var(--u) * 396); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } }
+/* stage 1: the requirement chips arrive after the brief has left the centre, so nothing passes over them */
+.ipv__canvas:not([data-focus="true"]) .ipv-req[data-on="true"] { transition-delay: 380ms; }

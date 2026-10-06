@@ -49,9 +49,23 @@ export function onProgress(id: string, fn: (p: number) => void): () => void {
   return () => { set!.delete(fn); };
 }
 
+/** Whether a data-scroll="pin" section really pins at the current size (its stage is sticky). Phones and short
+ * screens lay these chapters out in normal flow, so they must use pass-through progress there. Cached; refreshed
+ * on resize, never measured per frame. */
+const pinCache = new WeakMap<HTMLElement, boolean>();
+const isPinned = (el: HTMLElement) => {
+  let v = pinCache.get(el);
+  if (v === undefined) {
+    const stage = el.firstElementChild as HTMLElement | null;
+    v = el.dataset.scroll === "pin" && !!stage && getComputedStyle(stage).position === "sticky";
+    pinCache.set(el, v);
+  }
+  return v;
+};
+
 function progressOf(el: HTMLElement, r: DOMRect, vh: number) {
   const h = r.height;
-  if (el.dataset.scroll === "pin" && h > vh * 1.2) return clamp(-r.top / (h - vh));
+  if (isPinned(el) && h > vh * 1.2) return clamp(-r.top / (h - vh));
   return clamp((vh * 0.72 - r.top) / Math.max(1, h * 0.78));
 }
 
@@ -109,7 +123,7 @@ export function startChapters(): () => void {
   pageVisible = document.visibilityState !== "hidden";
   const onVis = () => { const v = document.visibilityState !== "hidden"; if (v && !pageVisible) resumed = true; pageVisible = v; schedule(); };
   window.addEventListener("scroll", schedule, { passive: true });
-  window.addEventListener("resize", schedule, { passive: true });
+  window.addEventListener("resize", () => { items.forEach((it) => pinCache.delete(it.el)); schedule(); }, { passive: true });
   document.addEventListener("visibilitychange", onVis);
   const onShow = (e: PageTransitionEvent) => { if (e.persisted) { lastY = window.scrollY; schedule(); } };
   window.addEventListener("pageshow", onShow);
