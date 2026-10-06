@@ -8,6 +8,9 @@ import { useInView } from "@/lib/hooks";
 import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
+import { DocumentApp, IntelligenceApp, MediaApp, SupportApp } from "./AiApps";
+
+const APPS: Record<string, (p: { step: number }) => React.JSX.Element> = { support: SupportApp, documents: DocumentApp, media: MediaApp, intelligence: IntelligenceApp };
 
 type NodeKey = "vision" | "docs" | "search" | "db" | "tools" | "approval";
 const NODES: { key: NodeKey; label: string; icon: LucideIcon }[] = [
@@ -20,8 +23,8 @@ const NODES: { key: NodeKey; label: string; icon: LucideIcon }[] = [
 ];
 /** One orbit system. Two ellipses seen at an angle; six capabilities, each one a real AI building block. */
 const ORBIT: Record<NodeKey, { ring: 0 | 1; a: number }> = {
-  search: { ring: 0, a: 200 }, docs: { ring: 0, a: 335 }, tools: { ring: 0, a: 62 },
-  vision: { ring: 1, a: 262 }, db: { ring: 1, a: 18 }, approval: { ring: 1, a: 152 },
+  search: { ring: 0, a: 200 }, db: { ring: 0, a: 335 }, tools: { ring: 0, a: 62 },
+  vision: { ring: 1, a: 262 }, docs: { ring: 1, a: 18 }, approval: { ring: 1, a: 152 },
 };
 /** Each scenario is led by the capability that docks into the core. */
 const LEAD: NodeKey[] = ["search", "docs", "vision", "db"];
@@ -204,11 +207,7 @@ export function AiSection() {
               </ol>
               <div className="aix__ui" aria-hidden>
                 <div className="aix__ui-h"><b>{sc.ui.title}</b><span className="mono" data-done={step >= N}>{step >= N ? "DONE" : "WORKING"}</span></div>
-                {sc.ui.rows.map((r) => {
-                  const shown = step >= r.at;
-                  const flagged = !!r.flag && step >= r.flag[0] && step < r.flag[1];
-                  return <div key={sc.id + r.k} className="aix__ui-r" data-on={shown} data-flag={flagged}><span>{r.k}</span><em>{r.v}</em></div>;
-                })}
+                {(() => { const App = APPS[sc.id]; return <App step={step} />; })()}
                 <div className="aix__ui-f" data-on={step >= N}>{sc.ui.result}</div>
               </div>
               <p className="sr-only" aria-live="polite">{current.text}</p>
