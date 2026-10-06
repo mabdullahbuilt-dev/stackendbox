@@ -267,3 +267,6 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 .ct__mail { font-weight: 500; font-size: 1.0625rem; color: var(--text-primary); text-decoration: underline; text-decoration-color: rgba(255, 122, 26, 0.6); text-underline-offset: 3px; overflow-wrap: anywhere; }
 .ct__done { display: grid; gap: 12px; justify-items: start; } .ct__done h3 { margin: 0; font-size: var(--fs-h3); } .ct__done p { margin: 0; color: var(--text-secondary); max-width: 52ch; } .ct__doneic { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--success-soft); color: var(--green-400); } .ct__doneic svg { width: 24px; height: 24px; } .ct__actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .work { margin-top: clamp(64px, 8vw, 120px); }
+
+.fthumb[data-kind="issue"], .fthumb:has([data-kind="issue"]) { border-color: rgba(240, 82, 82, 0.6); }
+.th-phone { display: grid; gap: 5px; width: 34%; margin: 0 auto; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border-strong); height: 100%; align-content: start; } .th-phone i { height: 8px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); } .th-phone i:nth-child(2) { background: rgba(255, 122, 26, 0.5); }

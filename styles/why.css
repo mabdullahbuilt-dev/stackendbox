@@ -15,3 +15,16 @@
   .why__node { left: 0; top: 0; } .why__path h3 { padding-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .why__node { transition: none; } }
+
+/* continuous hand-off: one project object travels Brief, Product, Systems, Production */
+.why__stop { font-size: 11px; letter-spacing: 0.1em; color: var(--text-muted); } .why__path li[data-st="active"] .why__stop { color: #a84300; } .why__path li[data-st="done"] .why__stop { color: #14783f; }
+.why__obj { display: none; }
+@media (min-width: 900px) {
+  .why__path { padding-top: 100px; }
+  .why__stop { position: absolute; left: 60px; top: 14px; }
+  .why__obj { display: grid; position: absolute; top: 0; left: 0; width: 150px; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1px solid rgba(9, 10, 9, 0.16); box-shadow: 0 14px 30px -14px rgba(9, 10, 9, 0.35); translate: calc(max(var(--p, 1) - 1, 0) * (100cqw + 28px) / 4) 0; top: 12px; transition: translate 650ms var(--ease-out); }
+  .why__obj b { font-size: 10px; font-weight: 500; color: #a84300; letter-spacing: 0.1em; } .why__obj i { height: 6px; border-radius: 3px; background: rgba(9, 10, 9, 0.12); } .why__obj i:last-child { width: 60%; background: rgba(255, 122, 26, 0.5); }
+  .why__path { container-type: inline-size; }
+}
+@media (prefers-reduced-motion: reduce) { .why__obj { transition: none; } }
+.why__stop { background: #f4f3ee; padding: 0 8px; }

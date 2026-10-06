@@ -1,0 +1,12 @@
+/* POINTER BEHAVIOUR PER CHAPTER. --px/--py (-1..1) and --mx/--my come from the chapter runtime and exist on the ACTIVE chapter only,
+   so nothing here runs for chapters that are not in view. Small transform/translate shifts, no particles. */
+#services .scard__vis { transform: translate(calc(var(--px, 0) * 3px), calc(var(--py, 0) * 2px)); transition: transform 200ms linear; }
+#proof .wk__img, #proof .proof__screen { translate: calc(var(--px, 0) * -6px) calc(var(--py, 0) * -4px); transition: translate 220ms linear; }
+#proof .wk__frame { overflow: hidden; } #proof .wk__img { scale: 1.02; }
+#transform .mt-ghost, #transform .mt-label { translate: calc(var(--px, 0) * -9px) calc(var(--py, 0) * -6px); transition: translate 240ms linear; }
+#start::before { background: radial-gradient(520px circle at var(--mx, 82%) var(--my, 20%), rgba(255, 122, 26, 0.075), transparent 70%); }
+/* Process measurement guide (local to the bench, written by Process.tsx) */
+.wb__guide { position: absolute; pointer-events: none; background: rgba(255, 122, 26, 0.45); opacity: 0; transition: opacity 160ms linear; z-index: 4; }
+.wb__guide--x { left: 0; right: 0; top: 0; height: 1px; translate: 0 var(--gy, 0); } .wb__guide--y { top: 0; bottom: 0; left: 0; width: 1px; translate: var(--gx, 0) 0; }
+.wb[data-guide="on"] .wb__guide { opacity: 0.5; }
+@media (prefers-reduced-motion: reduce), (max-width: 1023px) { #services .scard__vis, #proof .wk__img, #proof .proof__screen, #transform .mt-ghost, #transform .mt-label { transform: none; translate: none; } .wb__guide { display: none; } }

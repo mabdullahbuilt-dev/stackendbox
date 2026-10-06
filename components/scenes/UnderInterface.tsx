@@ -1,7 +1,7 @@
 "use client";
 import { ArrowRight, Bot, Check, Database, Lock, Rocket, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
@@ -9,119 +9,174 @@ import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 
-type L = { id: string; title: string; sub: string };
+type L = { id: string; title: string; sub: string; inspect: string };
 const LAYERS: L[] = [
-  { id: "ui", title: "Interface", sub: "Responsive screens, states, accessibility" },
-  { id: "logic", title: "Product logic", sub: "Rules, workflows, validation" },
-  { id: "auth", title: "Authentication", sub: "Sessions, roles, permissions" },
-  { id: "api", title: "API", sub: "Typed endpoints, webhooks, limits" },
-  { id: "db", title: "Database", sub: "Schemas, migrations, backups" },
-  { id: "ai", title: "AI", sub: "Models, retrieval, guardrails" },
-  { id: "int", title: "Integrations", sub: "Payments, CRM, messaging, sync" },
-  { id: "test", title: "Testing", sub: "Unit, integration, end to end" },
-  { id: "ship", title: "Deployment", sub: "Releases, monitoring, rollback" },
+  { id: "ui", title: "Interface", sub: "Responsive screens, states, accessibility", inspect: "COMPONENT LAYOUT" },
+  { id: "logic", title: "Product logic", sub: "Rules, workflows, validation", inspect: "BUSINESS RULES" },
+  { id: "auth", title: "Authentication", sub: "Sessions, roles, permissions", inspect: "ROLE MATRIX" },
+  { id: "api", title: "API", sub: "Typed endpoints, webhooks, limits", inspect: "REQUEST AND RESPONSE" },
+  { id: "db", title: "Database", sub: "Schemas, migrations, backups", inspect: "SCHEMA" },
+  { id: "ai", title: "AI", sub: "Models, retrieval, guardrails", inspect: "MODEL AND TOOL PATH" },
+  { id: "int", title: "Integrations", sub: "Payments, CRM, messaging, sync", inspect: "EXTERNAL SERVICES" },
+  { id: "test", title: "Testing", sub: "Unit, integration, end to end", inspect: "TEST MATRIX" },
+  { id: "ship", title: "Delivery", sub: "Releases, monitoring, rollback", inspect: "BUILD AND DEPLOY PIPELINE" },
 ];
-const STAGES = LAYERS.length + 2; // 0 compressed, 1..9 one layer each, 10 compressed and live
-const LAST = STAGES - 1;
 
-function Art({ id }: { id: string }) {
+const REQ = '/v1/requests\n{ "title": "Brand refresh",\n  "owner": "usr_204" }';
+const RES = 'Created\n{ "id": "req_8812",\n  "status": "in_review" }';
+
+/** Meaningful inspector visual for each layer (not decorative checklists). */
+function Inspector({ id }: { id: string }) {
   switch (id) {
-    case "ui": return <div className="dpx-ui"><i /><i /><i /><s /></div>;
-    case "logic": return <div className="dpx-logic">{["IF", "THEN", "ELSE"].map((t) => <span key={t}><b className="mono">{t}</b><i /></span>)}</div>;
-    case "auth": return <div className="dpx-auth"><Lock /><span>Admin</span><span>Staff</span><span>Customer</span></div>;
-    case "api": return <div className="dpx-api">{[["GET", "/bookings", "200"], ["POST", "/payments", "201"], ["POST", "/webhooks", "200"]].map(([m, p, c]) => <span key={p}><b className="mono">{m}</b><em className="mono">{p}</em><i className="mono">{c}</i></span>)}</div>;
-    case "db": return <div className="dpx-db"><Database />{[0, 1, 2].map((r) => <span key={r}><i /><i /><i /></span>)}</div>;
-    case "ai": return <div className="dpx-ai"><Bot /><i /><i /><i /></div>;
-    case "int": return <div className="dpx-int">{(["stripe", "hubspot", "whatsapp", "gcal"] as const).map((k) => <span key={k}><BrandIcon name={k} size={18} /></span>)}</div>;
-    case "test": return <div className="dpx-test">{["Unit", "Integration", "End to end"].map((t) => <span key={t}><Check />{t}</span>)}</div>;
-    default: return <div className="dpx-ship">{["Build", "Test", "Deploy"].map((t) => <span key={t}><Check />{t}</span>)}<em className="mono"><Rocket /> LIVE</em></div>;
+    case "ui": return (
+      <div className="xi-ui">
+        <div className="xi-tree">{[["AppShell", 0], ["Sidebar", 1], ["RequestTable", 1], ["Row", 2], ["DetailDrawer", 1], ["StatusBadge", 2]].map(([t, d]) => <span key={t as string} style={{ ["--d" as string]: d }}><b className="mono">{t}</b></span>)}</div>
+        <div className="xi-wire"><i /><i /><i /><s /></div>
+      </div>);
+    case "logic": return (
+      <table className="xi-rules"><tbody>
+        {[["Request over $5,000", "needs Finance approval"], ["Owner missing", "assign by team load"], ["Approved and paid", "close and notify client"], ["Overdue 3 days", "escalate to admin"]].map(([a, b]) => <tr key={a}><td><b className="mono">IF</b>{a}</td><td><b className="mono">THEN</b>{b}</td></tr>)}
+      </tbody></table>);
+    case "auth": return (
+      <table className="xi-matrix"><thead><tr><th /><th className="mono">VIEW</th><th className="mono">EDIT</th><th className="mono">APPROVE</th><th className="mono">ADMIN</th></tr></thead><tbody>
+        {[["Client", [1, 0, 0, 0]], ["Staff", [1, 1, 0, 0]], ["Manager", [1, 1, 1, 0]], ["Admin", [1, 1, 1, 1]]].map(([r, v]) => <tr key={r as string}><th>{r as string}</th>{(v as number[]).map((x, i) => <td key={i} data-on={!!x}>{x ? <Check aria-label="allowed" /> : <span aria-label="no access">-</span>}</td>)}</tr>)}
+      </tbody></table>);
+    case "api": return (
+      <div className="xi-api">
+        <pre className="mono"><b>POST</b> {REQ}</pre>
+        <pre className="mono xi-ok"><b>201</b> {RES}</pre>
+      </div>);
+    case "db": return (
+      <div className="xi-db">
+        {[["accounts", ["id", "name", "plan"]], ["requests", ["id", "account_id", "status"]], ["payments", ["id", "request_id", "amount"]]].map(([t, c]) => <div key={t as string}><b className="mono"><Database />{t as string}</b>{(c as string[]).map((x) => <span key={x} className="mono">{x}</span>)}</div>)}
+        <i className="xi-rel xi-rel--a" /><i className="xi-rel xi-rel--b" />
+      </div>);
+    case "ai": return (
+      <ol className="xi-ai">{[["Request", "text and files"], ["Retrieve", "policy and history"], ["Model", "classify and draft"], ["Tool", "update the record"], ["Approval", "a person confirms"]].map(([t, s], i) => <li key={t} data-hl={i === 4}><span>{i === 2 ? <Bot /> : i === 4 ? <ShieldCheck /> : <i />}</span><b>{t}</b><em>{s}</em></li>)}</ol>);
+    case "int": return (
+      <div className="xi-int">{([["stripe", "Payments", "payment.completed"], ["hubspot", "CRM", "contact.updated"], ["whatsapp", "Messages", "message.sent"], ["gcal", "Calendar", "event.created"]] as const).map(([k, t, e]) => <div key={k}><BrandIcon name={k} size={20} /><b>{t}</b><span className="mono">{e}</span></div>)}</div>);
+    case "test": return (
+      <table className="xi-tests"><thead><tr><th /><th className="mono">UNIT</th><th className="mono">API</th><th className="mono">E2E</th></tr></thead><tbody>
+        {[["Sign in", [1, 1, 1]], ["Submit request", [1, 1, 1]], ["Approval", [1, 1, 2]], ["Payment", [1, 1, 1]]].map(([r, v]) => <tr key={r as string}><th>{r as string}</th>{(v as number[]).map((x, i) => <td key={i} data-t={x === 1 ? "ok" : "fixed"}><Check aria-label={x === 1 ? "passing" : "fixed and passing"} /></td>)}</tr>)}
+      </tbody></table>);
+    default: return (
+      <div className="xi-ship">{["Build", "Test", "Deploy", "Monitor"].map((t) => <span key={t}><Check />{t}</span>)}<em className="mono"><Rocket /> LIVE</em></div>);
   }
 }
 
-/** Stage-driven 2.5D stack. Scroll picks a stage, so every frame is complete and contained. */
+/** Tiny per-plane schematic so each slab in the stack reads as its own layer. */
+function Slab({ id }: { id: string }) {
+  switch (id) {
+    case "logic": return <div className="xs-lines"><i /><i /><i /></div>;
+    case "auth": return <div className="xs-chips"><Lock /><i /><i /><i /></div>;
+    case "api": return <div className="xs-lines xs-lines--m"><i /><i /></div>;
+    case "db": return <div className="xs-chips"><Database /><i /><i /></div>;
+    case "ai": return <div className="xs-chips"><Bot /><i /><i /></div>;
+    case "int": return <div className="xs-chips"><i /><i /><i /><i /></div>;
+    case "test": return <div className="xs-lines"><i /><i /><i /></div>;
+    default: return <div className="xs-chips"><Rocket /><i /><i /></div>;
+  }
+}
+
+/**
+ * PRODUCT X-RAY. A complete product interface sits on top of nine real layers. Select a layer (click, tap, key or hover)
+ * and it lifts 14px, the interface turns see-through and an inspector shows what that layer contains.
+ * CSS 2.5D only, no pin, no scroll lock; the pointer adds a 2.5 degree parallax over this stage only.
+ */
 export function UnderInterface() {
   const { reduced } = useMotionPreference();
-  const [stage, setStage] = useState(0);
-  const root = useRef<HTMLElement>(null);
+  const [sel, setSel] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
-  const inView = useInView(box, "-15% 0px -15% 0px");
-  const near = useInView(root, "300px 0px 300px 0px");
-  const played = useRef(false);
-  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const inView = useInView(box, "-20% 0px -20% 0px");
+  const tour = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const toured = useRef(false);
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  useEffect(() => { if (reduced) setStage(LAST); }, [reduced]);
+  const stopTour = useCallback(() => { clearInterval(tour.current); tour.current = undefined; }, []);
+  // One short tour on first view so the stack explains itself, then it rests on the complete product.
   useEffect(() => {
-    const el = root.current;
-    if (!el || reduced || !near) return;
-    if (!window.matchMedia("(min-width: 900px)").matches) return;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const span = el.offsetHeight - window.innerHeight;
-      const p = span > 0 ? Math.min(1, Math.max(0, -el.getBoundingClientRect().top / span)) : 0;
-      const n = Math.min(LAST, Math.floor(p * (STAGES - 0.001)));
-      setStage((s) => (s === n ? s : n));
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, [near, reduced]);
-
-  const play = () => {
-    clearInterval(timer.current);
+    if (reduced || !inView || toured.current) return;
+    toured.current = true;
     let k = 0;
-    setStage(0);
-    timer.current = setInterval(() => { k += 1; setStage(k); if (k >= LAST) clearInterval(timer.current); }, 950);
-  };
+    setSel(0);
+    tour.current = setInterval(() => { k += 1; if (k >= LAYERS.length) { stopTour(); setSel(null); } else setSel(k); }, 1100);
+  }, [inView, reduced, stopTour]);
+  useEffect(() => stopTour, [stopTour]);
+
+  // Pointer parallax (max 2.5 degrees), this stage only, one rAF, fine pointer only.
   useEffect(() => {
-    if (reduced || !inView || played.current) return;
-    if (window.matchMedia("(min-width: 900px)").matches) return;
-    played.current = true;
-    play();
-  }, [inView, reduced]);
-  useEffect(() => () => clearInterval(timer.current), []);
+    const el = box.current;
+    if (!el || reduced || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let raf = 0, x = 0, y = 0;
+    const apply = () => { raf = 0; el.style.setProperty("--rx", x.toFixed(3)); el.style.setProperty("--ry", y.toFixed(3)); };
+    const move = (e: PointerEvent) => { const r = el.getBoundingClientRect(); x = ((e.clientX - r.left) / r.width) * 2 - 1; y = ((e.clientY - r.top) / r.height) * 2 - 1; if (!raf) raf = requestAnimationFrame(apply); };
+    const leave = () => { x = 0; y = 0; if (!raf) raf = requestAnimationFrame(apply); };
+    el.addEventListener("pointermove", move, { passive: true });
+    el.addEventListener("pointerleave", leave);
+    return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
+  }, [reduced]);
 
-  const active = stage >= 1 && stage <= LAYERS.length ? stage - 1 : -1;
-  const expanded = stage >= 1 && stage <= LAYERS.length;
-  const live = stage === LAST;
+  const pick = (i: number | null, how: string) => { stopTour(); setSel(i); if (i !== null) track("scene_replay", { scene: "depth", layer: LAYERS[i].id, method: how }); };
+  const onKey = (e: React.KeyboardEvent) => {
+    const n = LAYERS.length;
+    const cur = sel ?? -1;
+    let i = -1;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") i = (cur + 1) % n;
+    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") i = (cur - 1 + n) % n;
+    else if (e.key === "Home") i = 0; else if (e.key === "End") i = n - 1;
+    if (i >= 0) { e.preventDefault(); pick(i, "key"); tabs.current[i]?.focus(); }
+  };
 
+  const L = sel !== null ? LAYERS[sel] : null;
   return (
-    <section id="depth" ref={root} className="dpx" aria-labelledby="depth-title" data-expanded={expanded} data-live={live}>
-      <div className="dpx__sticky">
-        <div className="container dpx__in">
-          <div className="dpx__copy">
-            <p className="eyebrow">{copy.depth.eyebrow}</p>
-            <h2 id="depth-title" className="h2">{copy.depth.title}</h2>
-            <ol className="dpx__list" aria-label="Layers behind the interface">
-              {LAYERS.map((l, i) => (
-                <li key={l.id} data-st={active === i ? "active" : stage > i + 1 || live ? "done" : "idle"} aria-current={active === i ? "step" : undefined}>
-                  <span className="mono">{String(i + 1).padStart(2, "0")}</span><b>{l.title}</b><em>{l.sub}</em>
-                </li>
-              ))}
-            </ol>
-            <div className="dpx__ctas">
-              <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "depth" }); goToBuilder(e, "Custom Software"); }}>{copy.depth.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-            </div>
+    <section id="depth" className="dpx" aria-labelledby="depth-title" data-sel={sel ?? "none"}>
+      <div className="container dpx__in">
+        <div className="dpx__copy">
+          <p className="eyebrow">{copy.depth.eyebrow}</p>
+          <h2 id="depth-title" className="h2">{copy.depth.title}</h2>
+          <p className="body-l">{copy.depth.support}</p>
+          <div className="dpx__list" role="tablist" aria-orientation="vertical" aria-label="Layers behind the interface" onKeyDown={onKey}>
+            {LAYERS.map((l, i) => (
+              <button key={l.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`xr-${l.id}`} aria-selected={sel === i} aria-controls="xr-panel" tabIndex={sel === i || (sel === null && i === 0) ? 0 : -1} className="dpx__tab" data-st={sel === i ? "active" : "idle"}
+                onClick={() => pick(sel === i ? null : i, "click")} onPointerEnter={(e) => { if (e.pointerType === "mouse" && !tour.current) setSel((s) => (s === null ? i : s)); }}>
+                <span className="mono">{String(i + 1).padStart(2, "0")}</span><b>{l.title}</b><em>{l.sub}</em>
+              </button>
+            ))}
           </div>
-          <div className="dpx__stage" ref={box} aria-hidden>
-            <div className="dpx__world">
-              {LAYERS.map((l, i) => (
-                <div key={l.id} className="dpx-l" data-act={active === i} style={{ ["--k" as string]: LAYERS.length - 1 - i }}>
-                  <b className="mono dpx-l__t">{l.title.toUpperCase()}</b>
-                  <Art id={l.id} />
-                </div>
-              ))}
-            </div>
-            <div className="dpx__detail" data-on={active >= 0} key={active}>
-              {active >= 0 && (<><b className="mono">{String(active + 1).padStart(2, "0")} {LAYERS[active].title.toUpperCase()}</b><Art id={LAYERS[active].id} /></>)}
-            </div>
-            <span className="dpx__live" data-on={live}><ShieldCheck /> All checks passing</span>
+          <div className="dpx__ctas">
+            <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "depth" }); goToBuilder(e, "Custom Software"); }}>{copy.depth.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>
         </div>
+        <div className="xr" ref={box} data-sel={sel ?? "none"}>
+          <div className="xr__scene" aria-hidden>
+            <div className="xr__tilt">
+              <div className="xr__world">
+                {LAYERS.slice(1).map((l, j) => {
+                  const i = j + 1;
+                  return (
+                    <div key={l.id} className="xr-slab" data-act={sel === i} data-below={sel !== null && sel < i} style={{ ["--k" as string]: LAYERS.length - 1 - i }} onClick={() => pick(i, "stack")}>
+                      <b className="mono">{l.title.toUpperCase()}</b><Slab id={l.id} />
+                    </div>
+                  );
+                })}
+                <div className="xr-slab xr-ui" data-act={sel === 0} data-xray={sel !== null && sel !== 0} style={{ ["--k" as string]: LAYERS.length }} onClick={() => pick(0, "stack")}>
+                  <div className="xr-ui__bar"><i /><i /><i /><b className="mono">Northwind portal</b></div>
+                  <div className="xr-ui__body"><aside><i /><i /><i /><i /></aside><div><u /><u /><u /><em>Submit request</em></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="xr-panel" role="tabpanel" aria-labelledby={L ? `xr-${L.id}` : undefined} className="xr__inspector" data-on={!!L}>
+            {L ? (
+              <div key={L.id} className="xr__ins"><b className="mono">{String((sel ?? 0) + 1).padStart(2, "0")} {L.inspect}</b><Inspector id={L.id} /></div>
+            ) : (
+              <p className="xr__hint mono">SELECT A LAYER</p>
+            )}
+          </div>
+          <span className="xr__live" data-on={sel === null}><ShieldCheck /> Complete product, all checks passing</span>
+        </div>
       </div>
-      <p className="sr-only">An application separates into nine layers: interface, product logic, authentication, API, database, AI, integrations, testing and deployment, then settles into one live product.</p>
+      <p className="sr-only">An application is shown with nine layers beneath its interface: logic, authentication, API, database, AI, integrations, testing and delivery. Selecting a layer opens an inspector for it.</p>
     </section>
   );
 }

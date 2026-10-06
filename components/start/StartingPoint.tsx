@@ -1,7 +1,7 @@
 "use client";
 import { ArrowRight, Bot, Boxes, Lightbulb, Link2Off, Rocket, Sparkles, SquareStack, Wrench, Workflow, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { starts, type StartId } from "@/content/starts";
 import { track } from "@/lib/analytics";
@@ -14,7 +14,21 @@ const icons: Record<StartId, LucideIcon> = { idea: Lightbulb, mvp: Rocket, proto
 export function StartingPoint() {
   const [active, setActive] = useState(0);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const stage = useRef<HTMLDivElement>(null);
   const s = starts[active];
+
+  // Blueprint pointer: a measurement crosshair that follows the pointer over this stage only. One rAF, fine pointer only.
+  useEffect(() => {
+    const el = stage.current;
+    if (!el || !window.matchMedia("(hover: hover) and (pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0, x = 0, y = 0;
+    const apply = () => { raf = 0; el.style.setProperty("--gx", `${x}px`); el.style.setProperty("--gy", `${y}px`); };
+    const move = (e: PointerEvent) => { const r = el.getBoundingClientRect(); x = e.clientX - r.left; y = e.clientY - r.top; el.dataset.guide = "on"; if (!raf) raf = requestAnimationFrame(apply); };
+    const leave = () => { el.dataset.guide = "off"; };
+    el.addEventListener("pointermove", move, { passive: true });
+    el.addEventListener("pointerleave", leave);
+    return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
+  }, []);
   const Scene = startScenes[s.id];
 
   const select = (i: number, how: string) => { setActive(i); track("intent_selected", { start: starts[i].id, method: how }); };
@@ -51,7 +65,8 @@ export function StartingPoint() {
               <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "start", start: s.id }); goToBuilder(e, s.need, s.stage); }}>{s.cta}<ArrowRight className="arrow" aria-hidden /></Link>
             </div>
           </div>
-          <div id="sp-panel" role="tabpanel" aria-labelledby={`sp-${s.id}`} className="intent__stage">
+          <div id="sp-panel" role="tabpanel" aria-labelledby={`sp-${s.id}`} className="intent__stage" ref={stage} data-guide="off">
+            <i className="sp-guide sp-guide--x" aria-hidden /><i className="sp-guide sp-guide--y" aria-hidden /><i className="sp-ruler sp-ruler--t" aria-hidden /><i className="sp-ruler sp-ruler--l" aria-hidden />
             <div aria-hidden key={s.id} className="sp-wrap"><Scene /></div>
             <p className="sr-only">{s.label}. {s.headline}</p>
           </div>

@@ -9,8 +9,12 @@ import { useInView } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 
-const STEPS = ["Brief", "User flow", "Wireframe", "Interface", "Mobile", "Access", "Data", "Billing", "Admin", "Tests", "Live"] as const;
+const STEPS = ["Brief", "User flow", "Wireframe", "Interface", "Frontend", "Backend", "Data", "Access", "Billing", "Admin", "Mobile", "Verify", "Live"] as const;
 const LAST = STEPS.length - 1;
+/** Visitor-facing grouping of the 11 internal build stages. */
+const GROUPS: { name: string; from: number; to: number }[] = [
+  { name: "PLAN", from: 0, to: 1 }, { name: "DESIGN", from: 2, to: 3 }, { name: "BUILD", from: 4, to: 10 }, { name: "VERIFY", from: 11, to: 11 }, { name: "SHIP", from: 12, to: 12 },
+];
 const on = (s: number, from: number) => s >= from;
 
 /**
@@ -25,6 +29,19 @@ export function IdeaToProduct() {
   const inView = useInView(box, "-15% 0px -15% 0px");
   const near = useInView(root, "300px 0px 300px 0px");
   const played = useRef(false);
+
+  // Pointer: 3 to 5px depth parallax between interface, logic plane and grid. This stage only, one rAF, fine pointer only.
+  useEffect(() => {
+    const el = box.current;
+    if (!el || reduced || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let raf = 0, x = 0, y = 0;
+    const apply = () => { raf = 0; el.style.setProperty("--ppx", x.toFixed(3)); el.style.setProperty("--ppy", y.toFixed(3)); };
+    const move = (e: PointerEvent) => { const r = el.getBoundingClientRect(); x = ((e.clientX - r.left) / r.width) * 2 - 1; y = ((e.clientY - r.top) / r.height) * 2 - 1; if (!raf) raf = requestAnimationFrame(apply); };
+    const leave = () => { x = 0; y = 0; if (!raf) raf = requestAnimationFrame(apply); };
+    el.addEventListener("pointermove", move, { passive: true });
+    el.addEventListener("pointerleave", leave);
+    return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
+  }, [reduced]);
 
   // Reduced motion: show the finished product.
   useEffect(() => { if (reduced) setStage(LAST); }, [reduced]);
@@ -70,11 +87,16 @@ export function IdeaToProduct() {
             <p className="eyebrow">{copy.product.eyebrow}</p>
             <h2 id="product-title" className="h2">{copy.product.title}</h2>
             <ol className="ipv__steps" aria-label="Build stages">
-              {STEPS.map((t, i) => (
-                <li key={t} data-st={stage > i ? "done" : stage === i ? "active" : "idle"} aria-current={stage === i ? "step" : undefined}>
-                  <span className="mono">{String(i + 1).padStart(2, "0")}</span>{t}
-                </li>
-              ))}
+              {GROUPS.map((g, i) => {
+                const st = stage > g.to ? "done" : stage >= g.from ? "active" : "idle";
+                return (
+                  <li key={g.name} data-st={st} aria-current={st === "active" ? "step" : undefined}>
+                    <span className="mono">{String(i + 1).padStart(2, "0")}</span>
+                    <b>{g.name}</b>
+                    <em>{st === "active" ? STEPS[stage] : st === "done" ? STEPS.slice(g.from, g.to + 1).join(", ") : STEPS.slice(g.from, g.to + 1)[0]}</em>
+                  </li>
+                );
+              })}
             </ol>
             <div className="ipv__ctas">
               <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("mvp_cta", { placement: "product" }); goToBuilder(e, "SaaS / MVP", "Idea"); }}>{copy.product.cta}<ArrowRight className="arrow" aria-hidden /></Link>
@@ -83,12 +105,15 @@ export function IdeaToProduct() {
 
           <div className="ipv__stage" ref={box} aria-hidden>
             <div className="ipv__canvas" data-focus={stage === 0}>
+              {/* ghost structure: the product outline and flow nodes are faintly present from the first frame */}
+              <div className="ipv-ghost" data-on={stage <= 1}><i /><i /><i /><i /><b /></div>
               {/* 0 brief */}
               <div className="ipv-brief"><span className="mono">BRIEF</span><p>{copy.product.brief}</p></div>
               {/* 1 flow */}
               <div className="ipv-flow" data-on={on(stage, 1)}>{["Sign in", "Submit request", "Team review", "Pay invoice"].map((t, i) => <span key={t} style={{ ["--i" as string]: i }}>{t}</span>)}</div>
               {/* 2-3 window: wireframe then interface */}
-              <div className="ipv-win" data-on={on(stage, 2)} data-ui={on(stage, 3)}>
+              <div className="ipv-back" data-on={on(stage, 5)}><b className="mono">BACKEND</b><span className="mono">API · SERVICES · JOBS</span></div>
+              <div className="ipv-win" data-on={on(stage, 2)} data-ui={on(stage, 3)} data-fe={on(stage, 4)}>
                 <div className="ipv-win__bar"><i /><i /><i /><b>Client portal</b></div>
                 <div className="ipv-win__body">
                   <div className="ipv-wf"><u /><u /><u /><s /><s /><em /></div>
@@ -99,17 +124,17 @@ export function IdeaToProduct() {
                 </div>
               </div>
               {/* 4 mobile */}
-              <div className="ipv-phone" data-on={on(stage, 4)}><span /><b>Requests</b><div className="ipv-rq">{[["Brand refresh", "Review"], ["Site migration", "Approved"]].map(([t, st], i) => <p key={t} data-act={i === 0}><span>{t}</span><em>{st}</em></p>)}</div><em>New request</em></div>
+              <div className="ipv-phone" data-on={on(stage, 10)}><span /><b>Requests</b><div className="ipv-rq">{[["Brand refresh", "Review"], ["Site migration", "Approved"]].map(([t, st], i) => <p key={t} data-act={i === 0}><span>{t}</span><em>{st}</em></p>)}</div><em>New request</em></div>
               {/* 5 access */}
-              <div className="ipv-card ipv-auth" data-on={on(stage, 5)}><Lock aria-hidden /><div><b>Sign in</b><span>Client, team, admin roles</span></div><Check className="ipv-ok" aria-label="secured" /></div>
+              <div className="ipv-card ipv-auth" data-on={on(stage, 7)}><Lock aria-hidden /><div><b>Sign in</b><span>Client, team, admin roles</span></div><Check className="ipv-ok" aria-label="secured" /></div>
               {/* 6 data */}
               <div className="ipv-card ipv-db" data-on={on(stage, 6)}><Database aria-hidden /><div><b>Data</b>{["accounts", "projects", "requests", "payments"].map((t) => <span key={t} className="mono">{t}</span>)}</div></div>
               {/* 7 billing */}
-              <div className="ipv-card ipv-bill" data-on={on(stage, 7)}><BrandIcon name="stripe" size={20} /><div><b>Payments</b><span>Invoices and plans</span></div><Check className="ipv-ok" aria-label="active" /></div>
+              <div className="ipv-card ipv-bill" data-on={on(stage, 8)}><BrandIcon name="stripe" size={20} /><div><b>Payments</b><span>Invoices and plans</span></div><Check className="ipv-ok" aria-label="active" /></div>
               {/* 8 admin */}
-              <div className="ipv-card ipv-admin" data-on={on(stage, 8)}><div className="ipv-admin__h"><Users aria-hidden /><b>Admin console</b><BarChart3 aria-hidden /></div><div className="ipv-bars">{[38, 62, 48, 80, 58, 72, 90].map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</div></div>
+              <div className="ipv-card ipv-admin" data-on={on(stage, 9)}><div className="ipv-admin__h"><Users aria-hidden /><b>Admin console</b><BarChart3 aria-hidden /></div><div className="ipv-bars">{[38, 62, 48, 80, 58, 72, 90].map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</div></div>
               {/* 9 tests, 10 live */}
-              <div className="ipv-chips"><span data-on={on(stage, 9)}><ShieldCheck aria-hidden />Tests passing</span><span data-on={on(stage, 10)} className="ipv-live"><Rocket aria-hidden />LIVE in production</span></div>
+              <div className="ipv-chips"><span data-on={on(stage, 11)}><ShieldCheck aria-hidden />Tests passing</span><span data-on={on(stage, 12)} className="ipv-live"><Rocket aria-hidden />LIVE in production</span></div>
             </div>
           </div>
         </div>

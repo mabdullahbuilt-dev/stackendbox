@@ -76,5 +76,5 @@ export function HeroSparks() {
     return () => { off(); cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
   }, [reduced]);
 
-  return <canvas ref={canvas} className="hero__sparks" aria-hidden />;
+  return reduced ? null : <canvas ref={canvas} className="hero__sparks" aria-hidden />;
 }

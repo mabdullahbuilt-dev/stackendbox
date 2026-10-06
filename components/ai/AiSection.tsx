@@ -8,6 +8,9 @@ import { useInView } from "@/lib/hooks";
 import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
+import { DocumentApp, IntelligenceApp, MediaApp, SupportApp } from "./AiApps";
+
+const APPS: Record<string, (p: { step: number }) => React.JSX.Element> = { support: SupportApp, documents: DocumentApp, media: MediaApp, intelligence: IntelligenceApp };
 
 type NodeKey = "vision" | "docs" | "search" | "db" | "tools" | "approval";
 const NODES: { key: NodeKey; label: string; icon: LucideIcon }[] = [
@@ -20,12 +23,14 @@ const NODES: { key: NodeKey; label: string; icon: LucideIcon }[] = [
 ];
 /** One orbit system. Two ellipses seen at an angle; six capabilities, each one a real AI building block. */
 const ORBIT: Record<NodeKey, { ring: 0 | 1; a: number }> = {
-  search: { ring: 0, a: 200 }, docs: { ring: 0, a: 335 }, tools: { ring: 0, a: 62 },
-  vision: { ring: 1, a: 262 }, db: { ring: 1, a: 18 }, approval: { ring: 1, a: 152 },
+  search: { ring: 0, a: 200 }, db: { ring: 0, a: 335 }, tools: { ring: 0, a: 62 },
+  vision: { ring: 1, a: 262 }, docs: { ring: 1, a: 18 }, approval: { ring: 1, a: 152 },
 };
 /** Each scenario is led by the capability that docks into the core. */
 const LEAD: NodeKey[] = ["search", "docs", "vision", "db"];
 const RX = [0.44, 0.26], RY = [0.36, 0.2];
+/** Narrow stages keep every satellite (70px wide) inside the viewport for the whole orbit. */
+const rxFor = (w: number) => (w < 500 ? [0.36, 0.22] : RX);
 /** Server-rendered positions (before the first measurement) so the orbit is spread out even without JavaScript. */
 const initialStyle = (k: NodeKey): React.CSSProperties => {
   const r = ORBIT[k].ring, th = (ORBIT[k].a * Math.PI) / 180, t = (Math.sin(th) + 1) / 2;
@@ -99,7 +104,7 @@ export function AiSection() {
       if (!el) return;
       const r = ORBIT[k].ring, th = (ang.current[k] * Math.PI) / 180;
       const t = (Math.sin(th) + 1) / 2;
-      el.style.setProperty("--tx", `${(Math.cos(th) * RX[r] * w).toFixed(1)}px`);
+      el.style.setProperty("--tx", `${(Math.cos(th) * rxFor(w)[r] * w).toFixed(1)}px`);
       el.style.setProperty("--ty", `${(Math.sin(th) * RY[r] * h).toFixed(1)}px`);
       el.style.setProperty("--sc", (0.84 + 0.26 * t).toFixed(3));
       el.style.setProperty("--op", (0.7 + 0.3 * t).toFixed(2));
@@ -174,7 +179,7 @@ export function AiSection() {
           <div className="aorb" ref={box} data-docked={docked ?? ""} onPointerEnter={() => { drift.current.paused = true; }} onPointerLeave={() => { drift.current.paused = false; }}>
             <div className="aorb__plane" ref={orb}>
               <svg className="aorb__rings" width={dim.w} height={dim.h} viewBox={`0 0 ${dim.w} ${dim.h}`} aria-hidden>
-                {[0, 1].map((r) => <ellipse key={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * RX[r]} ry={dim.h * RY[r]} data-ring={r} />)}
+                {[0, 1].map((r) => <ellipse key={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * rxFor(dim.w)[r]} ry={dim.h * RY[r]} data-ring={r} />)}
               </svg>
               <div className="aorb__core" data-done={step >= N} data-busy={!!docked && step < N} aria-hidden><Bot /><b>AI capability</b><em className="mono">{sc.hub}</em></div>
               {NODES.map((n) => {
@@ -202,11 +207,7 @@ export function AiSection() {
               </ol>
               <div className="aix__ui" aria-hidden>
                 <div className="aix__ui-h"><b>{sc.ui.title}</b><span className="mono" data-done={step >= N}>{step >= N ? "DONE" : "WORKING"}</span></div>
-                {sc.ui.rows.map((r) => {
-                  const shown = step >= r.at;
-                  const flagged = !!r.flag && step >= r.flag[0] && step < r.flag[1];
-                  return <div key={sc.id + r.k} className="aix__ui-r" data-on={shown} data-flag={flagged}><span>{r.k}</span><em>{r.v}</em></div>;
-                })}
+                {(() => { const App = APPS[sc.id]; return <App step={step} />; })()}
                 <div className="aix__ui-f" data-on={step >= N}>{sc.ui.result}</div>
               </div>
               <p className="sr-only" aria-live="polite">{current.text}</p>

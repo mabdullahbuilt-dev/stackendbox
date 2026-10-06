@@ -1,3 +1,4 @@
+import { Aperture } from "@/components/site/Aperture";
 import { HeroCopy } from "./HeroCopy";
 import { HeroSparks } from "./HeroSparks";
 import { HeroVisual } from "./HeroVisual";
@@ -12,6 +13,7 @@ export function Hero() {
           <HeroVisual />
         </div>
       </div>
+      <Aperture kind="module" />
     </section>
   );
 }

@@ -8,9 +8,16 @@ for (const [w,h] of VPS) {
   await p.goto("http://localhost:3100", { waitUntil: "networkidle" });
   const total = await p.evaluate(() => document.documentElement.scrollHeight);
   for (let y = 0; y < total; y += 400) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(25); }
+  await p.evaluate(() => document.getElementById('ai')?.scrollIntoView()); await p.waitForTimeout(2800);
   const r = await p.evaluate(() => {
     const W = document.documentElement.clientWidth;
-    const out = [...document.querySelectorAll("main section")].filter((s) => s.scrollWidth > W + 1).map((s) => s.id);
+    // A section that clips (decorative backgrounds) is judged by its real descendants, not by its scrollWidth.
+    const out = [...document.querySelectorAll("main section")].filter((s) => {
+      const ox = getComputedStyle(s).overflowX;
+      if (ox === "visible") return s.scrollWidth > W + 1;
+      const clipped = (e) => { for (let a = e.parentElement; a && a !== s; a = a.parentElement) { if (getComputedStyle(a).overflowX !== "visible" && e.getBoundingClientRect().right > a.getBoundingClientRect().right + 1) return true; } return false; };
+      return [...s.querySelectorAll(":scope > * *")].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.right > W + 2 && getComputedStyle(e).position !== "fixed" && !clipped(e); });
+    }).map((s) => s.id);
     return { over: document.documentElement.scrollWidth - W, out };
   });
   const ok = r.over <= 0 && r.out.length === 0; if (!ok) bad++;
