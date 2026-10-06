@@ -114,3 +114,9 @@
 .sp-cands { display: flex; gap: 8px; flex-wrap: wrap; } .sp-cands li { padding: 5px 10px; border-radius: 999px; border: 1px dashed rgba(243, 236, 222, 0.3); color: var(--text-secondary); font-size: 10px; letter-spacing: 0.06em; }
 @media (max-width: 599px) { .sp-ruler { display: none; } .sp-reqs { max-width: 100%; position: static; grid-column: 1 / -1; } .sp { height: auto; min-height: 340px; } .sp-pin--b { bottom: auto; top: 28px; } }
 @media (prefers-reduced-motion: reduce) { .sp-guide { display: none; } }
+@media (max-width: 599px) {
+  .sp-idea { grid-template-columns: 1fr; height: auto; gap: 14px; justify-items: center; } .sp-idea .sp-note { justify-self: stretch; } .sp-trail { display: none; } .sp-phone { width: 62%; height: auto; min-height: 240px; } .sp-reqs { justify-self: stretch; }
+  .sp-manual { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: auto; align-content: start; }
+  .sp-manual .sp-tile { position: relative; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; width: auto; } .sp-manual .sp-copy { position: static; translate: none; grid-column: 1 / -1; justify-self: center; }
+  .sp-proto { height: 340px; }
+}

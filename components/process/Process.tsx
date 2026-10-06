@@ -24,6 +24,18 @@ export function Process() {
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => { if (reduced) { setStage(4); setFix(true); } }, [reduced]);
+  // Measurement guide that follows the pointer over the workbench only (one rAF, fine pointer, no particles).
+  useEffect(() => {
+    const el = box.current;
+    if (!el || reduced || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let raf = 0, x = 0, y = 0;
+    const apply = () => { raf = 0; el.style.setProperty("--gx", `${x}px`); el.style.setProperty("--gy", `${y}px`); };
+    const move = (e: PointerEvent) => { const r = el.getBoundingClientRect(); x = e.clientX - r.left; y = e.clientY - r.top; el.dataset.guide = "on"; if (!raf) raf = requestAnimationFrame(apply); };
+    const leave = () => { el.dataset.guide = "off"; };
+    el.addEventListener("pointermove", move, { passive: true });
+    el.addEventListener("pointerleave", leave);
+    return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
+  }, [reduced]);
   useEffect(() => {
     if (reduced || !inView) return;
     let k = 0;
@@ -79,6 +91,7 @@ export function Process() {
           <p className="pxg__line" aria-live="polite">{cur.line}</p>
           <div id="px-panel" role="tabpanel" aria-labelledby={`px-${cur.id}`} className="wb" ref={box} data-s={stage} style={{ ["--z" as string]: stage }}>
             <div className="wb__bench" aria-hidden>
+              <i className="wb__guide wb__guide--x" /><i className="wb__guide wb__guide--y" />
               <div className="wb__zones">
                 {stations.map(([t, cells], i) => (
                   <div key={t} className="wb__zone" data-st={stage > i ? "done" : stage === i ? "active" : "idle"}>
