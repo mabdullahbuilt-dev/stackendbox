@@ -120,7 +120,7 @@ export function UnderInterface() {
 
   const L = sel !== null ? LAYERS[sel] : null;
   return (
-    <section id="depth" className="dpx" data-scroll="pin" aria-labelledby="depth-title" data-sel={sel ?? "none"}>
+    <section id="depth" className="dpx" data-scroll="pin" aria-labelledby="depth-title" data-sel={sel ?? "none"} data-step={raw}>
       <div className="dpx__sticky">
       <div className="container dpx__in">
         <div className="dpx__copy">
