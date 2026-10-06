@@ -1,176 +1,118 @@
 "use client";
-import { ArrowRight, BarChart3, Bell, Building2, Check, ClipboardList, Command, FileText, Landmark, LayoutGrid, Lock, Search, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, BarChart3, Bell, Building2, Check, ClipboardCheck, FolderKanban, Inbox, LayoutGrid, Lock, Search, Settings, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
-import { useInView } from "@/lib/hooks";
+import { useChapterStep } from "@/lib/chapters";
 import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
-import { Reveal } from "@/components/ui/Reveal";
 import { Aperture } from "@/components/site/Aperture";
 
-const NAV = [[LayoutGrid, "Overview"], [Building2, "Customers"], [UsersRound, "Team"], [ClipboardList, "Projects"], [Check, "Tasks"], [FileText, "Documents"], [Landmark, "Finance"], [BarChart3, "Reports"], [Settings, "Settings"]] as const;
-const TEAM = [["Maya", 62], ["Leo", 48], ["Ines", 71], ["Sam", 35], ["Jo", 54]] as const;
-const PROJECTS = [["Harbor redesign", "Active", "ok"], ["Northwind rollout", "In review", "run"], ["Atlas migration", "Active", "ok"], ["Corvid onboarding", "Planned", "idle"], ["Delta handover", "Active", "ok"], ["Eastgate audit", "Planned", "idle"]] as const;
-const CAPTIONS = [
-  "A manager opens the dashboard.",
-  "Team workload updates.",
-  "A customer project is selected.",
-  "The detail workspace slides open.",
-  "A team member is assigned.",
-  "Their permission level changes.",
-  "Task status updates.",
-  "Reporting reflects the change.",
-  "The audit history records the action.",
-];
-const N = CAPTIONS.length;
-type View = "manager" | "team" | "admin";
-const VIEWS: [View, string, string][] = [["manager", "MANAGER", "Portfolio, workload, status and reporting"], ["team", "TEAM", "Tasks, customer workspace, documents and activity"], ["admin", "ADMIN", "Roles, permissions, audit and settings"]];
-const ROLES = [["Admin", [1, 1, 1, 1]], ["Manager", [1, 1, 1, 0]], ["Staff", [1, 1, 0, 0]], ["Client", [1, 0, 0, 0]]] as const;
+/** Four operational stories told by ONE application changing state (two beats each). Roles appear inside the story. */
+const STORIES = [
+  { n: "01", k: "CUSTOMER / INTAKE", t: "A request arrives and gets an owner", nav: 1 },
+  { n: "02", k: "PROJECT / OPERATIONS", t: "Work is planned, assigned and balanced", nav: 2 },
+  { n: "03", k: "APPROVAL / WORKFLOW", t: "Spend needs Finance before work starts", nav: 3 },
+  { n: "04", k: "REPORTING / AUDIT", t: "Progress reports itself, every action is logged", nav: 4 },
+] as const;
+const NAV = [[LayoutGrid, "Overview"], [Building2, "Customers"], [FolderKanban, "Projects"], [ClipboardCheck, "Approvals"], [BarChart3, "Reports"], [Settings, "Settings"]] as const;
+const STEPS = STORIES.length * 2;
 
-/** A dense multi-user business application. The point is management: roles, ownership, records, reporting, audit. */
+function Intake({ b }: { b: number }) {
+  const rows = [["Harbor Retail", "Store rollout", "MA", "Active"], ["Atlas Group", "Data migration", "IN", "Active"], ["Corvid Labs", "Onboarding", "JO", "Planned"]];
+  return (
+    <div className="ops-pane ops-intake">
+      <div className="ops-h"><b>Customers</b><span className="ops-chip"><Inbox />1 new request</span></div>
+      <div className="ops-tbl">
+        <div className="ops-r ops-r--h"><span>Customer</span><span>Request</span><span>Owner</span><span>Status</span></div>
+        <div className="ops-r ops-new" data-b={b}><span><u>N</u>Northwind Ltd</span><span>Site migration</span><span>{b >= 1 ? <u className="ops-av ops-av--on">SA</u> : <em className="ops-unassigned">Unassigned</em>}</span><span><i data-t={b >= 1 ? "run" : "new"}>{b >= 1 ? "Assigned" : "New"}</i></span></div>
+        {rows.map(([c, r, o, s]) => <div key={c} className="ops-r"><span><u>{c[0]}</u>{c}</span><span>{r}</span><span><u className="ops-av">{o}</u></span><span><i data-t={s === "Active" ? "ok" : "idle"}>{s}</i></span></div>)}
+      </div>
+      <aside className="ops-side" data-on={b >= 1}><b className="mono">ROUTED BY RULE</b><p>Migration requests go to the delivery team with the most capacity.</p><span><ShieldCheck />Sam Okoye, Delivery</span></aside>
+    </div>
+  );
+}
+function Projects({ b }: { b: number }) {
+  const load = [["Maya", 82], ["Leo", 64], ["Sam", b >= 1 ? 58 : 34], ["Ines", 71]] as const;
+  const tasks = [["Scope and plan", "MA", true], ["Content audit", "SA", b >= 1], ["Redirect map", "SA", false], ["Cutover rehearsal", "LE", false]] as const;
+  return (
+    <div className="ops-pane ops-proj">
+      <div className="ops-h"><b>Northwind site migration</b><span className="ops-chip ops-chip--run">In progress</span></div>
+      <div className="ops-proj__grid">
+        <div className="ops-card"><b className="mono">TASKS</b>{tasks.map(([t, o, d]) => <div key={t} className="ops-task" data-done={d}><span>{d ? <Check /> : null}</span>{t}<u className="ops-av">{o}</u></div>)}</div>
+        <div className="ops-card"><b className="mono">TEAM WORKLOAD</b>{load.map(([n, v]) => <div key={n} className="ops-load"><span>{n}</span><i><s style={{ width: `${v}%` }} data-hot={n === "Sam" && b >= 1} /></i><em>{v}%</em></div>)}</div>
+      </div>
+    </div>
+  );
+}
+function Approvals({ b }: { b: number }) {
+  return (
+    <div className="ops-pane ops-appr">
+      <div className="ops-h"><b>Approvals</b><span className="ops-chip">{b >= 1 ? "0 waiting" : "1 waiting"}</span></div>
+      <div className="ops-req" data-ok={b >= 1}>
+        <div className="ops-req__h"><b>Contractor budget, Northwind</b><strong>$18,400</strong></div>
+        <p>Over the $10,000 project limit, so the rule sends it to Finance.</p>
+        <div className="ops-flow"><span data-st="ok"><Check />Requested by Maya</span><i /><span data-st={b >= 1 ? "ok" : "run"}>{b >= 1 ? <Check /> : <Lock />}Finance: A. Khan</span><i /><span data-st={b >= 1 ? "ok" : "idle"}>{b >= 1 ? <Check /> : null}Work can start</span></div>
+      </div>
+      <div className="ops-perm"><b className="mono">PERMISSIONS IN THIS STEP</b>{[["Maya, Manager", "request"], ["A. Khan, Finance", "approve"], ["Sam, Delivery", b >= 1 ? "edit project" : "view"]].map(([w, c]) => <div key={w}><span>{w}</span><em>{c}</em></div>)}</div>
+    </div>
+  );
+}
+function Reports({ b }: { b: number }) {
+  const bars = [44, 52, 61, 58, 70, b >= 1 ? 84 : 72];
+  const log = ["Northwind request created", "Owner set to Sam by rule", "Budget approved by A. Khan", "Task: Content audit done", "Delivery report refreshed"];
+  return (
+    <div className="ops-pane ops-rep">
+      <div className="ops-h"><b>Delivery report</b><span className="ops-chip ops-chip--ok">{b >= 1 ? "84% on track" : "72% on track"}</span></div>
+      <div className="ops-rep__grid">
+        <div className="ops-card"><b className="mono">PROJECTS ON TRACK, LAST 6 WEEKS</b><div className="ops-bars">{bars.map((h, i) => <i key={i} style={{ height: `${h}%` }} data-hot={i === bars.length - 1} />)}</div></div>
+        <div className="ops-card"><b className="mono">AUDIT TRAIL</b><ol className="ops-log">{log.map((l, i) => <li key={l} data-on={i < 4 || b >= 1}>{l}</li>)}</ol></div>
+      </div>
+    </div>
+  );
+}
+const PANES = [Intake, Projects, Approvals, Reports];
+
+/**
+ * One Northfield Ops application that changes state as the visitor scrolls: intake, operations, approval, reporting.
+ * Desktop: a short sticky runway (8 beats) keeps the whole chapter in one viewport. Small screens: pass-through range,
+ * one pane at a time. Scrolling back steps backward through the same states; every visit replays.
+ */
 export function BusinessSoftware() {
   const { reduced } = useMotionPreference();
-  const [step, setStep] = useState(0);
-  const box = useRef<HTMLDivElement>(null);
-  const inView = useInView(box, "-20% 0px -20% 0px", true);
-  const near = useInView(box, "900px 0px 900px 0px", true);
-  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const [view, setView] = useState<View>("manager");
-  const [chk, setChk] = useState<Record<string, boolean>>({ "Prepare scope doc": true });
-
-  const run = () => {
-    clearInterval(timer.current);
-    let k = 0;
-    setStep(0);
-    timer.current = setInterval(() => { k += 1; setStep(k); if (k >= N - 1) clearInterval(timer.current); }, 1100);
-  };
-  useEffect(() => { if (reduced) setStep(N - 1); }, [reduced]);
-  useEffect(() => {
-    if (reduced || !inView) return;
-    const t = setTimeout(run, 500);
-    return () => clearTimeout(t);
-  }, [inView, reduced]);
-  useEffect(() => () => clearInterval(timer.current), []);
-  const s = step;
-
+  const raw = useChapterStep("business", STEPS);
+  const step = reduced ? STEPS - 1 : raw;
+  const story = Math.floor(step / 2), beat = step % 2;
+  const S = STORIES[story];
   return (
-    <section id="business" className="section bsw" aria-labelledby="bsw-title">
-      <div className="container">
-        <Reveal className="sec-head">
-          <p className="eyebrow">{copy.business.eyebrow}</p>
-          <h2 id="bsw-title" className="h2">{copy.business.title}</h2>
-          <p className="body-l">{copy.business.support}</p>
-        </Reveal>
-
-        <div className="bsw__views" role="tablist" aria-label="Choose a viewpoint">
-          {VIEWS.map(([v, t, d]) => (
-            <button key={v} role="tab" aria-selected={view === v} tabIndex={view === v ? 0 : -1} className="bsw__view" data-active={view === v} onClick={() => { setView(v); track("scene_replay", { scene: "business", view: v }); }}
-              onKeyDown={(e) => { const i = VIEWS.findIndex((x) => x[0] === view); if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); const n = VIEWS[(i + (e.key === "ArrowRight" ? 1 : VIEWS.length - 1)) % VIEWS.length][0]; setView(n); } }}>
-              <b className="mono">{t}</b><em>{d}</em>
-            </button>
-          ))}
-        </div>
-        <div className="bsw__stage" data-view={view} ref={box} data-s={s} role="img" aria-label="A custom business management application: dashboard, team workload, customer workspace, roles and permissions, tasks, reporting and audit history">
-          {near && (
-          <div className="bsw__scene" aria-hidden>
-            {/* background layer: reporting and audit */}
-            <div className="bsw__back">
-              <div className="bsw__card bsw__rep"><b>Delivery report</b><span><i data-hot={s >= 7} style={{ width: s >= 7 ? "84%" : "72%" }} /></span><em className="mono">{s >= 7 ? "84% on track" : "72% on track"}</em></div>
-              <div className="bsw__card bsw__audit"><b className="mono">AUDIT HISTORY</b>
-                <ol>
-                  <li data-on>Project created, A. Khan</li>
-                  <li data-on={s >= 4}>Sam assigned to Northwind</li>
-                  <li data-on={s >= 5}>Sam role: Editor to Lead</li>
-                  <li data-on={s >= 6}>Task 14 marked done</li>
-                  <li data-on={s >= 8} data-new>Report refreshed, logged</li>
-                </ol>
-              </div>
+    <section id="business" className="ops" data-scroll="pin" aria-labelledby="bsw-title">
+      <div className="ops__sticky">
+        <div className="container ops__in">
+          <div className="ops__head">
+            <div>
+              <p className="eyebrow">{copy.business.eyebrow}</p>
+              <h2 id="bsw-title" className="h2">{copy.business.title}</h2>
             </div>
-
-            {/* foreground: manager dashboard */}
-            <div className="bsw__app">
-              <div className="bsw__bar"><i /><i /><i /><b>Northfield Ops</b><span className="bsw__cmd"><Search />Search anything<kbd><Command />K</kbd></span><Bell className="bsw__bell" /><em>AK</em></div>
-              <div className="bsw__grid">
-                <nav className="bsw__nav">{NAV.map(([Ic, t]) => <span key={t} data-on={t === "Projects"}><Ic />{t}</span>)}</nav>
-                {view === "manager" && (                <div className="bsw__main">
-                  <div className="bsw__kpis">
-                    <div><em>Active projects</em><b>24</b></div>
-                    <div><em>Open tasks</em><b>{s >= 6 ? 137 : 138}</b></div>
-                    <div><em>Team utilization</em><b>{s >= 4 ? "74%" : "78%"}</b></div>
-                  </div>
-                  <div className="bsw__load">
-                    <b>Team workload</b>
-                    <div>{TEAM.map(([n, v]) => {
-                      const val = n === "Sam" && s >= 4 ? 58 : n === "Maya" && s >= 1 ? v - 8 : v;
-                      return <span key={n}><i data-hot={n === "Sam" && s >= 4} style={{ height: `${val}%` }} /><u>{n}</u></span>;
-                    })}</div>
-                  </div>
-                  <div className="bsw__tbl">
-                    <div className="bsw__r bsw__r--h"><span>Project</span><span>Owner</span><span>Status</span></div>
-                    {PROJECTS.map(([p, st, t], i) => (
-                      <div key={p} className="bsw__r" data-sel={i === 1 && s >= 2}>
-                        <span>{p}</span><span><u>{["MA", "LE", "IN", "SA", "JO", "MA"][i]}</u></span><span><i data-t={t}>{st}</i></span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                )}
-                {view === "team" && (
-                  <div className="bsw__main bsw__main--alt">
-                    <div className="bsw__panel"><b>My tasks</b>
-                      {["Prepare scope doc", "Review wireframes", "Send onboarding pack", "Update project plan"].map((t) => (
-                        <button type="button" key={t} className="bsw__task" data-done={!!chk[t]} onClick={() => setChk((c) => ({ ...c, [t]: !c[t] }))}><span>{chk[t] ? <Check /> : null}</span>{t}</button>
-                      ))}
-                    </div>
-                    <div className="bsw__panel"><b>Northwind Ltd, documents</b>
-                      {["Statement of work.pdf", "Wireframes v3.fig", "Kickoff notes.md"].map((d) => <div key={d} className="bsw__doc"><FileText />{d}</div>)}
-                    </div>
-                    <div className="bsw__panel"><b>Recent activity</b>
-                      <ol className="bsw__feed">{["Leo commented on Wireframes v3", "Maya uploaded Statement of work", "Task 13 moved to review"].map((t) => <li key={t}>{t}</li>)}</ol>
-                    </div>
-                  </div>
-                )}
-                {view === "admin" && (
-                  <div className="bsw__main bsw__main--alt">
-                    <div className="bsw__panel"><b>Roles and permissions</b>
-                      <table className="bsw__matrix"><thead><tr><th /><th>View</th><th>Edit</th><th>Approve</th><th>Admin</th></tr></thead><tbody>
-                        {ROLES.map(([r, v]) => <tr key={r}><th>{r}</th>{v.map((x, i) => <td key={i} data-on={!!x}>{x ? <Check aria-label="allowed" /> : <span aria-label="no access">-</span>}</td>)}</tr>)}
-                      </tbody></table>
-                    </div>
-                    <div className="bsw__panel"><b>Audit log</b>
-                      <ol className="bsw__feed">{["A. Khan changed Sam to Project lead", "System: Report refreshed", "A. Khan invited a client user", "Role Staff: Edit enabled"].map((t) => <li key={t}>{t}</li>)}</ol>
-                    </div>
-                    <div className="bsw__panel"><b>Settings</b><div className="bsw__chips">{["Single sign-on", "Two-step sign-in", "Data export", "Retention 7 years"].map((t) => <span key={t}><ShieldCheck />{t}</span>)}</div></div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* middle layer: customer workspace drawer */}
-            <aside className="bsw__drawer" data-open={s >= 3}>
-              <div className="bsw__dh"><span className="bsw__logo">N</span><div><b>Northwind Ltd</b><em>Customer, since 2023</em></div><i data-t="run">In review</i></div>
-              <p className="mono bsw__lab">ASSIGNED TEAM</p>
-              <div className="bsw__team"><u>MA</u><u>LE</u><u data-new={s >= 4} data-off={s < 4}>SA</u></div>
-              <div className="bsw__perm" data-lead={s >= 5}>
-                <Lock /><span>Sam Okoye</span><em>{s >= 5 ? "Project lead" : "Editor"}</em><ShieldCheck data-on={s >= 5} />
-              </div>
-              <p className="mono bsw__lab">TASKS</p>
-              <ul className="bsw__tasks">
-                <li data-done><Check />Kickoff call</li>
-                <li data-done={s >= 6}>{s >= 6 ? <Check /> : <i />}Approve scope</li>
-                <li><i />Send onboarding pack</li>
-              </ul>
-            </aside>
+            <p className="body-l">{copy.business.support}</p>
           </div>
-          )}
-        </div>
-
-        <div className="bsw__foot">
-          <p className="bsw__cap body-l" aria-live="polite">{CAPTIONS[s]}</p>
-          <div className="bsw__ctas">
-            <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "business" }); goToBuilder(e, "CRM / Internal Tool"); }}>{copy.business.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+          <div className="ops__body">
+            <ol className="ops__stories" aria-label="What the application handles">
+              {STORIES.map((x, i) => (
+                <li key={x.k} data-st={i < story ? "done" : i === story ? "active" : "idle"} aria-current={i === story ? "step" : undefined}>
+                  <span className="mono">{x.n}</span><b className="mono">{x.k}</b><em>{x.t}</em>
+                </li>
+              ))}
+              <li className="ops__cta"><Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "business" }); goToBuilder(e, "CRM / Internal Tool"); }}>{copy.business.cta}<ArrowRight className="arrow" aria-hidden /></Link></li>
+            </ol>
+            <div className="ops__app" data-story={story} role="img" aria-label={`Northfield Ops application, ${S.k.toLowerCase()}: ${S.t}`}>
+              <div className="ops__bar" aria-hidden><i /><i /><i /><b>Northfield Ops</b><span className="ops__cmd"><Search />Search anything</span><Bell /><em>AK</em></div>
+              <div className="ops__grid" aria-hidden>
+                <nav className="ops__nav">{NAV.map(([Ic, t], i) => <span key={t} data-on={i === S.nav}><Ic />{t}</span>)}</nav>
+                <div className="ops__main">
+                  {PANES.map((P, i) => <div key={i} className="ops__state" data-on={i === story} data-dir={i < story ? "past" : i > story ? "next" : "now"}><P b={i === story ? beat : i < story ? 1 : 0} /></div>)}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 "use client";
 import { ArrowRight, BarChart3, Check, Database, Lock, Rocket, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useChapterStep } from "@/lib/chapters";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { goToBuilder } from "@/lib/intent";
@@ -19,16 +20,14 @@ const on = (s: number, from: number) => s >= from;
 
 /**
  * Scroll maps to a discrete build stage (0..10), so every scroll position is a finished, readable frame.
- * Desktop: sticky runway driven by one passive scroll listener (no GSAP). Touch/mobile: plays once, then rests.
+ * Driven by the shared chapter runtime: on desktop the sticky runway maps to the 13 stages, on small screens the pass-through
+ * range does. Scrolling back reverses the build; every visit replays it. Reduced motion shows the finished product.
  */
 export function IdeaToProduct() {
   const { reduced } = useMotionPreference();
-  const [stage, setStage] = useState(0);
-  const root = useRef<HTMLElement>(null);
+  const step = useChapterStep("product", STEPS.length);
+  const stage = reduced ? LAST : step;
   const box = useRef<HTMLDivElement>(null);
-  const inView = useInView(box, "-15% 0px -15% 0px");
-  const near = useInView(root, "300px 0px 300px 0px");
-  const played = useRef(false);
 
   // Pointer: 3 to 5px depth parallax between interface, logic plane and grid. This stage only, one rAF, fine pointer only.
   useEffect(() => {
@@ -43,44 +42,8 @@ export function IdeaToProduct() {
     return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
   }, [reduced]);
 
-  // Reduced motion: show the finished product.
-  useEffect(() => { if (reduced) setStage(LAST); }, [reduced]);
-
-  // Desktop runway: stage follows scroll progress through the sticky section.
-  useEffect(() => {
-    const el = root.current;
-    if (!el || reduced || !near) return;
-    const mq = window.matchMedia("(min-width: 900px)");
-    if (!mq.matches) return;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const r = el.getBoundingClientRect();
-      const span = el.offsetHeight - window.innerHeight;
-      const p = span > 0 ? Math.min(1, Math.max(0, -r.top / span)) : 0;
-      setStage((s) => { const n = Math.min(LAST, Math.floor(p * (STEPS.length - 0.001))); return n === s ? s : n; });
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, [near, reduced]);
-
-  // Mobile and tablets: play the build once when it comes into view.
-  useEffect(() => {
-    if (reduced || !inView || played.current) return;
-    if (window.matchMedia("(min-width: 900px)").matches) return;
-    played.current = true;
-    let k = 0;
-    setStage(0);
-    const id = setInterval(() => { k += 1; setStage(k); if (k >= LAST) { clearInterval(id); track("scene_complete", { scene: "idea-to-product" }); } }, 950);
-    return () => clearInterval(id);
-  }, [inView, reduced]);
-
-
   return (
-    <section id="product" ref={root} className="ipv" aria-labelledby="product-title" data-s={stage}>
+    <section id="product" className="ipv" data-scroll="pin" aria-labelledby="product-title" data-s={stage}>
       <div className="ipv__sticky">
         <div className="container ipv__in">
           <div className="ipv__copy">
@@ -105,8 +68,8 @@ export function IdeaToProduct() {
 
           <div className="ipv__stage" ref={box} aria-hidden>
             <div className="ipv__canvas" data-focus={stage === 0}>
-              {/* ghost structure: the product outline and flow nodes are faintly present from the first frame */}
-              <div className="ipv-ghost" data-on={stage <= 1}><i /><i /><i /><i /><b /></div>
+              {/* requirements extracted from the brief: frame zero already reads as the start of a real build */}
+              <ul className="ipv-req mono" data-on={stage <= 1}>{["ACCOUNTS", "REQUESTS", "DOCUMENTS", "PAYMENTS", "ADMIN", "ROLES"].map((t, i) => <li key={t} style={{ ["--i" as string]: i }}><i />{t}</li>)}</ul>
               {/* 0 brief */}
               <div className="ipv-brief"><span className="mono">BRIEF</span><p>{copy.product.brief}</p></div>
               {/* 1 flow */}

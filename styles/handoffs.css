@@ -16,11 +16,11 @@
 
 /* 4 Product to Business: the admin layer grows and the management application opens from it */
 #product .ipv__stage { transform-origin: 70% 80%; scale: calc(1 + var(--exit, 0) * 0.07); opacity: calc(1 - var(--exit, 0) * 0.45); }
-#business .bsw__stage { transform-origin: 0 50%; scale: calc(0.95 + var(--enter, 1) * 0.05); }
+#business .ops__app { transform-origin: 0 50%; scale: calc(0.94 + var(--enter, 1) * 0.06); }
 
 /* 5 Business to Manual: the selected record slides out and the fragmented tools come in from both sides */
-#business .bsw__r[data-sel="true"] { translate: calc(var(--exit, 0) * 34px) 0; }
-#business .bsw__scene { opacity: calc(1 - var(--exit, 0) * 0.4); }
+
+#business .ops__app { opacity: calc(1 - var(--exit, 0) * 0.4); }
 #transform .mt { translate: 0 calc((1 - var(--enter, 1)) * 24px); }
 
 /* 6 Manual to AI: the finished system recedes and the capability core grows from the centre */
@@ -71,7 +71,7 @@
   #depth .xr__world { transform: rotateX(60deg) rotateZ(-32deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #hero .hero__visual, #services .svc__grid, #intent .intent__stage, #intent .sp-wrap, #product .ipv-brief, #product .ipv__stage, #business .bsw__stage, #business .bsw__r, #business .bsw__scene, #transform .mt, #ai .aorb, #ai .aorb__rings, #ai .aorb__sat, #integrations .ixnet__lines, #integrations .ixnet__map, #specialized .spc__stage, #proof .proof__main, #rescue .rx, #depth .xr__scene, #depth .xr__inspector, #process .wb, #process .wb__art, #delivery, #delivery .why__obj, #start .ct { translate: none; scale: none; transform: none; opacity: 1; clip-path: none; }
+  #hero .hero__visual, #services .svc__grid, #intent .intent__stage, #intent .sp-wrap, #product .ipv-brief, #product .ipv__stage, #business .ops__app, #transform .mt, #ai .aorb, #ai .aorb__rings, #ai .aorb__sat, #integrations .ixnet__lines, #integrations .ixnet__map, #specialized .spc__stage, #proof .proof__main, #rescue .rx, #depth .xr__scene, #depth .xr__inspector, #process .wb, #process .wb__art, #delivery, #delivery .why__obj, #start .ct { translate: none; scale: none; transform: none; opacity: 1; clip-path: none; }
   #rescue .rx::after { display: none; }
   #depth .xr__world { transform: rotateX(60deg) rotateZ(-32deg); }
 }

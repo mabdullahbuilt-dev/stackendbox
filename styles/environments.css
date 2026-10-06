@@ -1,159 +1,39 @@
-/* ENVIRONMENTS: each chapter gets a designed back plane (::before in chapters.css) and a mid plane (::after here).
-   Static CSS only: no animation, no extra layers in the DOM, 2 to 7 percent visible intensity. */
-#intent::after, #services::after, #product::after, #business::after, #transform::after, #ai::after, #integrations::after, #specialized::after, #proof::after, #rescue::after, #depth::after, #process::after, #delivery::after, #start::after, #final::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-#delivery { position: relative; isolation: isolate; }
-
-/* SERVICES: living software system. Charcoal, modular grid, green nodes, cropped geometry. */
-#services { background: linear-gradient(160deg, #0b0c0b 0%, #101211 48%, #0b110d 100%); }
-#services::after {
-  background:
-    radial-gradient(circle at 25% 30%, rgba(47, 210, 122, 0.5) 0 1.5px, transparent 2.5px) 0 0 / 192px 192px,
-    radial-gradient(circle at 75% 70%, rgba(47, 210, 122, 0.35) 0 1.5px, transparent 2.5px) 0 0 / 192px 192px,
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 96px 96px,
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 96px 96px;
-  -webkit-mask-image: radial-gradient(90% 80% at 50% 45%, #000 20%, transparent 85%); mask-image: radial-gradient(90% 80% at 50% 45%, #000 20%, transparent 85%);
-  opacity: 0.8;
-}
-
-/* STARTING POINT: design studio. Graphite, warm blueprint lines, measurement and crop marks. */
-#intent { background: #0e0e0d; }
-#intent::after {
-  background:
-    linear-gradient(rgba(243, 236, 222, 0.05) 1px, transparent 1px) 0 0 / 24px 24px,
-    linear-gradient(90deg, rgba(243, 236, 222, 0.05) 1px, transparent 1px) 0 0 / 24px 24px,
-    linear-gradient(rgba(243, 236, 222, 0.07) 1px, transparent 1px) 0 0 / 120px 120px,
-    linear-gradient(90deg, rgba(243, 236, 222, 0.07) 1px, transparent 1px) 0 0 / 120px 120px,
-    linear-gradient(90deg, rgba(255, 122, 26, 0.5) 0 28px, transparent 28px) 24px 28px / 100% 1px no-repeat;
-  -webkit-mask-image: radial-gradient(85% 75% at 50% 50%, #000 15%, transparent 80%); mask-image: radial-gradient(85% 75% at 50% 50%, #000 15%, transparent 80%);
-  opacity: 0.7;
-}
-
-/* PRODUCT: digital construction lab. Black, orange construction grid, coordinate guides. */
-#product { background: #070706; }
-#product::after {
-  background:
-    linear-gradient(rgba(255, 122, 26, 0.07) 1px, transparent 1px) 0 0 / 48px 48px,
-    linear-gradient(90deg, rgba(255, 122, 26, 0.07) 1px, transparent 1px) 0 0 / 48px 48px,
-    linear-gradient(90deg, rgba(247, 248, 245, 0.06) 1px, transparent 1px) 0 0 / 384px 100%;
-  -webkit-mask-image: radial-gradient(80% 70% at 62% 50%, #000 10%, transparent 78%); mask-image: radial-gradient(80% 70% at 62% 50%, #000 10%, transparent 78%);
-}
-
-/* BUSINESS: enterprise command environment. Graphite, structural columns, row geometry, white divisions. */
-#business { background: linear-gradient(180deg, #0d0e0f 0%, #111314 100%); }
-#business::after {
-  background:
-    repeating-linear-gradient(90deg, transparent 0 175px, rgba(247, 248, 245, 0.05) 175px 176px),
-    repeating-linear-gradient(0deg, transparent 0 43px, rgba(247, 248, 245, 0.028) 43px 44px),
-    linear-gradient(90deg, rgba(47, 210, 122, 0.4) 0 2px, transparent 2px) 176px 0 / 100% 22% no-repeat;
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 80%, transparent); mask-image: linear-gradient(180deg, transparent, #000 18%, #000 80%, transparent);
-}
-
-/* MANUAL TO SYSTEM: fragmentation to order. Red tension left, orange centre, aligned green grid right. */
-#transform { background: #0b0b0a; }
-#transform::after {
-  background:
-    repeating-linear-gradient(103deg, transparent 0 38px, rgba(240, 82, 82, 0.07) 38px 39px) 0 0 / 40% 100% no-repeat,
-    repeating-linear-gradient(77deg, transparent 0 61px, rgba(240, 82, 82, 0.05) 61px 62px) 0 0 / 38% 100% no-repeat,
-    linear-gradient(90deg, transparent 38%, rgba(255, 122, 26, 0.07) 50%, transparent 62%),
-    linear-gradient(rgba(47, 210, 122, 0.06) 1px, transparent 1px) 100% 0 / 40px 40px,
-    linear-gradient(90deg, rgba(47, 210, 122, 0.06) 1px, transparent 1px) 100% 0 / 40px 40px;
-  -webkit-mask-image: linear-gradient(90deg, #000, #000); mask-image: none;
-}
-#transform::after { background-size: 40% 100%, 38% 100%, 100% 100%, 40px 40px, 40px 40px; background-position: 0 0, 0 0, 0 0, 100% 0, 100% 0; }
-
-/* AI: intelligence orbit chamber. Black-green, perspective orbit guides, topology points. */
-#ai { background: radial-gradient(70% 70% at 30% 50%, #0c140e 0%, #080b09 70%); }
-#ai::after {
-  inset: -10% 0; background:
-    repeating-radial-gradient(ellipse 50% 50% at 28% 50%, transparent 0 62px, rgba(47, 210, 122, 0.07) 62px 63px),
-    radial-gradient(circle, rgba(47, 210, 122, 0.4) 0 1px, transparent 1.5px) 0 0 / 56px 56px;
-  -webkit-mask-image: radial-gradient(60% 55% at 28% 50%, #000 5%, transparent 80%); mask-image: radial-gradient(60% 55% at 28% 50%, #000 5%, transparent 80%);
-  transform: perspective(900px) rotateX(58deg) scale(1.3); transform-origin: 28% 50%; opacity: 0.9;
-}
-
-/* INTEGRATIONS: signal transmission network. Graphite, diagonal protocol routes, packet ticks. */
-#integrations { background: #0d0d0c; }
-#integrations::after {
-  background:
-    repeating-linear-gradient(118deg, transparent 0 96px, rgba(255, 122, 26, 0.06) 96px 97px),
-    repeating-linear-gradient(0deg, transparent 0 79px, rgba(247, 248, 245, 0.035) 79px 80px),
-    radial-gradient(circle, rgba(255, 122, 26, 0.5) 0 1.5px, transparent 2px) 0 0 / 160px 160px;
-  -webkit-mask-image: radial-gradient(85% 70% at 55% 50%, #000 10%, transparent 82%); mask-image: radial-gradient(85% 70% at 55% 50%, #000 10%, transparent 82%);
-}
-
-/* SPECIALIZED: three environments, switched by the active mode. */
-#specialized { background: #0c0d0d; }
-#specialized::after { transition: opacity 420ms var(--ease-out); -webkit-mask-image: radial-gradient(85% 70% at 50% 45%, #000 10%, transparent 82%); mask-image: radial-gradient(85% 70% at 50% 45%, #000 10%, transparent 82%); }
-#specialized:has([data-mode="market"])::after { background: repeating-linear-gradient(90deg, transparent 0 63px, rgba(247, 248, 245, 0.045) 63px 64px), repeating-linear-gradient(0deg, transparent 0 31px, rgba(247, 248, 245, 0.03) 31px 32px), linear-gradient(0deg, transparent 58%, rgba(255, 122, 26, 0.18) 58% calc(58% + 1px), transparent calc(58% + 1px)); }
-#specialized:has([data-mode="web3"])::after { background: repeating-linear-gradient(90deg, transparent 0 119px, rgba(255, 122, 26, 0.07) 119px 120px), linear-gradient(rgba(247, 248, 245, 0.03) 1px, transparent 1px) 0 0 / 60px 60px, radial-gradient(circle, rgba(247, 248, 245, 0.35) 0 1px, transparent 1.5px) 0 0 / 60px 60px; }
-#specialized:has([data-mode="dev"])::after { background: repeating-linear-gradient(0deg, transparent 0 23px, rgba(247, 248, 245, 0.03) 23px 24px), linear-gradient(90deg, rgba(247, 248, 245, 0.06) 1px, transparent 1px) 0 0 / 220px 100%, linear-gradient(90deg, rgba(47, 210, 122, 0.12) 0 2px, transparent 2px) 220px 0 / 100% 40% no-repeat; }
-
-/* WORK & PROOF: premium gallery. Quiet black, warm spotlight, no grid. */
-#proof { background: #080807; }
-#proof::after { background: radial-gradient(50% 38% at 50% 38%, rgba(243, 236, 222, 0.07), transparent 72%), radial-gradient(35% 25% at 50% 100%, rgba(255, 122, 26, 0.04), transparent 70%); }
-
-/* RESCUE: diagnostic lab. Graphite, dotted diagnostic grid, red issue nodes, orange repair field. */
-#rescue { background: #0d0d0d; }
-#rescue::after {
-  background:
-    radial-gradient(circle at 18% 28%, rgba(240, 82, 82, 0.5) 0 3px, rgba(240, 82, 82, 0.1) 3px 22px, transparent 24px),
-    radial-gradient(circle at 82% 66%, rgba(240, 82, 82, 0.4) 0 3px, rgba(240, 82, 82, 0.08) 3px 18px, transparent 20px),
-    radial-gradient(circle, rgba(247, 248, 245, 0.28) 0 1px, transparent 1.5px) 0 0 / 32px 32px;
-  -webkit-mask-image: radial-gradient(90% 80% at 50% 50%, #000 15%, transparent 85%); mask-image: radial-gradient(90% 80% at 50% 50%, #000 15%, transparent 85%);
-  opacity: 0.6;
-}
-
-/* ENGINEERING: product x-ray. Black, receding perspective floor grid, orange depth guides. */
-#depth { background: #060606; overflow: clip; }
-#depth::after {
-  inset: auto 0 0 0; height: 62%;
-  background:
-    linear-gradient(rgba(255, 122, 26, 0.16) 1px, transparent 1px) 0 0 / 64px 64px,
-    linear-gradient(90deg, rgba(247, 248, 245, 0.1) 1px, transparent 1px) 0 0 / 64px 64px;
-  transform: perspective(700px) rotateX(62deg); transform-origin: 50% 100%;
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 70%); mask-image: linear-gradient(180deg, transparent, #000 70%);
-  opacity: 0.55;
-}
-
-/* PROCESS: engineering workbench. Charcoal surface, measurement grid, zone ticks. */
-#process { background: #111210; }
-#process::after {
-  background:
-    linear-gradient(rgba(243, 236, 222, 0.035) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(90deg, rgba(243, 236, 222, 0.035) 1px, transparent 1px) 0 0 / 28px 28px,
-    repeating-linear-gradient(90deg, rgba(255, 122, 26, 0.35) 0 1px, transparent 1px 20%) 0 0 / 100% 10px no-repeat,
-    repeating-linear-gradient(90deg, transparent 0 calc(20% - 1px), rgba(47, 210, 122, 0.3) calc(20% - 1px) 20%) 0 100% / 100% 2px no-repeat;
-  -webkit-mask-image: linear-gradient(180deg, #000, #000); mask-image: none;
-}
-
-/* WHY: light editorial chapter. Warm white, pale orange wash, faint editorial columns. */
-#delivery { background: linear-gradient(180deg, #f3f4f0 0%, #f6f2ea 100%); }
-#delivery::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(60% 45% at 85% 0%, rgba(255, 122, 26, 0.07), transparent 70%); }
-#delivery::after { background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(9, 10, 9, 0.045) calc(25% - 1px) 25%); -webkit-mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent); }
-
-/* CONTACT: quiet project studio. Deep black, faint orange modular geometry, nothing moving. */
-#start { background: #050505; }
-#start::after {
-  background:
-    linear-gradient(90deg, rgba(255, 122, 26, 0.07) 1px, transparent 1px) 0 0 / 160px 100%,
-    linear-gradient(rgba(255, 122, 26, 0.05) 1px, transparent 1px) 0 0 / 100% 160px;
-  -webkit-mask-image: radial-gradient(70% 60% at 85% 20%, #000, transparent 75%); mask-image: radial-gradient(70% 60% at 85% 20%, #000, transparent 75%);
-}
-
-/* FINAL: brand convergence. Deepest black, one orange centre. */
-#final { background: #030303; }
-#final::after { background: radial-gradient(38% 42% at 50% 50%, rgba(255, 122, 26, 0.08), transparent 72%); }
-
-@media (max-width: 767px) { #services::after, #product::after, #intent::after, #ai::after, #depth::after { opacity: 0.55; } }
-#intent, #services, #product, #business, #transform, #ai, #integrations, #specialized, #proof, #rescue, #depth, #process, #delivery, #start, #final { overflow-x: clip; overflow-y: visible; }
+/* ENVIRONMENTS: atmospheric chapter worlds made of light, not lines. Each chapter has a base tone that blends into its
+   neighbours at the seams, one or two very large low-contrast radial fields, a vignette and a faint grain. No grids, no
+   graph paper, no diagonal wallpaper. Static except where a field is tied to the chapter's scroll progress (--p). */
+#services::after, #intent::after, #product::after, #business::after, #transform::after, #ai::after, #integrations::after, #specialized::after, #proof::after, #rescue::after, #depth::after, #process::after, #start::after, #final::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+#services, #intent, #product, #business, #transform, #ai, #integrations, #specialized, #proof, #rescue, #depth, #process, #start, #final { position: relative; isolation: isolate; overflow-x: clip; }
 #ai, #depth { overflow: clip; }
-
-/* ENVIRONMENT HAND-OFF: the mid plane arrives as the chapter opens and recedes as it leaves (driven by the chapter runtime). */
-#intent::after, #services::after, #product::after, #business::after, #transform::after, #ai::after, #integrations::after, #specialized::after, #rescue::after, #depth::after, #process::after, #start::after, #final::after {
-  opacity: calc(var(--enter, 1) * (1 - var(--exit, 0) * 0.85));
-}
-#ai::after { opacity: calc(var(--enter, 1) * (1 - var(--exit, 0) * 0.85) * 0.9); }
-#depth::after { opacity: calc(var(--enter, 1) * (1 - var(--exit, 0) * 0.85) * 0.55); }
-#rescue::after { opacity: calc(var(--enter, 1) * (1 - var(--exit, 0) * 0.85) * 0.6); }
-#delivery::before, #delivery::after { opacity: calc(0.35 + var(--enter, 1) * 0.65); }
-@media (prefers-reduced-motion: reduce) { #intent::after, #services::after, #product::after, #business::after, #transform::after, #ai::after, #integrations::after, #specialized::after, #rescue::after, #depth::after, #process::after, #start::after, #final::after { opacity: 1; } }
+#delivery { position: relative; isolation: isolate; }
+#services { background: linear-gradient(180deg, #050505 0, #0a0c0b 160px, #0a0c0b calc(100% - 160px), #0c0c0b 100%); }
+#services::after { background: radial-gradient(60% 55% at 86% 18%, rgba(47,210,122,.075), transparent 70%), radial-gradient(50% 45% at 8% 92%, rgba(255,122,26,.045), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#intent { background: linear-gradient(180deg, #0a0c0b 0, #0c0c0b 160px, #0c0c0b calc(100% - 160px), #080706 100%); }
+#intent::after { background: radial-gradient(70% 60% at 72% 40%, rgba(243,236,222,.06), transparent 70%), radial-gradient(28% 26% at 74% 46%, rgba(255,122,26,.07), transparent 72%), radial-gradient(40% 40% at 10% 90%, rgba(47,210,122,.03), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#product { background: linear-gradient(180deg, #0c0c0b 0, #080706 160px, #080706 calc(100% - 160px), #0a0d0d 100%); }
+#product::after { background: radial-gradient(60% 60% at 66% 46%, rgba(255,122,26,.10), transparent 70%), radial-gradient(50% 40% at 20% 10%, rgba(243,236,222,.05), transparent 72%), radial-gradient(30% 28% at 88% 88%, rgba(47,210,122,.04), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#business { background: linear-gradient(180deg, #080706 0, #0a0d0d 160px, #0a0d0d calc(100% - 160px), #0b0a09 100%); }
+#business::after { background: radial-gradient(70% 60% at 60% 40%, rgba(47,190,160,.07), transparent 72%), radial-gradient(40% 40% at 6% 10%, rgba(243,236,222,.04), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#transform { background: linear-gradient(180deg, #0a0d0d 0, #0b0a09 160px, #0b0a09 calc(100% - 160px), #050a07 100%); }
+#transform::after { background: radial-gradient(55% 60% at 12% 40%, rgba(240,82,82,calc(.08 * (1 - var(--p, 0)))), transparent 72%), radial-gradient(45% 50% at 50% 50%, rgba(255,122,26,calc(.18 * min(var(--p, 0), 1 - var(--p, 0)))), transparent 72%), radial-gradient(55% 60% at 88% 60%, rgba(47,210,122,calc(.09 * var(--p, 0))), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#ai { background: linear-gradient(180deg, #0b0a09 0, #050a07 160px, #050a07 calc(100% - 160px), #0b0a09 100%); }
+#ai::after { background: radial-gradient(48% 52% at 30% 56%, rgba(47,210,122,.12), transparent 70%), radial-gradient(70% 70% at 30% 56%, rgba(47,210,122,.05), transparent 76%), radial-gradient(30% 30% at 76% 30%, rgba(255,122,26,.035), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#integrations { background: linear-gradient(180deg, #050a07 0, #0b0a09 160px, #0b0a09 calc(100% - 160px), #0a0b0b 100%); }
+#integrations::after { background: radial-gradient(55% 50% at 30% 52%, rgba(255,122,26,.085), transparent 72%), radial-gradient(45% 45% at 80% 40%, rgba(47,210,122,.05), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#specialized { background: linear-gradient(180deg, #0b0a09 0, #0a0b0b 160px, #0a0b0b calc(100% - 160px), #070707 100%); }
+#specialized::after { background: radial-gradient(60% 50% at 70% 20%, rgba(255,122,26,.05), transparent 72%), radial-gradient(50% 50% at 10% 100%, rgba(243,236,222,.04), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#proof { background: linear-gradient(180deg, #0a0b0b 0, #070707 160px, #070707 calc(100% - 160px), #0c0a0a 100%); }
+#proof::after { background: radial-gradient(55% 42% at 50% 38%, rgba(243,236,222,.075), transparent 72%), radial-gradient(35% 25% at 50% 100%, rgba(255,122,26,.045), transparent 70%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#rescue { background: linear-gradient(180deg, #070707 0, #0c0a0a 160px, #0c0a0a calc(100% - 160px), #050505 100%); }
+#rescue::after { background: radial-gradient(45% 45% at 14% 26%, rgba(240,82,82,.06), transparent 70%), radial-gradient(45% 45% at 70% 50%, rgba(255,122,26,.06), transparent 72%), radial-gradient(40% 40% at 90% 90%, rgba(47,210,122,.045), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#depth { background: linear-gradient(180deg, #0c0a0a 0, #050505 160px, #050505 calc(100% - 160px), #0b0b0a 100%); }
+#depth::after { background: radial-gradient(55% 55% at 62% 58%, rgba(255,122,26,.10), transparent 70%), radial-gradient(80% 50% at 50% 110%, rgba(255,122,26,.05), transparent 70%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#process { background: linear-gradient(180deg, #050505 0, #0b0b0a 160px, #0b0b0a calc(100% - 160px), #0b0b0a 100%); }
+#process::after { background: radial-gradient(60% 50% at 50% 70%, rgba(243,236,222,.05), transparent 72%), radial-gradient(35% 35% at calc(10% + var(--p, 0) * 80%) 60%, rgba(255,122,26,.08), transparent 72%), radial-gradient(30% 30% at 92% 30%, rgba(47,210,122,.045), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#delivery { background: linear-gradient(180deg, #f3f4f0 0%, #f6f2ea 100%); }
+#delivery::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(60% 45% at 85% 0%, rgba(255,122,26,.08), transparent 70%), radial-gradient(50% 40% at 0% 100%, rgba(47,210,122,.04), transparent 70%); }
+#start { background: linear-gradient(180deg, #050505 0, #050505 160px, #050505 calc(100% - 160px), #030303 100%); }
+#start::after { background: radial-gradient(520px circle at var(--mx, 82%) var(--my, 20%), rgba(255,122,26,.07), transparent 70%), radial-gradient(60% 50% at 80% 10%, rgba(255,122,26,.05), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#final { background: linear-gradient(180deg, #050505 0, #030303 160px, #030303 calc(100% - 160px), #030303 100%); }
+#final::after { background: radial-gradient(40% 46% at 50% 50%, rgba(255,122,26,.11), transparent 72%), radial-gradient(30% 30% at 50% 50%, rgba(47,210,122,.03), transparent 72%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 160px 160px; opacity: calc(0.35 + var(--enter, 1) * 0.65); }
+#transform::after, #process::after { transition: none; }
+@media (prefers-reduced-motion: reduce) { #services::after, #intent::after, #product::after, #business::after, #transform::after, #ai::after, #integrations::after, #specialized::after, #proof::after, #rescue::after, #depth::after, #process::after, #start::after, #final::after { opacity: 1; } }

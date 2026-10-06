@@ -184,7 +184,7 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
 .itab[data-active="true"] { color: #fff; background: rgba(255, 122, 26, 0.16); border-color: var(--border-active); }
 .intent__copy { display: grid; gap: 14px; justify-items: start; animation: hero-in 360ms var(--ease-out) both; }
 .intent__h { font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.5rem); line-height: 1.08; letter-spacing: -0.03em; font-weight: 500; max-width: 16ch; text-wrap: balance; }
-.intent__stage { position: relative; min-width: 0; border-radius: var(--r-lg); border: 1px solid var(--border-strong); background: var(--surface); background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 32px 32px; box-shadow: var(--shadow-2); min-height: 420px; padding: 20px; display: grid; }
+.intent__stage { position: relative; min-width: 0; border-radius: var(--r-lg); border: 1px solid var(--border-strong); background: radial-gradient(70% 60% at 60% 40%, rgba(243, 236, 222, 0.05), transparent 72%), var(--surface); box-shadow: var(--shadow-2); min-height: 420px; padding: 20px; display: grid; }
 @media (min-width: 1024px) {
   .intent__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px; align-items: stretch; }
   .intent__tabs { flex-direction: column; overflow: visible; padding: 0; margin: 0; gap: 6px; }

@@ -11,6 +11,6 @@ for (let i = 0; i < +n; i++) {
   const f = (i + 0.5) / +n;
   await p.evaluate(([id, f]) => { const e = document.getElementById(id); const top = scrollY + e.getBoundingClientRect().top; scrollTo(0, top + (e.offsetHeight - innerHeight) * f); }, [id, f]);
   await p.waitForTimeout(900);
-  await p.locator(stage).screenshot({ path: `${out}-${i}.png` });
+  if (stage === "VIEWPORT") await p.screenshot({ path: `${out}-${i}.png` }); else await p.locator(stage).screenshot({ path: `${out}-${i}.png` });
 }
 await b.close();

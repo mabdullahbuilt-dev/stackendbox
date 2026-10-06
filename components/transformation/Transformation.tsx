@@ -1,14 +1,13 @@
 "use client";
 import { Search as SearchIcon, ShieldCheck, LayoutGrid, Settings, ListChecks, Building, AlertTriangle, ArrowRight, Archive, Bell, BarChart3, Building2, CalendarCheck, CalendarDays, Check, CheckCheck, CircleCheck, ClipboardList, CreditCard, Database, Eye, FileSearch, FileText, Film, FolderCheck, GitBranch, GitCompare, Headset, Image as Img, Landmark, Lock, Mail, MessageSquare, Mic, PenLine, Phone, Receipt, ScanText, Send, Sparkles, Stamp, Table2, Type, Upload, UserCheck, UserRound, UsersRound, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useChapterStep } from "@/lib/chapters";
 import { copy } from "@/content/copy";
 import { scenarios } from "@/content/transformations";
 import { track } from "@/lib/analytics";
-import { useInView } from "@/lib/hooks";
 import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
-import { Reveal } from "@/components/ui/Reveal";
 
 const icons: Record<string, LucideIcon> = {
   form: ClipboardList, clip: ClipboardList, mail: Mail, sheet: Table2, msg: MessageSquare, crm: UsersRound, users: UsersRound, cal: CalendarDays, "cal-check": CalendarCheck,
@@ -29,63 +28,43 @@ const AUDIT = ["Logged by A. Khan", "Routed to Finance by rule", "Approved by M.
 /** One transformation: scattered tools become a real internal application (nav, records, owners, permissions, tasks, approvals, activity, reporting, audit). */
 export function Transformation() {
   const { reduced } = useMotionPreference();
-  const [state, setState] = useState<"before" | "after">("after");
-  const [step, setStep] = useState(0);
   const stage = useRef<HTMLDivElement>(null);
-  const seen = useRef(false);
-  const inView = useInView(stage, "-25% 0px -25% 0px");
-  const near = useInView(stage, "900px 0px 900px 0px", true);
   const sc = scenarios[0];
-  const alts = scenarios.slice(1);
   const N = sc.steps.length;
-
-  useEffect(() => {
-    if (reduced) { setState("after"); setStep(N); return; }
-    if (!seen.current) { setState("before"); setStep(-1); }
-  }, [reduced, N]);
-  const autoplay = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => {
-    if (reduced || !inView || seen.current) return;
-    seen.current = true;
-    autoplay.current = setTimeout(() => { setState("after"); track("scene_complete", { scene: "transformation" }); }, 900);
-  }, [inView, reduced]);
-  useEffect(() => () => clearTimeout(autoplay.current), []);
-
-  useEffect(() => {
-    if (state !== "after") { setStep(-1); return; }
-    if (reduced) { setStep(N); return; }
-    let k = -1;
-    setStep(-1);
-    let id: ReturnType<typeof setInterval> | undefined;
-    const t0 = setTimeout(() => {
-      k = 0; setStep(0);
-      id = setInterval(() => { k += 1; setStep(k); if (k >= N) clearInterval(id); }, 760);
-    }, 1100);
-    return () => { clearTimeout(t0); clearInterval(id); };
-  }, [state, reduced, N]);
-
-  const replay = () => { clearTimeout(autoplay.current); seen.current = true; setState("before"); setStep(-1); if (!reduced) autoplay.current = setTimeout(() => setState("after"), 900); else setState("after"); };
+  // Scroll drives the whole transformation and reverses it: 0 scattered, 1 duplicates flagged, 2 duplicates merge,
+  // 3 tools converge, 4..9 the application handles #204 (logged, routed, approved, assigned, reported).
+  const raw = useChapterStep("transform", 10);
+  const [manual, setManual] = useState<{ v: "before" | "after"; at: number } | null>(null);
+  const s = reduced ? 9 : raw;
+  const forced = manual && manual.at === s ? manual.v : null;
+  const state: "before" | "after" = forced ?? (s >= 4 ? "after" : "before");
+  const step = state === "after" ? (forced ? N : s - 4) : -1;
+  const phase = state === "after" ? "system" : s >= 3 ? "converge" : s >= 2 ? "merge" : s >= 1 ? "flag" : "scatter";
   const st204 = step < 0 ? "New" : step === 0 ? "New" : step === 1 ? "Routed" : step === 2 ? "Approved" : "Approved";
   const tone204 = step < 1 ? "idle" : step === 1 ? "run" : "ok";
 
   return (
-    <section id="transform" className="section tf" aria-labelledby="tf-title">
-      <div className="container">
-        <Reveal className="sec-head">
-          <p className="eyebrow">{copy.transform.eyebrow}</p>
-          <h2 id="tf-title" className="h2">{copy.transform.title}</h2>
-          <p className="body-l">{copy.transform.support}</p>
-        </Reveal>
-
-        <div className="tf__bar">
-          <div className="segmented" role="group" aria-label="Show the process before or after it becomes software">
-            <button aria-pressed={state === "before"} onClick={() => { setState("before"); seen.current = true; }}>{copy.transform.before}</button>
-            <button aria-pressed={state === "after"} onClick={() => { setState("after"); seen.current = true; }}>{copy.transform.after}</button>
+    <section id="transform" className="tf" data-scroll="pin" aria-labelledby="tf-title">
+      <div className="tf__sticky">
+      <div className="container tf__in">
+        <div className="tf__head">
+          <div>
+            <p className="eyebrow">{copy.transform.eyebrow}</p>
+            <h2 id="tf-title" className="h2">{copy.transform.title}</h2>
+          </div>
+          <div className="tf__side">
+            <p className="body-l">{copy.transform.support}</p>
+            <div className="tf__bar">
+              <div className="segmented" role="group" aria-label="Show the process before or after it becomes software">
+                <button aria-pressed={state === "before"} onClick={() => setManual({ v: "before", at: s })}>{copy.transform.before}</button>
+                <button aria-pressed={state === "after"} onClick={() => setManual({ v: "after", at: s })}>{copy.transform.after}</button>
+              </div>
+              <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "transformation", scenario: sc.id }); goToBuilder(e, sc.need); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
+            </div>
           </div>
         </div>
 
-        <div className="mt" ref={stage} data-state={state} data-sc="operations" role="img" aria-label="Vendor approval #204 moving from scattered email, spreadsheets and chat into one custom internal application">
-          {near && (
+        <div className="mt" ref={stage} data-state={state} data-phase={phase} data-sc="operations" role="img" aria-label="Vendor approval #204 moving from scattered email, spreadsheets and chat into one custom internal application">
           <>
           <p className="mt-label mt-label--b mono"><AlertTriangle aria-hidden /> BEFORE</p>
           <p className="mt-label mt-label--a mono"><CircleCheck aria-hidden /> AFTER</p>
@@ -133,25 +112,12 @@ export function Transformation() {
           })}
           <span className="mt-ghost mt-ghost--1" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
           <span className="mt-ghost mt-ghost--2" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
+          <span className="mt-ghost mt-ghost--3" aria-hidden><Glyph k={sc.object.icon} />{sc.object.label}<X /></span>
+          <span className="mt-rec" aria-hidden><Glyph k={sc.object.icon} /><b>{sc.object.label}</b><em className="mono">ONE RECORD</em></span>
           </>
-          )}
         </div>
 
-        <div className="tf__foot">
-          <p className="body-l" aria-live="polite">We turn a manual process into software your team can own: records, owners, permissions, approvals, reporting and an audit trail.</p>
-          <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "transformation", scenario: sc.id }); goToBuilder(e, sc.need); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-        </div>
-
-        <ul className="tf__alts" aria-label="Other processes we have turned into software">
-          {alts.map((a) => (
-            <li key={a.id}>
-              <b className="mono">{a.tab.toUpperCase()}</b>
-              <span>{a.frags.slice(0, 3).map((f) => f.name).join(", ")}</span>
-              <ArrowRight aria-hidden />
-              <em>{a.system}</em>
-            </li>
-          ))}
-        </ul>
+      </div>
       </div>
     </section>
   );

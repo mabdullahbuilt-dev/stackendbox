@@ -12,11 +12,6 @@ body {
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 64px 64px;
-  background-position: -1px -1px;
 }
 h1, h2, h3, h4, p, ul, ol, figure { margin: 0; padding: 0; }
 ul, ol { list-style: none; }
