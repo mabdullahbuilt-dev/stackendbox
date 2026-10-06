@@ -54,7 +54,7 @@ for (const it of list) {
     for (const el of document.querySelectorAll(sel)) {
       const l = (el.getAttribute("aria-label") || el.innerText || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 48);
       const s = el.closest("section,header,footer")?.id || el.closest("header,footer")?.tagName;
-      if (l === lab && (el.getAttribute("href") || "") === (href || "") && s === sec) { el.setAttribute("data-qa", "t"); return; }
+      if (l.replace(/\s+/g, "") === lab.replace(/\s+/g, "") && (el.getAttribute("href") || "") === (href || "") && s === sec) { el.setAttribute("data-qa", "t"); return; }
     }
     for (const el of document.querySelectorAll(sel)) {
       const s = el.closest("section,header,footer")?.id || el.closest("header,footer")?.tagName;

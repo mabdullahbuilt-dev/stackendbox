@@ -30,7 +30,7 @@ const ORBIT: Record<NodeKey, { ring: 0 | 1; a: number }> = {
 const LEAD: NodeKey[] = ["search", "docs", "vision", "db"];
 const RX = [0.44, 0.26], RY = [0.36, 0.2];
 /** Narrow stages keep every satellite (70px wide) inside the viewport for the whole orbit. */
-const rxFor = (w: number) => (w < 500 ? [0.36, 0.22] : RX);
+const rxFor = (w: number) => (w < 500 ? [0.32, 0.2] : RX);
 /** Server-rendered positions (before the first measurement) so the orbit is spread out even without JavaScript. */
 const initialStyle = (k: NodeKey): React.CSSProperties => {
   const r = ORBIT[k].ring, th = (ORBIT[k].a * Math.PI) / 180, t = (Math.sin(th) + 1) / 2;
