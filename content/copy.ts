@@ -73,6 +73,7 @@ export const copy = {
     eyebrow: "EXISTING PRODUCTS",
     titleA: "Already have a product?",
     titleB: "We can make it stronger.",
+    support: "Redesign the interface, fix weak architecture, add missing capabilities and take the product back to reliable production.",
     cta: "Improve an Existing Product",
   },
   founders: {
