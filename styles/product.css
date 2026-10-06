@@ -66,3 +66,9 @@
 
 .ipv-rq { display: grid; gap: calc(var(--u) * 5); } .ipv-rq p { margin: 0; display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: calc(var(--u) * 6) calc(var(--u) * 8); border-radius: 7px; border: 1px solid var(--border); font-size: max(9px, calc(var(--u) * 10.5)); color: var(--text-secondary); } .ipv-rq em { font-style: normal; font-size: 0.9em; padding: 1px 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); } .ipv-rq p[data-act] { border-color: var(--border-active); background: rgba(255, 122, 26, 0.1); color: var(--text-primary); } .ipv-rq p[data-act] em { background: var(--accent-soft); color: var(--accent-text); }
 .ipv-phone .ipv-rq p { flex-direction: column; align-items: flex-start; }
+
+.ipv-ghost { position: absolute; left: calc(var(--u) * 150); right: calc(var(--u) * 30); top: calc(var(--u) * 40); bottom: calc(var(--u) * 50); border: 1px dashed rgba(247, 248, 245, 0.16); border-radius: 14px; opacity: 0; transition: opacity 400ms var(--ease-out); pointer-events: none; background: linear-gradient(rgba(255, 122, 26, 0.05) 1px, transparent 1px) 0 0 / 100% calc(var(--u) * 28), linear-gradient(90deg, rgba(255, 122, 26, 0.05) 1px, transparent 1px) 0 0 / calc(var(--u) * 28) 100%; }
+.ipv-ghost[data-on="true"] { opacity: 1; }
+.ipv-ghost i { position: absolute; width: calc(var(--u) * 54); height: calc(var(--u) * 22); border: 1px dashed rgba(255, 122, 26, 0.35); border-radius: 6px; } .ipv-ghost i:nth-child(1) { left: 8%; top: 14%; } .ipv-ghost i:nth-child(2) { left: 40%; top: 14%; } .ipv-ghost i:nth-child(3) { left: 40%; top: 46%; } .ipv-ghost i:nth-child(4) { left: 72%; top: 46%; }
+.ipv-ghost b { position: absolute; left: 8%; right: 8%; bottom: 12%; height: calc(var(--u) * 26); border: 1px dashed rgba(247, 248, 245, 0.12); border-radius: 6px; }
+@media (max-width: 767px) { .ipv-ghost { left: calc(var(--u) * 20); } }

@@ -26,6 +26,8 @@ const ORBIT: Record<NodeKey, { ring: 0 | 1; a: number }> = {
 /** Each scenario is led by the capability that docks into the core. */
 const LEAD: NodeKey[] = ["search", "docs", "vision", "db"];
 const RX = [0.44, 0.26], RY = [0.36, 0.2];
+/** Narrow stages keep every satellite (70px wide) inside the viewport for the whole orbit. */
+const rxFor = (w: number) => (w < 500 ? [0.36, 0.22] : RX);
 /** Server-rendered positions (before the first measurement) so the orbit is spread out even without JavaScript. */
 const initialStyle = (k: NodeKey): React.CSSProperties => {
   const r = ORBIT[k].ring, th = (ORBIT[k].a * Math.PI) / 180, t = (Math.sin(th) + 1) / 2;
@@ -99,7 +101,7 @@ export function AiSection() {
       if (!el) return;
       const r = ORBIT[k].ring, th = (ang.current[k] * Math.PI) / 180;
       const t = (Math.sin(th) + 1) / 2;
-      el.style.setProperty("--tx", `${(Math.cos(th) * RX[r] * w).toFixed(1)}px`);
+      el.style.setProperty("--tx", `${(Math.cos(th) * rxFor(w)[r] * w).toFixed(1)}px`);
       el.style.setProperty("--ty", `${(Math.sin(th) * RY[r] * h).toFixed(1)}px`);
       el.style.setProperty("--sc", (0.84 + 0.26 * t).toFixed(3));
       el.style.setProperty("--op", (0.7 + 0.3 * t).toFixed(2));
@@ -174,7 +176,7 @@ export function AiSection() {
           <div className="aorb" ref={box} data-docked={docked ?? ""} onPointerEnter={() => { drift.current.paused = true; }} onPointerLeave={() => { drift.current.paused = false; }}>
             <div className="aorb__plane" ref={orb}>
               <svg className="aorb__rings" width={dim.w} height={dim.h} viewBox={`0 0 ${dim.w} ${dim.h}`} aria-hidden>
-                {[0, 1].map((r) => <ellipse key={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * RX[r]} ry={dim.h * RY[r]} data-ring={r} />)}
+                {[0, 1].map((r) => <ellipse key={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * rxFor(dim.w)[r]} ry={dim.h * RY[r]} data-ring={r} />)}
               </svg>
               <div className="aorb__core" data-done={step >= N} data-busy={!!docked && step < N} aria-hidden><Bot /><b>AI capability</b><em className="mono">{sc.hub}</em></div>
               {NODES.map((n) => {

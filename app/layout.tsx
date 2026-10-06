@@ -22,6 +22,7 @@ import "@/styles/process.css";
 import "@/styles/business.css";
 import "@/styles/specialized.css";
 import "@/styles/chapters.css";
+import "@/styles/environments.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

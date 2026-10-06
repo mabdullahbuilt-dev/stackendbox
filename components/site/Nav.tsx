@@ -112,7 +112,7 @@ export function Nav() {
         </nav>
 
         <Link href="/" aria-label="StackEndBox home" className="nav__logo">
-          <Logo stacked markHeight={compact ? 26 : 34} priority />
+          <Logo stacked markHeight={compact ? 34 : 42} priority />
         </Link>
 
         <div className="nav__right">

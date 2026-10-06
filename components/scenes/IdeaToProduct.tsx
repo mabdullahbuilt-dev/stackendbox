@@ -83,6 +83,8 @@ export function IdeaToProduct() {
 
           <div className="ipv__stage" ref={box} aria-hidden>
             <div className="ipv__canvas" data-focus={stage === 0}>
+              {/* ghost structure: the product outline and flow nodes are faintly present from the first frame */}
+              <div className="ipv-ghost" data-on={stage <= 1}><i /><i /><i /><i /><b /></div>
               {/* 0 brief */}
               <div className="ipv-brief"><span className="mono">BRIEF</span><p>{copy.product.brief}</p></div>
               {/* 1 flow */}
