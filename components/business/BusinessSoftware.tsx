@@ -8,6 +8,7 @@ import { useInView } from "@/lib/hooks";
 import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
+import { Aperture } from "@/components/site/Aperture";
 
 const NAV = [[LayoutGrid, "Overview"], [Building2, "Customers"], [UsersRound, "Team"], [ClipboardList, "Projects"], [Check, "Tasks"], [FileText, "Documents"], [Landmark, "Finance"], [BarChart3, "Reports"], [Settings, "Settings"]] as const;
 const TEAM = [["Maya", 62], ["Leo", 48], ["Ines", 71], ["Sam", 35], ["Jo", 54]] as const;
@@ -173,6 +174,7 @@ export function BusinessSoftware() {
           </div>
         </div>
       </div>
+      <Aperture kind="record" />
     </section>
   );
 }

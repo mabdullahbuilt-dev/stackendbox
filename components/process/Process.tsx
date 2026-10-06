@@ -6,6 +6,7 @@ import { steps } from "@/content/process";
 import { useInView } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
+import { Aperture } from "@/components/site/Aperture";
 
 const OUT: [string, number][] = [["Requirements", 0], ["User flow", 1], ["Wireframes", 1], ["Interface", 2], ["API", 2], ["Data model", 2], ["Test suite", 3], ["Release", 4], ["Monitoring", 4]];
 const icons: LucideIcon[] = [Target, PenTool, Blocks, ShieldCheck, PackageCheck];
@@ -130,6 +131,7 @@ export function Process() {
           </div>
         </div>
       </div>
+      <Aperture kind="live" />
     </section>
   );
 }

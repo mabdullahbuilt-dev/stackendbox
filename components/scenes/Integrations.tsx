@@ -11,6 +11,7 @@ import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { Reveal } from "@/components/ui/Reveal";
+import { Aperture } from "@/components/site/Aperture";
 
 type Sys = { key: BrandKey; label: string };
 const LEFT: Sys[] = [{ key: "stripe", label: "Stripe" }, { key: "gcal", label: "Google Calendar" }, { key: "whatsapp", label: "WhatsApp" }, { key: "gmail", label: "Gmail" }];
@@ -147,6 +148,7 @@ export function Integrations() {
           </ul>
         </div>
       </div>
+      <Aperture kind="payload" />
     </section>
   );
 }

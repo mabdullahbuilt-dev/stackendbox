@@ -76,3 +76,13 @@
   #depth .xr__world { transform: rotateX(60deg) rotateZ(-32deg); }
 }
 :root[data-motion="reduced"] #hero .hero__visual, :root[data-motion="reduced"] #delivery { translate: none; scale: none; transform: none; opacity: 1; clip-path: none; }
+
+/* APERTURES: four small (72px) gates inside the outgoing chapter's bottom padding; the chapter's object passes through as --exit runs 0 to 1 */
+.apt { position: absolute; left: 50%; bottom: 10px; width: 72px; height: 72px; margin-left: -36px; z-index: 6; pointer-events: none; overflow: visible; }
+.apt__ring { position: absolute; inset: 8px; border-radius: 50%; border: 1px solid rgba(255, 122, 26, 0.7); box-shadow: 0 0 0 5px rgba(255, 122, 26, 0.08), inset 0 0 14px rgba(255, 122, 26, 0.18); opacity: calc(var(--exit, 0) * 1.6); scale: calc(0.55 + var(--exit, 0) * 0.45); }
+.apt__obj { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 3px; background: var(--orange-500); translate: 0 calc(-44px + var(--exit, 0) * 70px); opacity: calc(var(--exit, 0) * 2 * (1.35 - var(--exit, 0))); scale: calc(1.1 - var(--exit, 0) * 0.5); }
+.apt[data-kind="record"] .apt__ring { border-radius: 14px; width: 72px; height: 26px; inset: 23px 0; } .apt[data-kind="record"] .apt__obj { width: 24px; height: 12px; margin: -6px 0 0 -12px; background: var(--white-100); }
+.apt[data-kind="payload"] .apt__ring { border-radius: 8px; rotate: calc(var(--exit, 0) * 90deg); border-color: rgba(255, 122, 26, 0.8); } .apt[data-kind="payload"] .apt__obj { border-radius: 50%; }
+.apt[data-kind="live"] .apt__ring { border-color: rgba(47, 210, 122, 0.7); box-shadow: 0 0 0 5px rgba(47, 210, 122, 0.08), inset 0 0 14px rgba(47, 210, 122, 0.18); } .apt[data-kind="live"] .apt__obj { background: var(--green-400); border-radius: 50%; }
+@media (max-width: 767px) { .apt { display: none; } }
+@media (prefers-reduced-motion: reduce) { .apt { display: none; } }
