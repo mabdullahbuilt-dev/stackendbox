@@ -1,8 +1,8 @@
 "use client";
 import { Check, Layers, MonitorPlay, Plug, ShieldCheck, type LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
+import { useChapterStep } from "@/lib/chapters";
 import { copy } from "@/content/copy";
-import { useInView } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 
 const POINTS: { icon: LucideIcon; stop: string; title: string; text: string }[] = [
@@ -15,17 +15,10 @@ const POINTS: { icon: LucideIcon; stop: string; title: string; text: string }[] 
 /** The one light section: a continuous delivery path. Current stop is orange, completed stops are green. */
 export function Why() {
   const { reduced } = useMotionPreference();
-  const [step, setStep] = useState(0);
+  // The project object travels the path with scroll, and back again when scrolling up.
+  const raw = useChapterStep("delivery", POINTS.length + 1);
+  const step = reduced ? POINTS.length : raw;
   const ref = useRef<HTMLOListElement>(null);
-  const inView = useInView(ref, "-20% 0px -20% 0px", true);
-  useEffect(() => {
-    if (reduced) { setStep(POINTS.length); return; }
-    if (!inView) return;
-    let k = 0;
-    setStep(0);
-    const id = setInterval(() => { k += 1; setStep(k); if (k >= POINTS.length) clearInterval(id); }, 750);
-    return () => clearInterval(id);
-  }, [inView, reduced]);
   return (
     <section id="delivery" className="why" aria-labelledby="why-title">
       <div className="container">

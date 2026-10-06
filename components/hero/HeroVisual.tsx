@@ -179,7 +179,7 @@ export function HeroVisual() {
             src={reduced ? "/hero/stack-exploded.webp" : "/hero/stack-assembled.webp"}
             alt=""
             fill
-            sizes="(max-width: 767px) min(92vw, 420px), (max-width: 1279px) 56vw, 780px"
+            sizes="(max-width: 767px) min(86vw, 480px), (max-width: 1279px) 66vw, 900px"
             priority
             className="hero__poster-img"
           />
