@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { LayoutGroup, m } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { goToBuilder } from "@/lib/intent";
@@ -88,7 +87,7 @@ export function Nav() {
         onClick={() => track("nav_link_click", { link: l.id })}
       >
         {highlight === l.id && (
-          <m.span layoutId="nav-hl" className="nav__hl" transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 30 }} />
+          <span className="nav__hl" aria-hidden />
         )}
         <span className="nav__text">{l.label}</span>
         {active === l.id && <span className="nav__dot" aria-hidden />}
@@ -106,18 +105,18 @@ export function Nav() {
     >
       <div className="nav__bar">
         <nav aria-label="Primary" className="nav__links nav__links--l">
-          <LayoutGroup id="nav-l">
+          
             <ul onPointerLeave={() => setHover(null)}>{copy.nav.left.map(item)}</ul>
-          </LayoutGroup>
+          
         </nav>
 
         <Link href="/" aria-label="StackEndBox home" className="nav__logo">
-          <Logo stacked markHeight={compact ? 34 : 42} />
+          <Logo markHeight={compact ? 34 : 44} />
         </Link>
 
         <div className="nav__right">
           <nav aria-label="Secondary" className="nav__links nav__links--r">
-            <LayoutGroup id="nav-r">
+            
               <ul onPointerLeave={() => setHover(null)}>
                 {copy.nav.right.map(item)}
                 <li>
@@ -126,7 +125,7 @@ export function Nav() {
                   </Link>
                 </li>
               </ul>
-            </LayoutGroup>
+            
           </nav>
           <MobileMenu open={menuOpen} onOpenChange={setMenuOpen} />
         </div>

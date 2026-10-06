@@ -30,19 +30,28 @@ class SceneBoundary extends Component<{ onError: () => void; children: ReactNode
 const ss = (t: number) => { const x = Math.min(1, Math.max(0, t)); return x * x * (3 - 2 * x); };
 const seg = (p: number, a: number, b: number) => ss((p - a) / (b - a));
 
-/** Scroll progress p (0..1) to the 3D state. Every phase stays inside the hero stage. */
+/**
+ * Scroll progress p (0..1) to the 3D state. One story, fully reversible because it is a pure function of p:
+ * assembled -> layers separate one by one from the bottom (PRODUCT first, DELIVERY last) -> a scan lights each layer
+ * bottom to top -> the stack reassembles top first -> settled, complete stack at the hand-off.
+ */
 function stateAt(p: number, n: number) {
-  const open = seg(p, 0.08, 0.25) * (1 - seg(p, 0.7, 0.85));
-  const zoom = seg(p, 0.04, 0.2) * (1 - seg(p, 0.7, 0.88));
-  const t = Math.min(0.999, Math.max(0, (p - 0.25) / 0.45));
-  const inAct = p >= 0.25 && p < 0.7;
-  const fromBottom = Math.floor(t * n);
+  const gaps = n - 1;
+  const sep: number[] = [];
+  for (let j = 0; j < gaps; j++) {
+    const open = seg(p, 0.05 + j * 0.04, 0.19 + j * 0.04);
+    const close = seg(p, 0.72 + (gaps - 1 - j) * 0.03, 0.82 + (gaps - 1 - j) * 0.03);
+    sep.push(open * (1 - close));
+  }
+  const t = Math.min(0.999, Math.max(0, (p - 0.38) / 0.32));
+  const inAct = p >= 0.38 && p < 0.7;
   return {
-    explode: open,
-    zoom,
-    active: inAct ? n - 1 - fromBottom : -1,
-    pulse: inAct ? (t * 2.2) % 1 : 0,
-    settle: seg(p, 0.7, 0.9),
+    sep,
+    explode: sep.reduce((a, v) => a + v, 0) / gaps,
+    zoom: seg(p, 0.05, 0.3) * (1 - seg(p, 0.75, 0.95)),
+    active: inAct ? n - 1 - Math.floor(t * n) : -1,
+    pulse: inAct ? t : 0,
+    settle: seg(p, 0.86, 1),
   };
 }
 
@@ -62,7 +71,9 @@ export function HeroVisual() {
   const [hovered, setHovered] = useState<number | null>(null);
   const hoverTimer = useRef<number | undefined>(undefined);
 
-  const live = !!Obj && !reduced && !degraded && near;
+  // Once loaded the scene stays mounted (paused while hidden), so returning to the hero replays it immediately
+  // instead of re-creating the WebGL context and showing the static poster in the meantime.
+  const live = !!Obj && !reduced && !degraded;
   const modules = live && mobile ? heroModulesMobile : heroModules;
 
   // Load the 3D chunk automatically once the page has painted and the main thread is idle. No interaction needed,
@@ -121,6 +132,9 @@ export function HeroVisual() {
       const m = mods();
       const s = stateAt(p, m.length);
       Object.assign(bus.current, s);
+      // exposed for QA and styling: how far the stack is separated (two decimals, written only when it changes)
+      const sepTxt = s.explode.toFixed(2);
+      if (wrap.current && wrap.current.dataset.sep !== sepTxt) wrap.current.dataset.sep = sepTxt;
       bus.current.invalidate?.();
       if (s.active !== lastActive) {
         lastActive = s.active;
@@ -179,7 +193,7 @@ export function HeroVisual() {
             src={reduced ? "/hero/stack-exploded.webp" : "/hero/stack-assembled.webp"}
             alt=""
             fill
-            sizes="(max-width: 767px) min(92vw, 420px), (max-width: 1279px) 56vw, 780px"
+            sizes="(max-width: 767px) min(86vw, 480px), (max-width: 1279px) 66vw, 900px"
             priority
             className="hero__poster-img"
           />
@@ -195,6 +209,7 @@ export function HeroVisual() {
               frameloop={visible ? "demand" : "never"}
               dpr={tier === "A" ? 1.5 : 1.1}
               lite={tier === "B"}
+              ambient={visible && !reduced}
               onReady={() => setReady(true)}
               onDegrade={() => setDegraded(true)}
             />

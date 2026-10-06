@@ -11,8 +11,19 @@ import { useSyncExternalStore } from "react";
  * - A single pointer engine writes `--px/--py/--mx/--my` onto the ACTIVE chapter only.
  */
 export type ChapterState = "active" | "near" | "far";
+export type MotionPhase = "idle" | "active" | "exited";
+export type Dir = "down" | "up";
 
-type Item = { el: HTMLElement; state: ChapterState; enter: number; exit: number };
+/**
+ * Re-entrant motion model, shared by every chapter (one scroll loop, one rAF):
+ * - `progress` 0..1 is derived from scroll position only, so moving forward plays a scene and moving backward reverses it.
+ *   Sections marked data-scroll="pin" (taller than the viewport, with a sticky stage) use their runway; others use a
+ *   pass-through range while they cross the viewport.
+ * - `cycle` increments every time a chapter is re-entered after being far away, so entrance choreography replays.
+ * - `phase` is idle (not reached yet), active, or exited (scrolled past). `dir` is the scroll direction at the last entry.
+ * The same values are written as data-motion / data-dir / data-cycle / --p attributes for CSS and tests.
+ */
+type Item = { el: HTMLElement; state: ChapterState; enter: number; exit: number; p: number; cycle: number; phase: MotionPhase; dir: Dir };
 const items = new Map<string, Item>();
 const subs = new Set<() => void>();
 let active = "";
@@ -21,13 +32,48 @@ let raf = 0;
 let started = false;
 let pageVisible = true;
 let reducedFlag = false;
+let lastY = 0;
+let dir: Dir = "down";
+let resumed = false; // set when a hidden tab becomes visible: returning is not a re-entry
 
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 const emit = () => { version++; subs.forEach((f) => f()); };
+const progressSubs = new Map<string, Set<(p: number) => void>>();
+/** Imperative progress listener for one chapter (for timelines that should not re-render React). */
+export function onProgress(id: string, fn: (p: number) => void): () => void {
+  let set = progressSubs.get(id);
+  if (!set) { set = new Set(); progressSubs.set(id, set); }
+  set.add(fn);
+  const it = items.get(id);
+  if (it && it.p >= 0) fn(it.p);
+  return () => { set!.delete(fn); };
+}
+
+/** Whether a data-scroll="pin" section really pins at the current size (its stage is sticky). Phones and short
+ * screens lay these chapters out in normal flow, so they must use pass-through progress there. Cached; refreshed
+ * on resize, never measured per frame. */
+const pinCache = new WeakMap<HTMLElement, boolean>();
+const isPinned = (el: HTMLElement) => {
+  let v = pinCache.get(el);
+  if (v === undefined) {
+    const stage = el.firstElementChild as HTMLElement | null;
+    v = el.dataset.scroll === "pin" && !!stage && getComputedStyle(stage).position === "sticky";
+    pinCache.set(el, v);
+  }
+  return v;
+};
+
+function progressOf(el: HTMLElement, r: DOMRect, vh: number) {
+  const h = r.height;
+  if (isPinned(el) && h > vh * 1.2) return clamp(-r.top / (h - vh));
+  return clamp((vh * 0.72 - r.top) / Math.max(1, h * 0.78));
+}
 
 function measure() {
   raf = 0;
   const vh = window.innerHeight;
+  const y = window.scrollY;
+  if (y !== lastY) { dir = y > lastY ? "down" : "up"; lastY = y; }
   let best = "";
   let bestVis = -1;
   let changed = false;
@@ -38,23 +84,32 @@ function measure() {
     const enter = clamp((vh - r.top) / (vh * 0.62));
     const exit = clamp(1 - r.bottom / (vh * 0.5));
     const away = r.top > vh * 1.4 || r.bottom < -vh * 0.4;
-    const near = r.top > vh * 1.4 ? false : r.bottom >= -vh * 0.4;
-    it.state = !pageVisible || away ? "far" : near ? (it.state === "active" ? "active" : "near") : "far";
+    const prevState = it.state;
+    it.state = !pageVisible ? "far" : away ? "far" : prevState === "active" ? "active" : "near";
+    // re-entry: far (by scrolling, not by a hidden tab) to near counts as a new visit
+    if (pageVisible && !resumed && prevState === "far" && it.state !== "far") { it.cycle += 1; it.dir = dir; it.el.dataset.cycle = String(it.cycle); it.el.dataset.dir = dir; changed = true; }
+    const phase: MotionPhase = r.top > vh ? "idle" : r.bottom < 0 ? "exited" : "active";
+    if (phase !== it.phase) { it.phase = phase; it.el.dataset.motion = phase; changed = true; }
     if (Math.abs(enter - it.enter) > 0.004 || Math.abs(exit - it.exit) > 0.004) {
       it.enter = enter; it.exit = exit;
       it.el.style.setProperty("--enter", enter.toFixed(3));
       it.el.style.setProperty("--exit", exit.toFixed(3));
     }
+    const p = progressOf(it.el, r, vh);
+    if (Math.abs(p - it.p) > 0.002) { it.p = p; it.el.style.setProperty("--p", p.toFixed(3)); changed = true; progressSubs.get(id)?.forEach((f) => f(p)); }
   });
   if (!pageVisible) best = "";
   if (best !== active) {
     const prev = items.get(active);
     if (prev) { prev.el.style.setProperty("--px", "0"); prev.el.style.setProperty("--py", "0"); prev.el.removeAttribute("data-active"); }
     active = best;
-    items.get(best)?.el.setAttribute("data-active", "true");
+    const it = items.get(best);
+    if (it) { it.el.setAttribute("data-active", "true"); it.state = "active"; }
+    items.forEach((x, k) => { if (k !== best && x.state === "active") x.state = "near"; });
     changed = true;
   }
   items.forEach((it) => { if (it.el.dataset.chapter !== it.state) { it.el.dataset.chapter = it.state; changed = true; } });
+  resumed = false;
   if (changed) emit();
 }
 const schedule = () => { if (!raf) raf = requestAnimationFrame(measure); };
@@ -63,12 +118,15 @@ export function startChapters(): () => void {
   if (started) return () => {};
   started = true;
   reducedFlag = window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.motion === "reduced";
-  document.querySelectorAll<HTMLElement>("main > section[id]").forEach((el) => items.set(el.id, { el, state: "far", enter: -1, exit: -1 }));
+  lastY = window.scrollY;
+  document.querySelectorAll<HTMLElement>("main > section[id]").forEach((el) => items.set(el.id, { el, state: "far", enter: -1, exit: -1, p: -1, cycle: 0, phase: "idle", dir: "down" }));
   pageVisible = document.visibilityState !== "hidden";
-  const onVis = () => { pageVisible = document.visibilityState !== "hidden"; schedule(); };
+  const onVis = () => { const v = document.visibilityState !== "hidden"; if (v && !pageVisible) resumed = true; pageVisible = v; schedule(); };
   window.addEventListener("scroll", schedule, { passive: true });
-  window.addEventListener("resize", schedule, { passive: true });
+  window.addEventListener("resize", () => { items.forEach((it) => pinCache.delete(it.el)); schedule(); }, { passive: true });
   document.addEventListener("visibilitychange", onVis);
+  const onShow = (e: PageTransitionEvent) => { if (e.persisted) { lastY = window.scrollY; schedule(); } };
+  window.addEventListener("pageshow", onShow);
   const ro = new ResizeObserver(schedule);
   ro.observe(document.body);
   schedule();
@@ -77,6 +135,7 @@ export function startChapters(): () => void {
     window.removeEventListener("scroll", schedule);
     window.removeEventListener("resize", schedule);
     document.removeEventListener("visibilitychange", onVis);
+    window.removeEventListener("pageshow", onShow);
     ro.disconnect();
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
@@ -95,6 +154,20 @@ export function useChapterState(id: string): ChapterState {
   return useSyncExternalStore(subscribe, () => { void version; return chapterState(id); }, () => "near");
 }
 export const useChapterRunning = (id: string) => useChapterState(id) !== "far";
+
+/** Scroll progress mapped to a discrete step 0..steps-1. Re-renders only when the step changes. Before start: `initial`. */
+export function useChapterStep(id: string, steps: number, initial = 0): number {
+  return useSyncExternalStore(subscribe, () => { void version; const it = items.get(id); return !it || it.p < 0 ? initial : Math.min(steps - 1, Math.floor(it.p * steps)); }, () => initial);
+}
+/** Continuous progress 0..1 (re-renders on every change; use for small trees only). */
+export function useChapterProgress(id: string): number {
+  return useSyncExternalStore(subscribe, () => { void version; const it = items.get(id); return !it || it.p < 0 ? 0 : Math.round(it.p * 200) / 200; }, () => 0);
+}
+/** Visit counter: increments on each re-entry (used to key entrance choreography so it replays). */
+export function useChapterCycle(id: string): number {
+  return useSyncExternalStore(subscribe, () => { void version; return items.get(id)?.cycle ?? 0; }, () => 0);
+}
+export function chapterDir(id: string): Dir { return items.get(id)?.dir ?? "down"; }
 
 /* ---------- pointer engine ---------- */
 type PointerFn = (x: number, y: number, chapter: string) => void;

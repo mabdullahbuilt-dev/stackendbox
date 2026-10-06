@@ -1,5 +1,5 @@
 /* MANUAL TO SYSTEM: scattered tools become one real internal application. Red problem, orange work, green result. */
-.mt { position: relative; container-type: size; height: clamp(540px, 74vh, 660px); border-radius: var(--r-lg); border: 1px solid var(--border-strong); background: radial-gradient(50% 50% at 50% 50%, rgba(255, 122, 26, 0.05), transparent 70%), var(--surface); overflow: clip; transition: border-color 600ms; }
+.mt { position: relative; container-type: size; height: clamp(480px, 70vh, 620px); border-radius: var(--r-lg); border: 1px solid var(--border-strong); background: radial-gradient(50% 50% at 50% 50%, rgba(255, 122, 26, 0.05), transparent 70%), var(--surface); overflow: clip; transition: border-color 600ms; }
 .mt[data-state="before"] { background: radial-gradient(60% 55% at 40% 50%, rgba(240, 82, 82, 0.07), transparent 70%), var(--surface); }
 .mt[data-state="after"] { border-color: rgba(47, 210, 122, 0.28); }
 .mt-label { position: absolute; left: 18px; top: 14px; z-index: 5; display: inline-flex; align-items: center; gap: 8px; margin: 0; transition: opacity 400ms; } .mt-label svg { width: 14px; height: 14px; }
@@ -57,3 +57,32 @@
 .tf__bar { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; }
 .tf__alts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; } .tf__alts li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-raised); font-size: 0.875rem; color: var(--text-secondary); } .tf__alts b { color: var(--accent-text); font-size: 10px; } .tf__alts em { font-style: normal; color: var(--green-400); } .tf__alts svg { width: 14px; height: 14px; }
 @media (max-width: 767px) { .mtapp { inset: 3%; font-size: 11px; } .mtapp__body { grid-template-columns: 1fr; grid-auto-rows: min-content; overflow: hidden; } .mtapp__nav, .mtapp__search { display: none; } .mtapp__det { border-left: 0; border-top: 1px solid var(--border); } .mtapp__rep { display: none; } .mtapp__r { grid-template-columns: 0.6fr 1.4fr 0.5fr 1fr; } .mtapp__audit li:nth-child(n+4) { display: none; } }
+
+/* SCROLL-DRIVEN TRANSFORMATION: scatter, flag duplicates, merge into one record, converge, system (and back) */
+.tf { position: relative; }
+.tf__sticky { padding-block: var(--sec-y); }
+.tf__in { display: grid; gap: clamp(16px, 2.2vh, 26px); }
+.tf__head { display: grid; gap: 14px; } .tf__head .h2 { max-width: 16ch; } .tf__side { display: grid; gap: 12px; } .tf__side .body-l { color: var(--text-secondary); max-width: 52ch; }
+.tf__bar { margin: 0; }
+.mt-tile { transition: translate 620ms var(--ease-out), rotate 620ms var(--ease-out), scale 620ms var(--ease-out), opacity 420ms, border-color 300ms, background 300ms; }
+.mt[data-phase="flag"] .mt-tile[data-st="bad"], .mt[data-phase="merge"] .mt-tile[data-st="bad"] { border-color: rgba(240, 82, 82, 0.85); background: linear-gradient(180deg, rgba(72, 27, 27, 0.55), var(--surface-higher)); }
+.mt[data-phase="converge"] .mt-tile { --x: calc(50 + (var(--bx) - 50) * 0.38); --y: calc(50 + (var(--by) - 50) * 0.38); --r: 0; --s: 0.78; border-color: rgba(255, 122, 26, 0.6); }
+.mt[data-phase="converge"] .mt-b { opacity: 0; }
+.mt-ghost { transition: opacity 360ms, translate 560ms var(--ease-out), left 0ms, scale 400ms; opacity: 0.55; }
+.mt-ghost--3 { left: 46%; top: 36%; rotate: 4deg; }
+.mt[data-phase="flag"] .mt-ghost { opacity: 1; scale: 1.05; border-style: solid; background: rgba(72, 27, 27, 0.8); }
+.mt[data-phase="merge"] .mt-ghost--1 { translate: calc(16cqw - 50%) -2cqh; opacity: 0; } .mt[data-phase="merge"] .mt-ghost--2 { translate: calc(-8cqw) -4cqh; opacity: 0; } .mt[data-phase="merge"] .mt-ghost--3 { translate: 4cqw 12cqh; opacity: 0; }
+.mt[data-phase="converge"] .mt-ghost, .mt[data-phase="system"] .mt-ghost { opacity: 0; }
+.mt-rec { position: absolute; left: 50%; top: 50%; z-index: 4; translate: -50% -50%; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--border-active); background: rgba(30, 18, 10, 0.95); box-shadow: 0 0 0 6px rgba(255, 122, 26, 0.08), 0 18px 40px rgba(0, 0, 0, 0.6); color: var(--text-primary); opacity: 0; scale: 0.6; transition: opacity 360ms, scale 460ms var(--ease-out); pointer-events: none; } .mt-rec svg { width: 16px; height: 16px; color: var(--orange-400); } .mt-rec b { font-weight: 500; } .mt-rec em { font-style: normal; font-size: 10px; color: var(--orange-300); letter-spacing: 0.08em; }
+.mt[data-phase="merge"] .mt-rec, .mt[data-phase="converge"] .mt-rec { opacity: 1; scale: 1; }
+.mt[data-phase="converge"] .mt-rec { scale: 1.08; }
+@media (min-width: 1000px) {
+  .tf__head { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); align-items: end; gap: 40px; }
+}
+@media (min-width: 1000px) and (min-height: 680px) {
+  .tf { height: calc(100svh + 130vh); }
+  .tf__sticky { position: sticky; top: 0; height: 100svh; padding-block: 92px 24px; display: grid; align-content: center; }
+  .mt { height: clamp(400px, calc(100svh - 300px), 600px); }
+}
+@media (max-width: 767px) { .mt-ghost--3, .mt-rec em { display: none; } .tf__bar { display: flex; flex-wrap: wrap; gap: 10px; } }
+@media (prefers-reduced-motion: reduce) { .mt-rec { transition: none; } }

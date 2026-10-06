@@ -11,11 +11,12 @@ import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
 import { TOTAL, visuals } from "./visuals";
 import { useCardMachine } from "./useCardMachine";
+import { useChapterCycle } from "@/lib/chapters";
 
 const icons: Record<Service["id"], LucideIcon> = { saas: Layers, web: LayoutDashboard, custom: Boxes, ai: Bot, automation: Workflow, crm: ChartNoAxesCombined, api: Braces, web3: Blocks, trading: ChartCandlestick };
 
 /**
- * Plays once when the card is visible, replays a short version on mouse hover or keyboard focus, and always
+ * Plays when the card is visible (again on every visit to the chapter), replays a short version on mouse hover or keyboard focus, and always
  * ends on the finished scene. The card container never moves; depth lives inside the scene.
  */
 function ServiceCard({ s }: { s: Service }) {
@@ -24,6 +25,9 @@ function ServiceCard({ s }: { s: Service }) {
   const near = useInView(ref, "700px 0px 700px 0px", true);
   const live = useInView(ref, "-12% 0px -12% 0px");
   const played = useRef(false);
+  // each visit to the chapter replays the card's full scene once (a new cycle resets the flag)
+  const cycle = useChapterCycle("services");
+  useEffect(() => { played.current = false; }, [cycle]);
   const m = useCardMachine(TOTAL[s.id], reduced);
   const { run, park } = m;
   const Icon = icons[s.id];
@@ -33,7 +37,7 @@ function ServiceCard({ s }: { s: Service }) {
     if (!near) return;
     if (live && !played.current) { played.current = true; run("full"); }
     else if (!live) park();
-  }, [live, near, run, park]);
+  }, [live, near, run, park, cycle]);
 
   const hoverIn = (e: React.PointerEvent) => { if (e.pointerType === "mouse" && !m.busy) run("short"); };
   return (

@@ -1,10 +1,7 @@
 "use client";
-import { LazyMotion } from "motion/react";
 import { useEffect } from "react";
 import { onDocumentClick } from "@/lib/scrollToHash";
 import { MotionProvider } from "@/lib/useMotionPreference";
-
-const features = () => import("@/lib/motionFeatures").then((r) => r.default);
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -13,9 +10,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
   return (
     <MotionProvider>
-      <LazyMotion features={features} strict={false}>
-        {children}
-      </LazyMotion>
+      {children}
     </MotionProvider>
   );
 }

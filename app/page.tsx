@@ -15,7 +15,6 @@ import { AiSection } from "@/components/ai/AiSection";
 import { Integrations } from "@/components/scenes/Integrations";
 import { UnderInterface } from "@/components/scenes/UnderInterface";
 import { Process } from "@/components/process/Process";
-import { Testimonials } from "@/components/testimonials/Testimonials";
 import { Why } from "@/components/why/Why";
 import { Builder } from "@/components/builder/Builder";
 import { FinalCTA } from "@/components/site/FinalCTA";
@@ -39,7 +38,6 @@ export default function Home() {
         <ProductRescue />
         <UnderInterface />
         <Process />
-        <Testimonials />
         <Why />
         <Builder />
         <FinalCTA />

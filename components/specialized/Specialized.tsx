@@ -1,7 +1,7 @@
 "use client";
 import { ArrowRight, Boxes, Check, CircleAlert, FileCode2, Folder, GitBranch, Rocket, ShieldCheck, Terminal, Wallet } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useChapterState } from "@/lib/chapters";
@@ -159,6 +159,9 @@ function Dev({ s }: { s: number }) {
   );
 }
 
+/** Wall clock for the manual-override window (read in handlers and timers only, never during render). */
+const clock = () => Date.now();
+
 export function Specialized() {
   const { reduced } = useMotionPreference();
   const [m, setM] = useState(0);
@@ -169,7 +172,16 @@ export function Specialized() {
   // one tracked script per mode; switching modes cancels the old one before the new one starts
   const step = useScript(mode.steps, 900, inView && chapter !== "far", reduced, mode.id);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const pick = (i: number) => { setM(i); track("scene_replay", { scene: "specialized", mode: MODES[i].id }); };
+  const lastUser = useRef(0);
+  const pick = (i: number) => { lastUser.current = clock(); setM(i); track("scene_replay", { scene: "specialized", mode: MODES[i].id }); };
+  // Calm auto-cycle while the chapter is on screen: the next mode starts a few seconds after the current script
+  // finishes, unless the visitor chose a mode in the last 15 seconds. Leaving the chapter returns it to the first mode.
+  useEffect(() => {
+    if (reduced || !inView || step < mode.steps) return;
+    const t = setTimeout(() => { if (clock() - lastUser.current < 15000) return; setM((x) => (x + 1) % MODES.length); }, 3800);
+    return () => clearTimeout(t);
+  }, [step, mode.steps, inView, reduced]);
+  useEffect(() => { if (chapter === "far") setM(0); }, [chapter]);
   const onKey = (e: React.KeyboardEvent) => {
     let i = -1;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") i = (m + 1) % MODES.length;
@@ -178,16 +190,18 @@ export function Specialized() {
   };
   return (
     <section id="specialized" className="section spc" aria-labelledby="spc-title">
-      <div className="container">
-        <Reveal className="sec-head">
-          <p className="eyebrow">{copy.specialized.eyebrow}</p>
-          <h2 id="spc-title" className="h2">{copy.specialized.title}</h2>
-          <p className="body-l">{copy.specialized.support}</p>
-        </Reveal>
-        <div className="spc__tabs" role="tablist" aria-label="Specialized software" onKeyDown={onKey}>
-          {MODES.map((x, i) => (
-            <button key={x.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`spc-${x.id}`} aria-selected={m === i} aria-controls="spc-panel" tabIndex={m === i ? 0 : -1} className="itab" data-active={m === i} onClick={() => pick(i)}><x.icon aria-hidden />{x.tab}</button>
-          ))}
+      <div className="container spc__in">
+        <div className="spc__side">
+          <Reveal className="sec-head">
+            <p className="eyebrow">{copy.specialized.eyebrow}</p>
+            <h2 id="spc-title" className="h2">{copy.specialized.title}</h2>
+            <p className="body-l">{copy.specialized.support}</p>
+          </Reveal>
+          <div className="spc__tabs" role="tablist" aria-label="Specialized software" onKeyDown={onKey}>
+            {MODES.map((x, i) => (
+              <button key={x.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`spc-${x.id}`} aria-selected={m === i} aria-controls="spc-panel" tabIndex={m === i ? 0 : -1} className="itab" data-active={m === i} onClick={() => pick(i)}><x.icon aria-hidden />{x.tab}</button>
+            ))}
+          </div>
         </div>
         <div id="spc-panel" role="tabpanel" aria-labelledby={`spc-${mode.id}`}>
           <div className="spc__stage" ref={stage} data-mode={mode.id} role="img" aria-label={mode.line}>
@@ -197,10 +211,10 @@ export function Specialized() {
               {mode.id === "dev" && <Dev s={step} />}
             </div>
           </div>
-          <div className="spc__foot">
+        </div>
+        <div className="spc__foot">
             <p className="body-l" aria-live="polite">{mode.line}</p>
             <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("cta_click", { placement: "specialized", mode: mode.id }); goToBuilder(e, mode.id === "web3" ? "Web3 / Blockchain" : mode.id === "market" ? "Trading / Data Platform" : "Custom Software", undefined, "specialized"); }}>{copy.specialized.cta}<ArrowRight className="arrow" aria-hidden /></Link>
-          </div>
         </div>
       </div>
     </section>

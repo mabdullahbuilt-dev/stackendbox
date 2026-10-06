@@ -3,7 +3,7 @@
 #services .scard__vis { transform: translate(calc(var(--px, 0) * 3px), calc(var(--py, 0) * 2px)); transition: transform 200ms linear; }
 #proof .wk__img, #proof .proof__screen { translate: calc(var(--px, 0) * -6px) calc(var(--py, 0) * -4px); transition: translate 220ms linear; }
 #proof .wk__frame { overflow: hidden; } #proof .wk__img { scale: 1.02; }
-#transform .mt-ghost, #transform .mt-label { translate: calc(var(--px, 0) * -9px) calc(var(--py, 0) * -6px); transition: translate 240ms linear; }
+#transform .mt-label { translate: calc(var(--px, 0) * -9px) calc(var(--py, 0) * -6px); transition: translate 240ms linear; } #transform .mt-tile__ic { transform: translate(calc(var(--px, 0) * 3px), calc(var(--py, 0) * 2px)); }
 #start::before { background: radial-gradient(520px circle at var(--mx, 82%) var(--my, 20%), rgba(255, 122, 26, 0.075), transparent 70%); }
 /* Process measurement guide (local to the bench, written by Process.tsx) */
 .wb__guide { position: absolute; pointer-events: none; background: rgba(255, 122, 26, 0.45); opacity: 0; transition: opacity 160ms linear; z-index: 4; }

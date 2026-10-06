@@ -103,17 +103,12 @@ function Ai() {
   );
 }
 function Custom() {
-  const slots = ["m0", "m1", "m2", "m3", "m4", "m5", "m6", "m7"];
+  const mods = [[Database, "Data model", true], [Lock, "Roles", true], [Boxes, "Workflow", true], [Plug, "API", false], [Server, "Jobs", false], [FileText, "Reports", false]] as const;
   return (
     <div className="sp sp-custom">
       <div className="sp-need" style={I(0)}><ClipboardList aria-hidden /><div><span className="mono">WHAT NEEDS TO WORK?</span><b>A tool that does not exist yet</b></div></div>
-      <ul className="sp-cands mono" aria-hidden>{["WORKFLOW", "DATA MODEL", "ROLES", "API", "REPORTING"].map((t, i) => <li key={t} style={I(i + 9)}>{t}</li>)}</ul>
-      <div className="sp-grid">
-        {slots.map((s, i) => {
-          const filled = [1, 2, 4, 6].includes(i);
-          const lock = [2, 6].includes(i);
-          return <span key={s} className="sp-slot" data-on={filled} data-lock={lock} style={I(i + 1)}>{filled && (i === 1 ? <Database aria-hidden /> : i === 2 ? <Lock aria-hidden /> : i === 4 ? <Boxes aria-hidden /> : <Server aria-hidden />)}</span>;
-        })}
+      <div className="sp-grid sp-grid--mods">
+        {mods.map(([Ic, t, on], i) => <span key={t} className="sp-slot" data-on={on} data-lock={i === 1} style={I(i + 1)}><Ic aria-hidden /><b>{t}</b><em className="mono">{on ? "SCOPED" : "CANDIDATE"}</em></span>)}
       </div>
     </div>
   );

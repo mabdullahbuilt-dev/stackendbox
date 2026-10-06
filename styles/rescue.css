@@ -37,3 +37,5 @@
 .rx-lens { position: absolute; z-index: 3; left: 0; top: 0; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 1px solid rgba(240, 82, 82, 0.45); background: radial-gradient(closest-side, rgba(240, 82, 82, 0.1), transparent); translate: var(--lx, 0px) var(--ly, 0px); opacity: 0; pointer-events: none; transition: opacity 160ms linear; } .rx[data-lens="on"] .rx-lens[data-on="true"] { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .rx-lens { display: none; } }
 @media (max-width: 767px) { .rx-pin[data-ok="false"]:not([data-near="true"]) { font-size: 8px; gap: 5px; } }
+/* phones: the diagnostic pins would sit on the checklist; the checklist already carries each state */
+@media (max-width: 599px) { .rx-pin { display: none; } }

@@ -12,6 +12,15 @@ const json = (body: unknown, status = 200, headers?: Record<string, string>) =>
 
 type Sender = { name: string; email: string };
 
+/** Operator-facing reason for a Brevo rejection, written to the runtime log only (never sent to the visitor). */
+export function brevoHint(message: string): string {
+  if (/^brevo_401:.*unrecognised IP/i.test(message)) return "Brevo blocked the request because Authorised IPs is on. Vercel functions have no fixed IP: deactivate the restriction in Brevo > Security > Authorised IPs.";
+  if (/^brevo_401/.test(message)) return "Brevo rejected the API key. Check BREVO_API_KEY (a v3 key starting with xkeysib-).";
+  if (/^brevo_400:.*sender/i.test(message)) return "Brevo rejected the sender. BREVO_SENDER_EMAIL must be a verified sender or on an authenticated domain in Brevo.";
+  if (/^brevo_403/.test(message)) return "Brevo refused the send (account not activated for transactional email, or permission missing).";
+  return "";
+}
+
 /** Brevo transactional email (server side only). Never log the API key or response bodies containing it. */
 async function brevoSend(key: string, sender: Sender, to: { email: string; name?: string }, replyTo: { email: string; name?: string }, mail: BriefMail) {
   const r = await fetch(process.env.BREVO_API_URL || "https://api.brevo.com/v3/smtp/email", {
@@ -86,7 +95,10 @@ export async function POST(req: NextRequest) {
     await brevoSend(BREVO_API_KEY, sender, { email: BRIEF_TO_EMAIL, name: "StackEndBox" }, { email: input.email, name: input.name.replace(/[\r\n]+/g, " ") }, internalEmail(input));
   } catch (e) {
     // Never lose a brief silently: the submission is written to the runtime log so it can be recovered.
-    console.error("[brief] internal delivery failed:", (e as Error).message.replace(BREVO_API_KEY, "[redacted]"));
+    const msg = (e as Error).message.replace(BREVO_API_KEY, "[redacted]");
+    console.error("[brief] internal delivery failed:", msg);
+    const hint = brevoHint(msg);
+    if (hint) console.error("[brief] fix:", hint);
     console.error("[brief] UNDELIVERED SUBMISSION", JSON.stringify({ at: new Date().toISOString(), name: input.name, email: input.email, company: input.company, needs: input.needs, stage: input.stage, goal: input.goal, url: input.url, context: input.context }));
     return json({ ok: false, error: "delivery_failed" }, 502);
   }

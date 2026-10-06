@@ -1,7 +1,7 @@
 "use client";
-import { ArrowRight, Bot, Database, Eye, FileText, Search, UserCheck, Wrench, type LucideIcon } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
 import { useInView } from "@/lib/hooks";
@@ -9,33 +9,12 @@ import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
 import { DocumentApp, IntelligenceApp, MediaApp, SupportApp } from "./AiApps";
+import { AiOrbit, type NodeKey } from "./AiOrbit";
 
 const APPS: Record<string, (p: { step: number }) => React.JSX.Element> = { support: SupportApp, documents: DocumentApp, media: MediaApp, intelligence: IntelligenceApp };
 
-type NodeKey = "vision" | "docs" | "search" | "db" | "tools" | "approval";
-const NODES: { key: NodeKey; label: string; icon: LucideIcon }[] = [
-  { key: "vision", label: "Vision", icon: Eye },
-  { key: "docs", label: "Documents", icon: FileText },
-  { key: "search", label: "Retrieval", icon: Search },
-  { key: "db", label: "Data", icon: Database },
-  { key: "tools", label: "Tools", icon: Wrench },
-  { key: "approval", label: "Human approval", icon: UserCheck },
-];
-/** One orbit system. Two ellipses seen at an angle; six capabilities, each one a real AI building block. */
-const ORBIT: Record<NodeKey, { ring: 0 | 1; a: number }> = {
-  search: { ring: 0, a: 200 }, db: { ring: 0, a: 335 }, tools: { ring: 0, a: 62 },
-  vision: { ring: 1, a: 262 }, docs: { ring: 1, a: 18 }, approval: { ring: 1, a: 152 },
-};
 /** Each scenario is led by the capability that docks into the core. */
 const LEAD: NodeKey[] = ["search", "docs", "vision", "db"];
-const RX = [0.44, 0.26], RY = [0.36, 0.2];
-/** Narrow stages keep every satellite (70px wide) inside the viewport for the whole orbit. */
-const rxFor = (w: number) => (w < 500 ? [0.36, 0.22] : RX);
-/** Server-rendered positions (before the first measurement) so the orbit is spread out even without JavaScript. */
-const initialStyle = (k: NodeKey): React.CSSProperties => {
-  const r = ORBIT[k].ring, th = (ORBIT[k].a * Math.PI) / 180, t = (Math.sin(th) + 1) / 2;
-  return { ["--tx" as string]: `${(Math.cos(th) * RX[r] * 640).toFixed(1)}px`, ["--ty" as string]: `${(Math.sin(th) * RY[r] * 440).toFixed(1)}px`, ["--sc" as string]: (0.84 + 0.26 * t).toFixed(3), ["--op" as string]: (0.7 + 0.3 * t).toFixed(2), zIndex: 2 + Math.round(t * 18) };
-};
 type Step = { node: NodeKey; text: string; state?: "blocked" };
 /** A row of the working UI: it appears once `at` steps have played; `flag` shows red until the step after it resolves. */
 type UiRow = { k: string; v: string; at: number; flag?: [number, number] };
@@ -57,9 +36,6 @@ const SCENARIOS: { id: string; tab: string; hub: string; steps: Step[]; cta: str
     { node: "approval", text: "Risk check passed" }, { node: "tools", text: "Alert sent" } ],
     ui: { title: "Signal 0.82", rows: [{ k: "Feed", v: "Live, 4 sources", at: 1 }, { k: "Charts", v: "Read and tagged", at: 2 }, { k: "History", v: "90 days compared", at: 3 }, { k: "Score", v: "0.82, above threshold", at: 4 }, { k: "Risk check", v: "Passed", at: 5 }], result: "Alert sent" } },
 ];
-const ANG = (i: number) => (i / NODES.length) * Math.PI * 2 - Math.PI / 2;
-const at = (i: number, r: number) => [50 + Math.cos(ANG(i)) * r, 50 + Math.sin(ANG(i)) * r] as const;
-
 export function AiSection() {
   const { reduced } = useMotionPreference();
   const [tab, setTab] = useState(0);
@@ -68,18 +44,11 @@ export function AiSection() {
   const inView = useInView(box, "-15% 0px -15% 0px");
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const played = useRef(false);
   const sc = SCENARIOS[tab];
   const N = sc.steps.length;
-  const orb = useRef<HTMLDivElement>(null);
-  const sats = useRef<Partial<Record<NodeKey, HTMLButtonElement | null>>>({});
-  const ang = useRef<Record<NodeKey, number>>({ search: ORBIT.search.a, docs: ORBIT.docs.a, tools: ORBIT.tools.a, vision: ORBIT.vision.a, db: ORBIT.db.a, approval: ORBIT.approval.a });
-  const size = useRef({ w: 640, h: 400 });
-  const [dim, setDim] = useState({ w: 640, h: 400 });
   const [docked, setDocked] = useState<NodeKey | null>(null);
   const dockedRef = useRef<NodeKey | null>(null);
   dockedRef.current = docked;
-  const drift = useRef({ raf: 0, until: 0, last: 0, paused: false });
 
   const play = (n: number) => {
     clearInterval(timer.current);
@@ -88,66 +57,26 @@ export function AiSection() {
     timer.current = setInterval(() => { k += 1; setStep(k); if (k >= n) clearInterval(timer.current); }, 850);
   };
   useEffect(() => { if (reduced) setStep(N); }, [reduced, N, tab]);
+  // Every visit replays: entering starts the first scenario; leaving stops everything and resets.
+  const lastUser = useRef(0);
   useEffect(() => {
-    if (reduced || !inView || played.current) return;
-    played.current = true;
-    const t = setTimeout(() => dock(0, LEAD[0]), 500);
+    if (reduced) return;
+    if (!inView) { clearInterval(timer.current); setDocked(null); setStep(0); setTab(0); return; }
+    const t = setTimeout(() => dock(0, LEAD[0], true), 500);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, reduced, N]);
+  }, [inView, reduced]);
   useEffect(() => () => clearInterval(timer.current), []);
 
-  const paint = useCallback(() => {
-    const { w, h } = size.current;
-    (Object.keys(ORBIT) as NodeKey[]).forEach((k) => {
-      const el = sats.current[k];
-      if (!el) return;
-      const r = ORBIT[k].ring, th = (ang.current[k] * Math.PI) / 180;
-      const t = (Math.sin(th) + 1) / 2;
-      el.style.setProperty("--tx", `${(Math.cos(th) * rxFor(w)[r] * w).toFixed(1)}px`);
-      el.style.setProperty("--ty", `${(Math.sin(th) * RY[r] * h).toFixed(1)}px`);
-      el.style.setProperty("--sc", (0.84 + 0.26 * t).toFixed(3));
-      el.style.setProperty("--op", (0.7 + 0.3 * t).toFixed(2));
-      el.style.zIndex = String(2 + Math.round(t * 18));
-    });
-  }, []);
-  const startDrift = useCallback((ms: number) => {
-    if (reduced) return;
-    const d = drift.current;
-    d.until = performance.now() + ms;
-    if (d.raf) return;
-    d.last = performance.now();
-    const tick = (now: number) => {
-      d.raf = 0;
-      const dt = Math.min(48, now - d.last); d.last = now;
-      if (now < d.until && !d.paused && !dockedRef.current) {
-        (Object.keys(ORBIT) as NodeKey[]).forEach((k) => { ang.current[k] += dt * (ORBIT[k].ring === 0 ? 0.0032 : -0.0042); });
-        paint();
-        d.raf = requestAnimationFrame(tick);
-      }
-    };
-    d.raf = requestAnimationFrame(tick);
-  }, [reduced, paint]);
-  useEffect(() => {
-    const el = orb.current;
-    if (!el) return;
-    const measure = () => { const r = el.getBoundingClientRect(); size.current = { w: r.width, h: r.height }; setDim({ w: r.width, h: r.height }); paint(); };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [paint]);
-  useEffect(() => { if (inView) startDrift(2200); else { cancelAnimationFrame(drift.current.raf); drift.current.raf = 0; } }, [inView, startDrift]);
-  useEffect(() => () => cancelAnimationFrame(drift.current.raf), []);
   // when the run finishes the capability returns to its orbit and the scene settles
   useEffect(() => {
     if (docked && step >= N) {
-      const t = setTimeout(() => { setDocked(null); startDrift(2500); }, reduced ? 0 : 1300);
+      const t = setTimeout(() => setDocked(null), reduced ? 0 : 1300);
       return () => clearTimeout(t);
     }
-  }, [docked, step, N, reduced, startDrift]);
+  }, [docked, step, N, reduced]);
 
-  const dock = (i: number, key: NodeKey) => { setTab(i); setDocked(key); track("scene_replay", { scene: "ai", scenario: SCENARIOS[i].id, node: key }); if (reduced) setStep(SCENARIOS[i].steps.length); else play(SCENARIOS[i].steps.length); };
+  const dock = (i: number, key: NodeKey, auto = false) => { if (!auto) lastUser.current = Date.now(); setTab(i); setDocked(key); if (!auto) track("scene_replay", { scene: "ai", scenario: SCENARIOS[i].id, node: key }); if (reduced) setStep(SCENARIOS[i].steps.length); else play(SCENARIOS[i].steps.length); };
   const pick = (i: number) => dock(i, LEAD[i]);
   const pickByNode = (key: NodeKey) => { const i = LEAD.indexOf(key); dock(i >= 0 ? i : SCENARIOS.findIndex((s) => s.steps.some((x) => x.node === key)), key); };
   const onKey = (e: React.KeyboardEvent) => {
@@ -156,6 +85,15 @@ export function AiSection() {
     else if (e.key === "ArrowUp" || e.key === "ArrowLeft") i = (tab - 1 + SCENARIOS.length) % SCENARIOS.length;
     if (i >= 0) { e.preventDefault(); pick(i); tabs.current[i]?.focus(); }
   };
+
+  // Gentle auto-cycle while the chapter stays in view: the next scenario docks a few seconds after one finishes,
+  // unless the visitor chose a scenario in the last 12 seconds.
+  useEffect(() => {
+    if (reduced || !inView || docked || step < N) return;
+    const t = setTimeout(() => { if (Date.now() - lastUser.current < 12000) return; const n = (tab + 1) % SCENARIOS.length; dock(n, LEAD[n], true); }, 4200);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docked, step, N, inView, reduced, tab]);
 
   // state of each node derived from the steps played so far
   const nodeState = (k: NodeKey): "idle" | "active" | "done" | "blocked" => {
@@ -167,7 +105,6 @@ export function AiSection() {
     });
     return st;
   };
-  const current = sc.steps[Math.min(step, N - 1)];
   return (
     <section id="ai" className="section section--alt aisec" aria-labelledby="ai-title">
       <div className="container">
@@ -175,23 +112,8 @@ export function AiSection() {
           <p className="eyebrow">{copy.ai.eyebrow}</p>
           <h2 id="ai-title" className="h2">{copy.ai.title}</h2>
         </Reveal>
-        <div className="aix">
-          <div className="aorb" ref={box} data-docked={docked ?? ""} onPointerEnter={() => { drift.current.paused = true; }} onPointerLeave={() => { drift.current.paused = false; }}>
-            <div className="aorb__plane" ref={orb}>
-              <svg className="aorb__rings" width={dim.w} height={dim.h} viewBox={`0 0 ${dim.w} ${dim.h}`} aria-hidden>
-                {[0, 1].map((r) => <ellipse key={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * rxFor(dim.w)[r]} ry={dim.h * RY[r]} data-ring={r} />)}
-              </svg>
-              <div className="aorb__core" data-done={step >= N} data-busy={!!docked && step < N} aria-hidden><Bot /><b>AI capability</b><em className="mono">{sc.hub}</em></div>
-              {NODES.map((n) => {
-                const st = nodeState(n.key);
-                return (
-                  <button key={n.key} ref={(el) => { sats.current[n.key] = el; }} type="button" className="aorb__sat" style={initialStyle(n.key)} data-st={st} data-docked={docked === n.key} aria-label={`${n.label}: run an example that uses it`} onClick={() => pickByNode(n.key)}>
-                    <span><n.icon /></span><b>{n.label}</b>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        <div className="aix" ref={box}>
+          <AiOrbit docked={docked} stateOf={nodeState} hub={sc.hub} busy={!!docked && step < N} done={step >= N} live={inView} reduced={reduced} onPick={pickByNode} />
           <div className="aix__side">
             <div className="aix__tabs" role="tablist" aria-label="AI examples" onKeyDown={onKey}>
               {SCENARIOS.map((s, i) => (
@@ -199,18 +121,13 @@ export function AiSection() {
               ))}
             </div>
             <div id="ai-panel" role="tabpanel" aria-labelledby={`ai-${sc.id}`}>
-              <ol className="aix__steps" aria-label="What the system does">
-                {sc.steps.map((s, i) => {
-                  const st = step > i ? "done" : step === i ? (s.state === "blocked" ? "blocked" : "active") : "idle";
-                  return <li key={sc.id + i} data-st={st}><span className="mono">{String(i + 1).padStart(2, "0")}</span>{s.text}</li>;
-                })}
-              </ol>
               <div className="aix__ui" aria-hidden>
                 <div className="aix__ui-h"><b>{sc.ui.title}</b><span className="mono" data-done={step >= N}>{step >= N ? "DONE" : "WORKING"}</span></div>
+                <div className="aix__trail" aria-hidden><i style={{ width: `${(Math.min(step, N) / N) * 100}%` }} /><em className="mono">{String(Math.min(step + 1, N)).padStart(2, "0")} / {String(N).padStart(2, "0")} · {sc.steps[Math.min(step, N - 1)].text}</em></div>
                 {(() => { const App = APPS[sc.id]; return <App step={step} />; })()}
                 <div className="aix__ui-f" data-on={step >= N}>{sc.ui.result}</div>
               </div>
-              <p className="sr-only" aria-live="polite">{current.text}</p>
+              <p className="sr-only">{sc.steps.map((x) => x.text).join(", ")}.</p>
             </div>
             <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("ai_cta", { placement: "ai", scenario: sc.id }); goToBuilder(e, "AI System"); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>

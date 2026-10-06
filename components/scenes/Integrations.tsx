@@ -6,7 +6,7 @@ import { copy } from "@/content/copy";
 import { stack } from "@/content/integrations";
 import type { BrandKey } from "@/content/brandIcons";
 import { track } from "@/lib/analytics";
-import { useInView } from "@/lib/hooks";
+import { useChapterCycle, useChapterStep } from "@/lib/chapters";
 import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { BrandIcon } from "@/components/ui/BrandIcon";
@@ -42,12 +42,16 @@ function SysBtn({ x, st, sel, onPick }: { x: Sys; st: "idle" | "active" | "done"
 
 export function Integrations() {
   const { reduced } = useMotionPreference();
-  const [sel, setSel] = useState<BrandKey>("stripe");
-  const [step, setStep] = useState(0);
+  // Default story (payment.completed) is driven by scroll, so it plays forward, reverses on the way up and replays on
+  // every visit. Choosing another system plays that system's flow on a timer until the visitor leaves the chapter.
+  const [user, setUser] = useState<{ k: BrandKey; step: number } | null>(null);
+  const auto = useChapterStep("integrations", FLOWS.stripe.length + 1);
+  const cycle = useChapterCycle("integrations");
+  const sel: BrandKey = user?.k ?? "stripe";
+  const step = reduced ? FLOWS[sel].length : user ? user.step : auto;
+  const setStep = (n: number) => setUser((u) => (u ? { ...u, step: n } : u));
   const box = useRef<HTMLDivElement>(null);
-  const inView = useInView(box, "-15% 0px -15% 0px");
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const played = useRef(false);
   const [wake, setWake] = useState<BrandKey | null>(null);
   const flow = FLOWS[sel];
   const others = flow.map((f) => f.node).filter((n, i, a) => n !== sel && a.indexOf(n) === i);
@@ -61,16 +65,10 @@ export function Integrations() {
     setStep(0);
     timer.current = setInterval(() => { k += 1; setStep(k); if (k >= n) clearInterval(timer.current); }, 800);
   };
-  useEffect(() => { if (reduced) setStep(N); }, [reduced, N, sel]);
-  useEffect(() => {
-    if (reduced || !inView || played.current) return;
-    played.current = true;
-    const t = setTimeout(() => play("stripe"), 400);
-    return () => clearTimeout(t);
-  }, [inView, reduced]);
+  useEffect(() => { clearInterval(timer.current); setUser(null); }, [cycle]);
   useEffect(() => () => clearInterval(timer.current), []);
 
-  const choose = (k: BrandKey) => { setSel(k); track("integration_selected", { system: k }); if (reduced) setStep(FLOWS[k].length); else play(k); };
+  const choose = (k: BrandKey) => { setUser({ k, step: 0 }); track("integration_selected", { system: k }); if (!reduced) play(k); };
   const nodeState = (k: BrandKey): "idle" | "active" | "done" => {
     let st: "idle" | "active" | "done" = "idle";
     flow.forEach((s, i) => { if (s.node !== k) return; if (step > i) st = "done"; else if (step === i && st !== "done") st = "active"; });

@@ -1,33 +1,32 @@
-import { BarChart3, CreditCard, LayoutDashboard, Rocket, Settings, Users } from "lucide-react";
+import { Check, CircleDot, CreditCard, Globe, KeyRound, Rocket, ShieldCheck, Users } from "lucide-react";
 import { BrandIcon } from "@/components/ui/BrandIcon";
-import { AppShell, Av, Chip } from "./Shell";
 
 export const LAUNCHKIT_STEPS = 5;
-const MEMBERS = [["Ada Okoro", "Owner", "A"], ["Leo Park", "Admin", "L"], ["Ines Duarte", "Member", "I"]] as const;
+const CHECKS = [[KeyRound, "Sign up and auth", 1], [CreditCard, "Billing and plans", 2], [Users, "Roles and invites", 3], [Globe, "Domain and SSL", 4], [ShieldCheck, "Monitoring", 5]] as const;
+const PIPE = ["Build", "Tests", "Preview", "Production"] as const;
 
+/** Release readiness for a SaaS launch: a checklist ring, a deploy pipeline and the release log. No table, no sidebar. */
 export function LaunchKit({ step }: { step: number }) {
+  const done = CHECKS.filter(([, , at]) => step >= at).length;
+  const pct = done / CHECKS.length;
+  const C = 2 * Math.PI * 40;
   return (
-    <AppShell
-      name="LaunchKit" active={1} title="Members"
-      nav={[[LayoutDashboard, "Dashboard"], [Users, "Members"], [CreditCard, "Billing"], [BarChart3, "Usage"], [Settings, "Settings"]]}
-      top={<><Chip tone={step >= 1 ? "ok" : "run"}>{step >= 1 ? "Workspace ready" : "Provisioning"}</Chip><Chip tone={step >= 5 ? "ok" : "idle"}>{step >= 5 ? "LIVE" : "Deploying"}</Chip></>}
-      rail={
-        <>
-          <div className="pa-card pa-plan" data-on={step >= 2}>
-            <b className="mono">PLAN</b>
-            <div className="pa-plans">{["Starter", "Pro", "Team"].map((p) => <span key={p} data-sel={step >= 2 ? p === "Pro" : p === "Starter"}>{p}</span>)}</div>
-            <div className="pa-pay"><BrandIcon name="stripe" size={14} />{step >= 2 ? <Chip tone="ok">Subscription active</Chip> : <Chip tone="idle">Free trial</Chip>}</div>
-          </div>
-          <div className="pa-card"><b className="mono">ROLES</b><div className="pa-roles">{["Owner", "Admin", "Member"].map((r) => <span key={r}>{r}</span>)}</div></div>
-        </>
-      }
-    >
-      <div className="pa-table">
-        <div className="pa-th"><span>Name</span><span>Role</span><span>Status</span></div>
-        {step >= 0 && <div className="pa-tr pa-tr--new" data-on={step >= 0}><span><Av tone="accent">M</Av>Maya Chen</span><span>Member</span><span>{step >= 3 ? <Chip tone="ok">Active</Chip> : <Chip tone="run">Signed up</Chip>}</span></div>}
-        {MEMBERS.map(([n, r, a]) => <div key={n} className="pa-tr"><span><Av>{a}</Av>{n}</span><span>{r}</span><span><Chip tone="ok">Active</Chip></span></div>)}
+    <div className="bw bw-launch">
+      <header className="bw-top"><b><i className="bw-dot" />LaunchKit</b><span>Release 1.4 to production</span><em data-ok={step >= 5}>{step >= 5 ? "LIVE" : "READYING"}</em></header>
+      <div className="bw-launch__grid">
+        <div className="bw-ring">
+          <svg viewBox="0 0 100 100" aria-hidden><circle cx="50" cy="50" r="40" className="bw-ring__bg" /><circle cx="50" cy="50" r="40" className="bw-ring__fg" style={{ strokeDasharray: C, strokeDashoffset: C * (1 - pct) }} /></svg>
+          <strong>{Math.round(pct * 100)}%</strong><span className="mono">LAUNCH READY</span>
+        </div>
+        <ul className="bw-checks">{CHECKS.map(([Ic, t, at]) => <li key={t} data-st={step >= at ? "ok" : step + 1 === at ? "run" : "idle"}><Ic aria-hidden />{t}<span>{step >= at ? <Check aria-label="done" /> : <CircleDot aria-hidden />}</span></li>)}</ul>
       </div>
-      <div className="pa-foot"><span className="pa-note"><Users aria-hidden />{step >= 4 ? "Invite sent to team@northwind.example" : "Invite teammates to the workspace"}</span><span className="pa-note"><Rocket aria-hidden />{step >= 5 ? "Deployed to production" : "Deploying"}</span></div>
-    </AppShell>
+      <div className="bw-pipe">{PIPE.map((p, i) => <span key={p} data-st={step >= i + 2 ? "ok" : step === i + 1 ? "run" : "idle"}>{p}{i < PIPE.length - 1 && <i />}</span>)}</div>
+      <ol className="bw-log mono">
+        <li data-on={step >= 1}>auth: email and Google sign in enabled</li>
+        <li data-on={step >= 2}><BrandIcon name="stripe" size={11} /> stripe: Pro plan and webhooks verified</li>
+        <li data-on={step >= 3}>roles: owner, admin, member seeded</li>
+        <li data-on={step >= 5}><Rocket aria-hidden /> production: release 1.4 live</li>
+      </ol>
+    </div>
   );
 }

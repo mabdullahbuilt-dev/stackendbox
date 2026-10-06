@@ -3,7 +3,8 @@ import { proofMatrix } from "@/content/proofMatrix";
 import { proofItems } from "@/content/proof";
 import { projects } from "@/content/projects";
 import { scenarios } from "@/content/transformations";
-import { testimonials } from "@/content/testimonials";
+import { devTestimonialFixtures } from "@/content/testimonials.fixtures";
+import { isPublishable, testimonials } from "@/content/testimonials";
 import { clients } from "@/content/clients";
 import { caseStudies } from "@/content/caseStudies";
 
@@ -26,7 +27,9 @@ describe("proof architecture", () => {
     expect(proofItems.length).toBeGreaterThanOrEqual(6);
   });
   it("social proof only exposes verified and permissioned entries", () => {
-    expect(testimonials.every((t) => t.verified && t.permissionConfirmed)).toBe(true);
+    expect(testimonials.every((t) => t.approved === true)).toBe(true);
+    // development fixtures are never approved, so they can never pass the publish filter
+    expect(devTestimonialFixtures.every((t) => !isPublishable(t))).toBe(true);
     expect(clients.every((c) => c.verified && c.permissionConfirmed)).toBe(true);
     expect(caseStudies.every((c) => c.verified && c.permissionConfirmed)).toBe(true);
   });

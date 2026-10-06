@@ -59,8 +59,8 @@
 @media (min-width: 768px) and (max-width: 1023px) { .nav__bar { gap: 12px; } .nav__link { padding: 0 9px; font-size: 0.875rem; } .nav__links ul { gap: 0; } .nav__pill { padding: 0 12px; } }
 
 /* Skip rendering work for below-the-fold sections until they approach the viewport.
-   Pinned scenes (#product, #depth) are excluded so ScrollTrigger measures stable heights. */
-#services, #intent, #transform, #business, #specialized, #proof, #labs, #founders, #rescue, #ai, #integrations, #work, #process, #testimonials, #delivery, #start, #final, .footer {
+   Pinned scroll scenes (#product, #business, #transform, #depth, #process) are excluded so their sticky runways measure stable heights. */
+#services, #intent, #specialized, #proof, #labs, #founders, #rescue, #ai, #integrations, #work, #testimonials, #delivery, #start, #final, .footer {
   content-visibility: auto;
   contain-intrinsic-size: auto 900px;
 }
@@ -75,3 +75,10 @@ html[data-cv="off"] #services, html[data-cv="off"] #intent, html[data-cv="off"] 
 #labs { background: #101310; } #rescue { background: var(--black-800); } #ai { background: #090c09; } #integrations { background: #101410; }
 #work { background: #070807; } #process { background: var(--black-850); } #start { background: var(--black-900); } #final { background: var(--black-950); }
 .nav__links--l { grid-column: 1; } .nav__logo { grid-column: 2; } .nav__right { grid-column: 3; }
+/* nav lockup: horizontal mark + wordmark, the anchor of the bar (fits the 80px bar and the 56px compact bar) */
+.nav__logo .logo { gap: 12px; }
+@media (max-width: 1100px) { .nav__logo .logo img + img { width: auto !important; height: 22px !important; } .nav__logo .logo img:first-child { height: 38px !important; width: auto !important; } }
+@media (max-width: 767px) { .nav__logo .logo img + img { height: 18px !important; } .nav__logo .logo img:first-child { height: 32px !important; } }
+/* Tablet: the larger lockup must not wrap nav labels or the contact pill. */
+.nav__link, .nav__pill { white-space: nowrap; }
+@media (min-width: 768px) and (max-width: 1023px) { .nav__link { padding: 0 7px; font-size: 0.8125rem; } .nav__pill { padding: 0 11px; font-size: 0.8125rem; } .nav__logo .logo img + img { height: 19px !important; } .nav__logo .logo img:first-child { height: 34px !important; } }

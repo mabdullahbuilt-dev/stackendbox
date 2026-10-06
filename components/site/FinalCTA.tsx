@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { copy } from "@/content/copy";
 import { goToBuilder } from "@/lib/intent";
 import { track } from "@/lib/analytics";
-import { loadGsap } from "@/lib/gsap";
+import { onProgress } from "@/lib/chapters";
 import { useMedia } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { ButtonLink } from "@/components/ui/Button";
@@ -40,44 +40,43 @@ export function FinalCTA() {
   const animate = mounted && wide && !reduced;
   useEffect(() => setMounted(true), []);
 
+  // Scroll drives the convergence (and reverses it): fragments travel in orange, turn green once aligned on the mark,
+  // the red problem fragment fades out on the way, then the mark resolves. Transform/opacity only, no animation library,
+  // no loop: work happens only when the chapter's scroll progress changes.
   useEffect(() => {
     const el = root.current;
     if (!animate || !el) return;
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-    (async () => {
-      const { gsap } = await loadGsap();
-      if (cancelled) return;
-      const ctx = gsap.context(() => {
-        const q = gsap.utils.selector(el);
-        const thumbs = q<HTMLElement>(".fthumb");
-        const mark = q(".final__mark");
-        const W = el.clientWidth;
-        const H = el.clientHeight;
-        thumbs.forEach((t, i) => gsap.set(t, { x: (POS[i][0] / 100) * W, y: (POS[i][1] / 100) * H, autoAlpha: 0.25, scale: 1, rotation: [-3, 2, 3, -2, 2, -3][i] }));
-        gsap.set(mark, { opacity: 0, scale: 0.92 });
-        const mr = (mark[0] as HTMLElement).getBoundingClientRect();
-        const box = el.getBoundingClientRect();
-        const cx = mr.left + mr.width / 2 - box.left - W / 2;
-        const cy = mr.top + mr.height / 2 - box.top - H / 2;
-        const tl = gsap.timeline({ paused: true });
-        // Fragments travel in orange, turn green when aligned on the mark; the red problem fragment fades out on the way.
-        thumbs.forEach((t, i) => {
-          if (THUMBS[i] === "issue") { tl.to(t, { autoAlpha: 0, scale: 0.6, duration: 0.3, ease: "power1.in" }, 0.05); return; }
-          tl.to(t, { borderColor: "rgba(255,122,26,0.9)", duration: 0.15, ease: "none" }, i * 0.04);
-          tl.to(t, { x: cx, y: cy + i * 6, rotation: 0, scale: 0.3, duration: 0.6, ease: "power2.inOut" }, i * 0.04);
-          tl.to(t, { borderColor: "rgba(47,210,122,0.85)", duration: 0.12, ease: "none" }, 0.58);
-        });
-        tl.to(thumbs, { autoAlpha: 0, duration: 0.2, ease: "none" }, 0.7);
-        tl.to(mark, { opacity: 1, scale: 1, duration: 0.2, ease: "none" }, 0.7);
-        const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { tl.play(); io.disconnect(); } }, { threshold: 0.6 });
-        io.observe(el);
-        cleanup = () => io.disconnect();
-      }, el);
-      const prev = cleanup;
-      cleanup = () => { prev?.(); ctx.revert(); };
-    })();
-    return () => { cancelled = true; cleanup?.(); };
+    const thumbs = [...el.querySelectorAll<HTMLElement>(".fthumb")];
+    const mark = el.querySelector<HTMLElement>(".final__mark");
+    if (!mark) return;
+    const ROT = [-3, 2, 3, -2, 2, -3, 1];
+    const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+    const clamp = (v: number) => Math.min(1, Math.max(0, v));
+    let geo = { W: 0, H: 0, cx: 0, cy: 0 };
+    const measure = () => {
+      const box = el.getBoundingClientRect(), mr = mark.getBoundingClientRect();
+      geo = { W: el.clientWidth, H: el.clientHeight, cx: mr.left + mr.width / 2 - box.left - el.clientWidth / 2, cy: mr.top + mr.height / 2 - box.top - el.clientHeight / 2 };
+    };
+    const paint = (p: number) => {
+      const t = clamp((p - 0.05) / 0.75);
+      thumbs.forEach((th, i) => {
+        th.style.visibility = "visible";
+        if (THUMBS[i] === "issue") { const k = clamp(t / 0.3); th.style.opacity = String(0.25 * (1 - k)); th.style.transform = `translate(${(POS[i][0] / 100) * geo.W}px, ${(POS[i][1] / 100) * geo.H}px) scale(${1 - 0.4 * k})`; return; }
+        const k = ease(clamp((t - i * 0.04) / 0.6));
+        const x = (POS[i][0] / 100) * geo.W * (1 - k) + geo.cx * k, y = (POS[i][1] / 100) * geo.H * (1 - k) + (geo.cy + i * 6) * k;
+        th.style.transform = `translate(${x}px, ${y}px) rotate(${ROT[i] * (1 - k)}deg) scale(${1 - 0.7 * k})`;
+        th.style.opacity = String(t > 0.7 ? 0.25 + 0.75 * Math.min(1, k) * (1 - clamp((t - 0.7) / 0.2)) : 0.25 + 0.75 * Math.min(1, k));
+        th.style.borderColor = k >= 0.97 ? "rgba(47,210,122,0.85)" : k > 0.02 ? "rgba(255,122,26,0.9)" : "";
+      });
+      const m = clamp((t - 0.7) / 0.2);
+      mark.style.opacity = String(m); mark.style.transform = `scale(${0.92 + 0.08 * m})`;
+    };
+    measure();
+    let last = 0;
+    const off = onProgress("final", (p) => { last = p; paint(p); });
+    const ro = new ResizeObserver(() => { measure(); paint(last); });
+    ro.observe(el);
+    return () => { off(); ro.disconnect(); thumbs.forEach((th) => { th.style.cssText = ""; }); mark.style.opacity = ""; mark.style.transform = ""; };
   }, [animate]);
 
   return (

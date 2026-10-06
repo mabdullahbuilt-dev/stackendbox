@@ -35,7 +35,7 @@ const list = await p.evaluate((SEL) => {
     if (cs.visibility === "hidden" || cs.display === "none" || cs.pointerEvents === "none") return;
     if (r.width < 2 || r.height < 2) return;
     if (el.classList.contains("sr-only") || el.classList.contains("hp")) return;
-    el.setAttribute("data-qa", String(i));
+    el.setAttribute("data-qai", String(i));
     const label = (el.getAttribute("aria-label") || el.innerText || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 48);
     const key = (el.closest("section,header,footer")?.id || el.closest("header,footer")?.tagName || "?") + "|" + label + "|" + (el.getAttribute("href") || "");
     if (seen.has(key)) return; seen.add(key);
@@ -46,21 +46,24 @@ const list = await p.evaluate((SEL) => {
 
 const stable = async () => { let last = -1, n = 0; for (let k = 0; k < 40 && n < 3; k++) { const y = await p.evaluate(() => Math.round(scrollY)); n = y === last ? n + 1 : 0; last = y; await p.waitForTimeout(100); } };
 const results = [];
-const sig = () => p.evaluate(() => ({ url: location.href, y: Math.round(scrollY), dlg: document.querySelectorAll("[role=dialog]").length, text: document.body.innerText.length, sel: [...document.querySelectorAll("[aria-selected=true],[aria-pressed=true],[data-checked=true]")].length }));
+const sig = () => p.evaluate(() => ({ url: location.href, y: Math.round(scrollY), dlg: document.querySelectorAll("[role=dialog],dialog[open]").length, text: document.body.innerText.length, sel: [...document.querySelectorAll("[aria-selected=true],[aria-pressed=true],[data-checked=true]")].length }));
 for (const it of list) {
   const r = { ...it, ok: true, why: [] };
-  await p.evaluate(([sel, lab, href, sec]) => {
+  await p.evaluate(([sel, lab, href, sec, idx]) => {
     document.querySelectorAll("[data-qa]").forEach((x) => x.removeAttribute("data-qa"));
+    // state-driven labels (carousel "Next: <title>") drift as the page runs: the enumeration index is the stable key
+    const byIdx = document.querySelector(`[data-qai="${idx}"]`);
+    if (byIdx) { byIdx.setAttribute("data-qa", "t"); return; }
     for (const el of document.querySelectorAll(sel)) {
       const l = (el.getAttribute("aria-label") || el.innerText || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 48);
       const s = el.closest("section,header,footer")?.id || el.closest("header,footer")?.tagName;
-      if (l === lab && (el.getAttribute("href") || "") === (href || "") && s === sec) { el.setAttribute("data-qa", "t"); return; }
+      if (l.replace(/\s+/g, "") === lab.replace(/\s+/g, "") && (el.getAttribute("href") || "") === (href || "") && s === sec) { el.setAttribute("data-qa", "t"); return; }
     }
     for (const el of document.querySelectorAll(sel)) {
       const s = el.closest("section,header,footer")?.id || el.closest("header,footer")?.tagName;
       if ((el.getAttribute("href") || "") === (href || "") && href && s === sec && el.classList.contains("btn")) { el.setAttribute("data-qa", "t"); return; }
     }
-  }, [SEL, it.label, it.href, it.sec]);
+  }, [SEL, it.label, it.href, it.sec, it.i]);
   const loc = p.locator(`[data-qa="t"]`).first();
   try {
     // mobile menu items only exist once the menu is open; header nav links are hidden on mobile
