@@ -76,3 +76,30 @@ describe("POST /api/brief", () => {
     delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   });
 });
+
+describe("brief email acceptance", () => {
+  const base = { name: "Ada", context: "A support assistant" };
+  it("accepts Gmail, Outlook and company addresses and rejects malformed ones", async () => {
+    const { briefSchema } = await import("@/lib/briefSchema");
+    for (const email of ["name@gmail.com", "name@outlook.com", "first.last@company.co.uk", "a+tag@sub.company.com"]) expect(briefSchema.safeParse({ ...base, email }).success).toBe(true);
+    for (const email of ["not-an-email", "a@b", "@gmail.com", ""]) expect(briefSchema.safeParse({ ...base, email }).success).toBe(false);
+  });
+  it("keeps company, url and areas optional and rejects blank required fields", async () => {
+    const { briefSchema } = await import("@/lib/briefSchema");
+    expect(briefSchema.safeParse({ ...base, email: "a@gmail.com" }).success).toBe(true);
+    expect(briefSchema.safeParse({ ...base, email: "a@gmail.com", name: " " }).success).toBe(false);
+    expect(briefSchema.safeParse({ ...base, email: "a@gmail.com", context: "" }).success).toBe(false);
+    expect(briefSchema.safeParse({ ...base, email: "a@gmail.com", context: "x".repeat(3000) }).success).toBe(true);
+  });
+});
+
+describe("brevo failure hints", () => {
+  it("names the Brevo setting to change for each rejection", async () => {
+    vi.resetModules();
+    const { brevoHint } = await import("@/app/api/brief/route");
+    expect(brevoHint('brevo_401:{"message":"We have detected you are using an unrecognised IP address 98.82.5.138"}')).toMatch(/Authorised IPs/);
+    expect(brevoHint('brevo_401:{"message":"Key not found"}')).toMatch(/BREVO_API_KEY/);
+    expect(brevoHint('brevo_400:{"message":"Sender is invalid / inactive"}')).toMatch(/verified sender/);
+    expect(brevoHint("brevo_500:x")).toBe("");
+  });
+});

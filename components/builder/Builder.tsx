@@ -1,6 +1,6 @@
 "use client";
 import { ArrowRight, CalendarClock, Check, Lightbulb, Mail, Send } from "lucide-react";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { siteConfig } from "@/site.config";
 import { track } from "@/lib/analytics";
@@ -43,6 +43,8 @@ export function Builder() {
   const [status, setStatus] = useState<"idle" | "sending" | "error" | "done">("idle");
   const [serverErr, setServerErr] = useState("");
   const [turnstile, setTurnstile] = useState("");
+  // Synchronous guard: a double click lands before React re-renders the disabled button.
+  const inFlight = useRef(false);
   const onToken = useCallback((t: string) => setTurnstile(t), []);
   const email = siteConfig.contactEmail;
 
@@ -65,7 +67,7 @@ export function Builder() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (status === "sending") return;
+    if (inFlight.current) return;
     const f: Record<string, string> = {};
     if (!form.name.trim()) f.name = "Tell us your name.";
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) f.email = "That email doesn't look right.";
@@ -78,6 +80,7 @@ export function Builder() {
       return;
     }
     setErrors({}); setStatus("sending"); setServerErr("");
+    inFlight.current = true;
     track("builder_submitted", { needs: needs.join("|") });
     const payload = {
       needs, name: form.name, email: form.email, company: form.company, context: form.context, url: form.url, website: form.website,
@@ -87,19 +90,24 @@ export function Builder() {
     try {
       const res = await fetch("/api/brief", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; fields?: Record<string, string> };
-      if (res.ok && body.ok) { track("contact_submit_success"); setStatus("done"); return; }
+      if (res.ok && body.ok) {
+        track("contact_submit_success");
+        setForm({ name: "", email: "", company: "", context: "", url: "", website: "" }); setNeeds([]);
+        setStatus("done"); inFlight.current = false; return;
+      }
       if (body.fields) setErrors(body.fields);
       setServerErr(
         body.error === "verification_failed" ? "We couldn't verify this request. Please refresh the check and try again."
           : body.error === "rate_limited" ? "Too many attempts. Please wait a few minutes and try again."
           : body.error === "validation" ? "Please check the highlighted fields."
-          : "We couldn't send this right now. Your message is still here.",
+          : "We couldn't send the brief. Your message is still here.",
       );
       track("builder_error", { field: body.error ?? "unknown" });
     } catch {
-      setServerErr("We couldn't send this right now. Check your connection. Your message is still here.");
+      setServerErr("We couldn't send the brief. Check your connection; your message is still here.");
       track("builder_error", { field: "network" });
     }
+    inFlight.current = false;
     setStatus("error");
   };
 
@@ -119,19 +127,19 @@ export function Builder() {
             {status === "done" ? (
               <div className="ct__done" role="status">
                 <span className="ct__doneic"><Check aria-hidden /></span>
-                <h3>Brief received.</h3>
-                <p>We have your message and will review it. If you would rather talk it through, book a call or email us.</p>
+                <h3>Brief sent.</h3>
+                <p>We received your project details and will review them. If you would rather talk it through, book a call or email us.</p>
                 <div className="ct__actions">
                   <CalButton placement="done" />
                   {mailto && <a className="btn btn--lg btn--secondary" href={`mailto:${email}`}><Mail aria-hidden />Email StackEndBox</a>}
-                  <button type="button" className="btn btn--lg btn--ghost" onClick={() => { setStatus("idle"); setForm({ name: "", email: "", company: "", context: "", url: "", website: "" }); setNeeds([]); }}>Send another brief</button>
+                  <button type="button" className="btn btn--lg btn--ghost" onClick={() => setStatus("idle")}>Send another brief</button>
                 </div>
               </div>
             ) : (
               <form onSubmit={submit} noValidate aria-describedby={serverErr ? `${uid}-srv` : undefined}>
                 <div className="ct__row">
                   <Field id={`${uid}-name`} label="Name" name="name" autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} required />
-                  <Field id={`${uid}-email`} label="Work email" name="email" type="email" autoComplete="email" value={form.email} onChange={set("email")} error={errors.email} required />
+                  <Field id={`${uid}-email`} label="Email" name="email" type="email" autoComplete="email" value={form.email} onChange={set("email")} error={errors.email} required />
                 </div>
                 <Field id={`${uid}-company`} label="Company" name="organization" autoComplete="organization" value={form.company} onChange={set("company")} optional />
                 <Field id={`${uid}-context`} label="What do you need built?" textarea rows={6} name="context" value={form.context} onChange={set("context")} error={errors.context} required />
@@ -155,8 +163,8 @@ export function Builder() {
                   <div id={`${uid}-srv`} className="ct__err" role="alert">
                     <p>{serverErr}</p>
                     <p className="ct__alt">
-                      {email && <>You can also email <a href={mailto}>{email}</a></>}
-                      {email && calParts_available() && " or "}
+                      Please try again{email && <>, email <a href={mailto}>{email}</a></>}
+                      {calParts_available() && ", or "}
                       {calParts_available() && <CalButton placement="error" className="ct__link" icon={false}>book a call</CalButton>}.
                     </p>
                   </div>
@@ -164,7 +172,7 @@ export function Builder() {
 
                 <div className="ct__submit">
                   <button type="submit" className="btn btn--primary btn--lg" disabled={status === "sending"}>
-                    {status === "sending" ? "Sending" : "Send Project Brief"}<Send className="arrow" aria-hidden />
+                    {status === "sending" ? "Sending brief…" : "Send Project Brief"}<Send className="arrow" aria-hidden />
                   </button>
                   <span className="mono mono--muted">{copy.builder.time}</span>
                 </div>
