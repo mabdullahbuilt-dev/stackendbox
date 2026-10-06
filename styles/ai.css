@@ -86,3 +86,5 @@
 .ixnet__pkt { fill: var(--orange-500); opacity: 0; transition: cx 600ms var(--ease-out), cy 600ms var(--ease-out), opacity 200ms; } .ixnet__pkt[data-on="true"] { opacity: 1; filter: drop-shadow(0 0 3px rgba(255, 122, 26, 0.8)); }
 .ixnet__lines line[data-wake="true"] { stroke: rgba(255, 122, 26, 0.7); stroke-width: 2; }
 @media (prefers-reduced-motion: reduce) { .ixnet__pkt { transition: none; } }
+
+.ixops__json { margin: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.03); color: var(--text-secondary); font-size: 11px; white-space: pre-wrap; opacity: 0.35; transition: opacity 300ms, border-color 300ms; } .ixops__json[data-on="true"] { opacity: 1; border-color: var(--border-active); color: var(--orange-300); }

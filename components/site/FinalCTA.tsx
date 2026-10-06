@@ -13,20 +13,21 @@ import { Magnet } from "@/components/vendor/Magnet";
 import { CalButton } from "@/components/ui/CalButton";
 import { siteConfig } from "@/site.config";
 
-const THUMBS = ["crm", "ai", "api", "product", "automation", "integration"] as const;
-const POS: [number, number][] = [[-38, -30], [36, -34], [-44, 10], [42, 14], [-26, 38], [26, 40]];
+const THUMBS = ["software", "ai", "data", "integration", "mobile", "product", "issue"] as const;
+const POS: [number, number][] = [[-38, -30], [36, -34], [-44, 10], [42, 14], [-26, 38], [26, 40], [4, -40]];
 
 /** Text-free fragments echoing earlier sections. Decorative and aria-hidden. */
 function Thumb({ kind }: { kind: (typeof THUMBS)[number] }) {
   return (
     <div className="fthumb__in" data-kind={kind}>
       <i className="th-bar" />
-      {kind === "crm" && <div className="th-cols">{[0, 1, 2].map((c) => <div key={c}><i /><i /></div>)}</div>}
+      {kind === "software" && <div className="th-cols">{[0, 1, 2].map((c) => <div key={c}><i /><i /></div>)}</div>}
       {kind === "ai" && <><i className="th-bub" /><i className="th-bub th-bub--r" /><i className="th-bub" /></>}
-      {kind === "api" && <div className="th-tiles">{[0, 1, 2, 3].map((r) => <i key={r} />)}</div>}
-      {kind === "product" && <div className="th-bars">{[30, 50, 40, 70, 60, 85].map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</div>}
-      {kind === "automation" && [0, 1, 2, 3].map((r) => <i key={r} className="th-row" />)}
+      {kind === "data" && <div className="th-bars">{[30, 50, 40, 70, 60, 85].map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</div>}
       {kind === "integration" && [0, 1, 2].map((r) => <i key={r} className="th-tg" />)}
+      {kind === "mobile" && <div className="th-phone"><i /><i /><i /></div>}
+      {kind === "product" && <div className="th-tiles">{[0, 1, 2, 3].map((r) => <i key={r} />)}</div>}
+      {kind === "issue" && [0, 1, 2, 3].map((r) => <i key={r} className="th-row" />)}
     </div>
   );
 }
@@ -60,7 +61,13 @@ export function FinalCTA() {
         const cx = mr.left + mr.width / 2 - box.left - W / 2;
         const cy = mr.top + mr.height / 2 - box.top - H / 2;
         const tl = gsap.timeline({ paused: true });
-        thumbs.forEach((t, i) => tl.to(t, { x: cx, y: cy + i * 6, rotation: 0, scale: 0.3, duration: 0.6, ease: "power2.inOut" }, i * 0.04));
+        // Fragments travel in orange, turn green when aligned on the mark; the red problem fragment fades out on the way.
+        thumbs.forEach((t, i) => {
+          if (THUMBS[i] === "issue") { tl.to(t, { autoAlpha: 0, scale: 0.6, duration: 0.3, ease: "power1.in" }, 0.05); return; }
+          tl.to(t, { borderColor: "rgba(255,122,26,0.9)", duration: 0.15, ease: "none" }, i * 0.04);
+          tl.to(t, { x: cx, y: cy + i * 6, rotation: 0, scale: 0.3, duration: 0.6, ease: "power2.inOut" }, i * 0.04);
+          tl.to(t, { borderColor: "rgba(47,210,122,0.85)", duration: 0.12, ease: "none" }, 0.58);
+        });
         tl.to(thumbs, { autoAlpha: 0, duration: 0.2, ease: "none" }, 0.7);
         tl.to(mark, { opacity: 1, scale: 1, duration: 0.2, ease: "none" }, 0.7);
         const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { tl.play(); io.disconnect(); } }, { threshold: 0.6 });

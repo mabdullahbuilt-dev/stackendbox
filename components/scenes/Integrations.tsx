@@ -20,7 +20,7 @@ const Y = [14, 38, 62, 86];
 type Flow = { node: BrandKey; text: string };
 /** What happens across the connected systems when each one fires an event. */
 const FLOWS: Record<string, Flow[]> = {
-  stripe: [{ node: "stripe", text: "Payment received" }, { node: "hubspot", text: "Customer updated" }, { node: "supabase", text: "Order stored" }, { node: "gmail", text: "Receipt sent" }],
+  stripe: [{ node: "stripe", text: "payment.completed received" }, { node: "stripe", text: "Signature verified" }, { node: "hubspot", text: "Fields mapped, contact updated" }, { node: "supabase", text: "Order written" }, { node: "gmail", text: "Confirmation sent" }],
   hubspot: [{ node: "hubspot", text: "Deal won" }, { node: "stripe", text: "Invoice created" }, { node: "gdrive", text: "Contract filed" }, { node: "gmail", text: "Welcome email sent" }],
   whatsapp: [{ node: "whatsapp", text: "Message received" }, { node: "anthropic", text: "Request understood" }, { node: "supabase", text: "Ticket created" }, { node: "whatsapp", text: "Reply sent" }],
   gcal: [{ node: "gcal", text: "Booking created" }, { node: "hubspot", text: "Contact updated" }, { node: "whatsapp", text: "Confirmation sent" }, { node: "supabase", text: "Slot locked" }],
@@ -29,6 +29,8 @@ const FLOWS: Record<string, Flow[]> = {
   anthropic: [{ node: "anthropic", text: "Model asked" }, { node: "supabase", text: "Context retrieved" }, { node: "hubspot", text: "Result saved" }, { node: "gmail", text: "Summary sent" }],
   gdrive: [{ node: "gdrive", text: "File added" }, { node: "anthropic", text: "Document read" }, { node: "supabase", text: "Fields stored" }, { node: "hubspot", text: "Record linked" }],
 };
+
+const PAYLOAD = '{ "type": "payment.completed",\n  "amount": 4900,\n  "customer": "cus_8f2" }';
 
 function SysBtn({ x, st, sel, onPick }: { x: Sys; st: "idle" | "active" | "done"; sel: boolean; onPick: (k: BrandKey) => void }) {
   return (
@@ -48,6 +50,8 @@ export function Integrations() {
   const played = useRef(false);
   const [wake, setWake] = useState<BrandKey | null>(null);
   const flow = FLOWS[sel];
+  const others = flow.map((f) => f.node).filter((n, i, a) => n !== sel && a.indexOf(n) === i);
+  const dest = others[0], dest2 = others[1] ?? others[0];
   const N = flow.length;
 
   const play = (key: BrandKey) => {
@@ -124,20 +128,21 @@ export function Integrations() {
           <div className="ixops__p">
             <b className="mono">EVENT STREAM</b>
             {flow.map((f, i) => {
-              const st = step > i ? "ok" : step === i ? (i === 1 ? "retry" : "run") : "wait";
-              return <div key={sel + i} className="ixops__r" data-st={st}><span className="mono">evt_{(2041 + i * 7).toString(16)}</span><em>{f.text}</em><i className="mono">{st === "ok" ? "OK" : st === "retry" ? "RETRY 1" : st === "run" ? "RUNNING" : "QUEUED"}</i></div>;
+              const st = step > i ? "ok" : step === i ? "run" : "wait";
+              return <div key={sel + i} className="ixops__r" data-st={st}><span className="mono">evt_{(2041 + i * 7).toString(16)}</span><em>{f.text}</em><i className="mono">{st === "ok" ? "OK" :  st === "run" ? "RUNNING" : "QUEUED"}</i></div>;
             })}
           </div>
           <div className="ixops__p">
-            <b className="mono">MAPPING</b>
-            <div className="ixops__m"><code>{sel}.id</code><span>→</span><code>{flow[1]?.node ?? "crm"}.external_id</code></div>
-            <div className="ixops__m"><code>{sel}.email</code><span>→</span><code>{flow[1]?.node ?? "crm"}.contact</code></div>
-            <div className="ixops__m"><code>{sel}.amount</code><span>→</span><code>{flow[2]?.node ?? "db"}.total</code></div>
+            <b className="mono">{sel === "stripe" ? "PAYLOAD AND MAPPING" : "MAPPING"}</b>
+            {sel === "stripe" && <pre className="ixops__json mono" data-on={step >= 1}>{PAYLOAD}</pre>}
+            <div className="ixops__m"><code>{sel}.id</code><span>→</span><code>{dest ?? "crm"}.external_id</code></div>
+            <div className="ixops__m"><code>{sel}.email</code><span>→</span><code>{dest ?? "crm"}.contact</code></div>
+            <div className="ixops__m"><code>{sel}.amount</code><span>→</span><code>{dest2 ?? "db"}.total</code></div>
           </div>
           <div className="ixops__p">
             <b className="mono">SYNC HEALTH</b>
             <div className="ixops__h" data-ok={step >= N}><span>Webhook signature</span><i className="mono">VERIFIED</i></div>
-            <div className="ixops__h" data-ok={step >= N}><span>Retries</span><i className="mono">{step > 1 ? "1 RESOLVED" : "PENDING"}</i></div>
+            <div className="ixops__h" data-ok={step >= N}><span>Retries</span><i className="mono">{step >= N ? "NONE NEEDED" : "0 SO FAR"}</i></div>
             <div className="ixops__h" data-ok={step >= N}><span>Systems in sync</span><i className="mono">{step >= N ? "ALL" : "SYNCING"}</i></div>
           </div>
         </div>
