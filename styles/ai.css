@@ -81,3 +81,8 @@
 .ap-int__risk, .ap-int__alert { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(47, 210, 122, 0.45); background: var(--green-dark); color: var(--green-400); } .ap-int__alert { border-color: var(--border-active); background: rgba(255, 122, 26, 0.1); color: var(--orange-300); }
 @media (max-width: 599px) { .ap-sup, .ap-doc, .ap-int { grid-template-columns: 1fr; } .ap-sup__side { display: none; } .ap-sup__cards { grid-template-columns: 1fr; } .ap-int__chart { grid-row: auto; } }
 @media (prefers-reduced-motion: reduce) { .ap [data-on], .ap-track__bar i { transition: none !important; } .ap-scan { animation: none !important; } }
+
+/* integrations: payload packet and local path wake */
+.ixnet__pkt { fill: var(--orange-500); opacity: 0; transition: cx 600ms var(--ease-out), cy 600ms var(--ease-out), opacity 200ms; } .ixnet__pkt[data-on="true"] { opacity: 1; filter: drop-shadow(0 0 3px rgba(255, 122, 26, 0.8)); }
+.ixnet__lines line[data-wake="true"] { stroke: rgba(255, 122, 26, 0.7); stroke-width: 2; }
+@media (prefers-reduced-motion: reduce) { .ixnet__pkt { transition: none; } }

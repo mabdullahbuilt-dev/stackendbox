@@ -31,7 +31,7 @@ const FLOWS: Record<string, Flow[]> = {
 
 function SysBtn({ x, st, sel, onPick }: { x: Sys; st: "idle" | "active" | "done"; sel: boolean; onPick: (k: BrandKey) => void }) {
   return (
-    <button type="button" className="ixnet__node" data-st={st} data-sel={sel} aria-pressed={sel} aria-label={`${x.label}: show what happens when it fires an event`} onClick={() => onPick(x.key)}>
+    <button type="button" className="ixnet__node" data-key={x.key} data-st={st} data-sel={sel} aria-pressed={sel} aria-label={`${x.label}: show what happens when it fires an event`} onClick={() => onPick(x.key)}>
       <span><BrandIcon name={x.key} size={22} /></span><b>{x.label}</b>
     </button>
   );
@@ -45,6 +45,7 @@ export function Integrations() {
   const inView = useInView(box, "-15% 0px -15% 0px");
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const played = useRef(false);
+  const [wake, setWake] = useState<BrandKey | null>(null);
   const flow = FLOWS[sel];
   const N = flow.length;
 
@@ -71,6 +72,19 @@ export function Integrations() {
     return st;
   };
 
+  // Payload packet: sits on the connection of whichever system the current step belongs to.
+  const here = flow[Math.min(step, N - 1)]?.node;
+  const li = LEFT.findIndex((x) => x.key === here), ri = RIGHT.findIndex((x) => x.key === here);
+  const pkt = li >= 0 ? { x: 33.5, y: (Y[li] + 50) / 2 } : ri >= 0 ? { x: 66.5, y: (Y[ri] + 50) / 2 } : { x: 50, y: 50 };
+
+  // Path wake: the single connection nearest the pointer lights up (one local path, never the whole network).
+  const onMapMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || reduced) return;
+    let best: BrandKey | null = null, bd = 90;
+    e.currentTarget.querySelectorAll<HTMLElement>(".ixnet__node").forEach((n) => { const r = n.getBoundingClientRect(); const d = Math.hypot(r.left + r.width / 2 - e.clientX, r.top + r.height / 2 - e.clientY); if (d < bd) { bd = d; best = n.dataset.key as BrandKey; } });
+    setWake((w) => (w === best ? w : best));
+  };
+
   return (
     <section id="integrations" className="section ix-sec aisec" aria-labelledby="int-title">
       <div className="container">
@@ -80,10 +94,11 @@ export function Integrations() {
           <p className="body-l">{copy.integrations.support}</p>
         </Reveal>
         <div className="ixnet">
-          <div className="ixnet__map">
+          <div className="ixnet__map" onPointerMove={onMapMove} onPointerLeave={() => setWake(null)}>
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="ixnet__lines" aria-hidden>
-              {LEFT.map((x, i) => <line key={x.key} x1="26" y1={Y[i]} x2="41" y2="50" data-st={nodeState(x.key)} />)}
-              {RIGHT.map((x, i) => <line key={x.key} x1="59" y1="50" x2="74" y2={Y[i]} data-st={nodeState(x.key)} />)}
+              {LEFT.map((x, i) => <line key={x.key} x1="26" y1={Y[i]} x2="41" y2="50" data-st={nodeState(x.key)} data-wake={wake === x.key} />)}
+              {RIGHT.map((x, i) => <line key={x.key} x1="59" y1="50" x2="74" y2={Y[i]} data-st={nodeState(x.key)} data-wake={wake === x.key} />)}
+              <circle className="ixnet__pkt" cx={pkt.x} cy={pkt.y} r="1.6" data-on={step < N} />
             </svg>
             <div className="ixnet__col ixnet__col--l">
               {LEFT.map((x) => <SysBtn key={x.key} x={x} st={nodeState(x.key)} sel={sel === x.key} onPick={choose} />)}

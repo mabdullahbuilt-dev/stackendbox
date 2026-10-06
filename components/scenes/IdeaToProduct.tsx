@@ -11,6 +11,10 @@ import { BrandIcon } from "@/components/ui/BrandIcon";
 
 const STEPS = ["Brief", "User flow", "Wireframe", "Interface", "Mobile", "Access", "Data", "Billing", "Admin", "Tests", "Live"] as const;
 const LAST = STEPS.length - 1;
+/** Visitor-facing grouping of the 11 internal build stages. */
+const GROUPS: { name: string; from: number; to: number }[] = [
+  { name: "PLAN", from: 0, to: 1 }, { name: "DESIGN", from: 2, to: 3 }, { name: "BUILD", from: 4, to: 8 }, { name: "VERIFY", from: 9, to: 9 }, { name: "SHIP", from: 10, to: 10 },
+];
 const on = (s: number, from: number) => s >= from;
 
 /**
@@ -25,6 +29,19 @@ export function IdeaToProduct() {
   const inView = useInView(box, "-15% 0px -15% 0px");
   const near = useInView(root, "300px 0px 300px 0px");
   const played = useRef(false);
+
+  // Pointer: 3 to 5px depth parallax between interface, logic plane and grid. This stage only, one rAF, fine pointer only.
+  useEffect(() => {
+    const el = box.current;
+    if (!el || reduced || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    let raf = 0, x = 0, y = 0;
+    const apply = () => { raf = 0; el.style.setProperty("--ppx", x.toFixed(3)); el.style.setProperty("--ppy", y.toFixed(3)); };
+    const move = (e: PointerEvent) => { const r = el.getBoundingClientRect(); x = ((e.clientX - r.left) / r.width) * 2 - 1; y = ((e.clientY - r.top) / r.height) * 2 - 1; if (!raf) raf = requestAnimationFrame(apply); };
+    const leave = () => { x = 0; y = 0; if (!raf) raf = requestAnimationFrame(apply); };
+    el.addEventListener("pointermove", move, { passive: true });
+    el.addEventListener("pointerleave", leave);
+    return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
+  }, [reduced]);
 
   // Reduced motion: show the finished product.
   useEffect(() => { if (reduced) setStage(LAST); }, [reduced]);
@@ -70,11 +87,16 @@ export function IdeaToProduct() {
             <p className="eyebrow">{copy.product.eyebrow}</p>
             <h2 id="product-title" className="h2">{copy.product.title}</h2>
             <ol className="ipv__steps" aria-label="Build stages">
-              {STEPS.map((t, i) => (
-                <li key={t} data-st={stage > i ? "done" : stage === i ? "active" : "idle"} aria-current={stage === i ? "step" : undefined}>
-                  <span className="mono">{String(i + 1).padStart(2, "0")}</span>{t}
-                </li>
-              ))}
+              {GROUPS.map((g, i) => {
+                const st = stage > g.to ? "done" : stage >= g.from ? "active" : "idle";
+                return (
+                  <li key={g.name} data-st={st} aria-current={st === "active" ? "step" : undefined}>
+                    <span className="mono">{String(i + 1).padStart(2, "0")}</span>
+                    <b>{g.name}</b>
+                    <em>{st === "active" ? STEPS[stage] : st === "done" ? STEPS.slice(g.from, g.to + 1).join(", ") : STEPS.slice(g.from, g.to + 1)[0]}</em>
+                  </li>
+                );
+              })}
             </ol>
             <div className="ipv__ctas">
               <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("mvp_cta", { placement: "product" }); goToBuilder(e, "SaaS / MVP", "Idea"); }}>{copy.product.cta}<ArrowRight className="arrow" aria-hidden /></Link>

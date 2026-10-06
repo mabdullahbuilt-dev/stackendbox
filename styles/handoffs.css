@@ -1,0 +1,78 @@
+/* CHAPTER HAND-OFFS: the outgoing chapter's real object resolves while the incoming chapter's object arrives.
+   Driven by --exit (outgoing, last half screen) and --enter (incoming, first 62 percent) from the chapter runtime.
+   Transform/opacity only on stage-level wrappers. Nothing delays scrolling and nothing adds page height. */
+
+/* 1 Hero to Services: the stack module detaches toward the lower right and lands as the first grid element */
+#hero .hero__visual { translate: calc(var(--exit, 0) * 28px) calc(var(--exit, 0) * 64px); scale: calc(1 - var(--exit, 0) * 0.14); opacity: calc(1 - var(--exit, 0) * 0.55); }
+#services .svc__grid { transform-origin: 90% 0; translate: 0 calc((1 - var(--enter, 1)) * 26px); scale: calc(0.97 + var(--enter, 1) * 0.03); }
+
+/* 2 Services to Starting Point: the bento settles back and one blueprint frame folds open */
+#services .svc__grid { opacity: calc(1 - var(--exit, 0) * 0.4); }
+#intent .intent__stage { transform-origin: 50% 0; transform: perspective(1100px) rotateX(calc((1 - var(--enter, 1)) * 9deg)); }
+
+/* 3 Starting Point to Product: the starting artifact leaves down and right, the Brief arrives from up and left */
+#intent .sp-wrap { translate: calc(var(--exit, 0) * 80px) calc(var(--exit, 0) * 56px); scale: calc(1 - var(--exit, 0) * 0.1); opacity: calc(1 - var(--exit, 0) * 0.55); }
+#product .ipv-brief { transform: translate(calc((1 - var(--enter, 1)) * -100px), calc((1 - var(--enter, 1)) * -64px)); }
+
+/* 4 Product to Business: the admin layer grows and the management application opens from it */
+#product .ipv__stage { transform-origin: 70% 80%; scale: calc(1 + var(--exit, 0) * 0.07); opacity: calc(1 - var(--exit, 0) * 0.45); }
+#business .bsw__stage { transform-origin: 0 50%; scale: calc(0.95 + var(--enter, 1) * 0.05); }
+
+/* 5 Business to Manual: the selected record slides out and the fragmented tools come in from both sides */
+#business .bsw__r[data-sel="true"] { translate: calc(var(--exit, 0) * 34px) 0; }
+#business .bsw__scene { opacity: calc(1 - var(--exit, 0) * 0.4); }
+#transform .mt { translate: 0 calc((1 - var(--enter, 1)) * 24px); }
+
+/* 6 Manual to AI: the finished system recedes and the capability core grows from the centre */
+#transform .mt { scale: calc(1 - var(--exit, 0) * 0.06); opacity: calc(1 - var(--exit, 0) * 0.4); }
+#ai .aorb { scale: calc(0.9 + var(--enter, 1) * 0.1); opacity: calc(0.3 + var(--enter, 1) * 0.7); }
+
+/* 7 AI to Integrations: orbit ellipses flatten, curves straighten into connection routes */
+#ai .aorb__rings { transform-origin: 50% 50%; transform: scaleY(calc(1 - var(--exit, 0) * 0.75)); opacity: calc(1 - var(--exit, 0) * 0.5); }
+#ai .aorb__sat { opacity: calc(var(--op, 1) * (1 - var(--exit, 0) * 0.5)); }
+#integrations .ixnet__lines { transform-origin: 50% 50%; transform: scaleX(calc(0.72 + var(--enter, 1) * 0.28)); opacity: calc(0.3 + var(--enter, 1) * 0.7); }
+
+/* 8 Integrations to Specialized: the payload enters a gate that rotates open in perspective */
+#integrations .ixnet__map { scale: calc(1 - var(--exit, 0) * 0.06); opacity: calc(1 - var(--exit, 0) * 0.4); }
+#specialized .spc__stage { transform-origin: 50% 0; transform: perspective(1400px) rotateX(calc((1 - var(--enter, 1)) * 7deg)) scale(calc(0.97 + var(--enter, 1) * 0.03)); }
+
+/* 9 Specialized to Work: the finished system pulls back and becomes one gallery tile */
+#specialized .spc__stage { translate: 0 calc(var(--exit, 0) * -10px); opacity: calc(1 - var(--exit, 0) * 0.5); }
+#proof .proof__main { transform-origin: 50% 0; scale: calc(0.95 + var(--enter, 1) * 0.05); }
+
+/* 10 Work to Rescue: a red diagnostic scan crosses the incoming product */
+#rescue .rx { overflow: hidden; }
+#rescue .rx::after { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--enter, 1) * 100%); height: 2px; background: linear-gradient(90deg, transparent, rgba(240, 82, 82, 0.9), transparent); box-shadow: 0 0 24px rgba(240, 82, 82, 0.5); opacity: calc(1 - var(--enter, 1)); pointer-events: none; z-index: 5; }
+
+/* 11 Rescue to Engineering: the healthy interface turns see-through and the architecture rises beneath it */
+#rescue .rx { opacity: calc(1 - var(--exit, 0) * 0.45); }
+#depth .xr__scene { translate: 0 calc((1 - var(--enter, 1)) * 36px); }
+#depth .xr[data-sel="none"] .xr-ui { opacity: calc(0.45 + var(--enter, 1) * 0.55); }
+
+/* 12 Engineering to Process: the layers recompress and flatten toward a top-down artifact */
+#depth .xr__world { transform: rotateX(calc(60deg - var(--exit, 0) * 36deg)) rotateZ(calc(-32deg + var(--exit, 0) * 28deg)); }
+#depth .xr__inspector { opacity: calc(1 - var(--exit, 0) * 0.6); }
+#process .wb__art { scale: calc(0.9 + var(--enter, 1) * 0.1); transform-origin: 50% 0; }
+
+/* 13 Process to Why: SHIP resolves and the warm surface opens from beneath the workbench, no flash */
+#process .wb { opacity: calc(1 - var(--exit, 0) * 0.55); }
+#delivery { clip-path: inset(calc((1 - var(--enter, 1)) * 40px) 0 0 0 round calc((1 - var(--enter, 1)) * 28px) calc((1 - var(--enter, 1)) * 28px) 0 0); }
+
+/* 14 Why to Contact: the project object travels lower right and the brief form rises to receive it */
+#delivery .why__obj { transform: translate(calc(var(--exit, 0) * 36px), calc(var(--exit, 0) * 84px)); opacity: calc(1 - var(--exit, 0) * 0.6); }
+#start .ct { translate: 0 calc((1 - var(--enter, 1)) * 26px); }
+
+/* 15 Contact to Final: the form recedes; the footer chapter converges its own fragments */
+#start .ct { opacity: calc(1 - var(--exit, 0) * 0.45); }
+
+@media (max-width: 767px) {
+  #hero .hero__visual { translate: none; scale: calc(1 - var(--exit, 0) * 0.06); }
+  #intent .intent__stage, #specialized .spc__stage { transform: none; }
+  #depth .xr__world { transform: rotateX(60deg) rotateZ(-32deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #hero .hero__visual, #services .svc__grid, #intent .intent__stage, #intent .sp-wrap, #product .ipv-brief, #product .ipv__stage, #business .bsw__stage, #business .bsw__r, #business .bsw__scene, #transform .mt, #ai .aorb, #ai .aorb__rings, #ai .aorb__sat, #integrations .ixnet__lines, #integrations .ixnet__map, #specialized .spc__stage, #proof .proof__main, #rescue .rx, #depth .xr__scene, #depth .xr__inspector, #process .wb, #process .wb__art, #delivery, #delivery .why__obj, #start .ct { translate: none; scale: none; transform: none; opacity: 1; clip-path: none; }
+  #rescue .rx::after { display: none; }
+  #depth .xr__world { transform: rotateX(60deg) rotateZ(-32deg); }
+}
+:root[data-motion="reduced"] #hero .hero__visual, :root[data-motion="reduced"] #delivery { translate: none; scale: none; transform: none; opacity: 1; clip-path: none; }
