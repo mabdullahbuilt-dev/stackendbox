@@ -72,3 +72,21 @@
 .wb[data-s="4"] .wb__rule::after { background: var(--green-400); }
 .wb__bench { min-height: calc(var(--u) * 520); }
 @media (max-width: 899px) { .wb__out { display: none; } .wb__rule::after { width: calc(var(--z, 0) * 25%); } }
+
+/* One artifact, one bench: no zone boxes. The artifact travels along the rail; a short note beside it lists what this
+   stage produces. Desktop: short sticky runway (6 beats). */
+.proc__sticky { padding-block: var(--sec-y); }
+.wb__bench { min-height: 0; grid-template-rows: auto auto 1fr; }
+.wb__art { width: 36%; margin-left: calc(var(--z, 0) * 16%); min-height: calc(var(--u) * 300); }
+.wb__note { position: absolute; top: calc(var(--u) * 92); width: 26%; display: grid; gap: 8px; animation: wb-note 360ms var(--ease-out) both; left: calc(var(--z, 0) * 16% * 0.96 + 40%); }
+.wb[data-s="3"] .wb__note, .wb[data-s="4"] .wb__note { left: calc(var(--z, 0) * 16% - 28%); }
+@keyframes wb-note { from { opacity: 0; translate: 0 8px; } }
+.wb__note ul { display: flex; flex-wrap: wrap; gap: 6px; } .wb__note li { padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text-secondary); font-size: max(9px, calc(var(--u) * 11)); letter-spacing: 0.06em; } .wb__note p { margin: 0; color: var(--text-muted); font-size: max(11px, calc(var(--u) * 13)); }
+.wb { background: radial-gradient(60% 70% at calc(18% + var(--z, 0) * 16%) 70%, rgba(255, 122, 26, 0.09), transparent 70%), #0d0e0d; }
+@media (min-width: 900px) { .wbx__tabs { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 1000px) and (min-height: 680px) {
+  .proc { height: calc(100svh + 110vh); }
+  .proc__sticky { position: sticky; top: 0; height: 100svh; padding-block: 88px 24px; display: grid; align-content: center; }
+}
+@media (max-width: 899px) { .wb__note { position: static; width: auto; animation: none; } .wb__bench { grid-template-rows: auto; } }
+@media (prefers-reduced-motion: reduce) { .wb__note { animation: none; } }

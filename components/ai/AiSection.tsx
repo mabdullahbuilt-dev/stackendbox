@@ -68,7 +68,6 @@ export function AiSection() {
   const inView = useInView(box, "-15% 0px -15% 0px");
   const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const played = useRef(false);
   const sc = SCENARIOS[tab];
   const N = sc.steps.length;
   const orb = useRef<HTMLDivElement>(null);
@@ -88,13 +87,15 @@ export function AiSection() {
     timer.current = setInterval(() => { k += 1; setStep(k); if (k >= n) clearInterval(timer.current); }, 850);
   };
   useEffect(() => { if (reduced) setStep(N); }, [reduced, N, tab]);
+  // Every visit replays: entering starts the first scenario; leaving stops everything and resets.
+  const lastUser = useRef(0);
   useEffect(() => {
-    if (reduced || !inView || played.current) return;
-    played.current = true;
-    const t = setTimeout(() => dock(0, LEAD[0]), 500);
+    if (reduced) return;
+    if (!inView) { clearInterval(timer.current); setDocked(null); setStep(0); setTab(0); return; }
+    const t = setTimeout(() => dock(0, LEAD[0], true), 500);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, reduced, N]);
+  }, [inView, reduced]);
   useEffect(() => () => clearInterval(timer.current), []);
 
   const paint = useCallback(() => {
@@ -121,7 +122,7 @@ export function AiSection() {
       d.raf = 0;
       const dt = Math.min(48, now - d.last); d.last = now;
       if (now < d.until && !d.paused && !dockedRef.current) {
-        (Object.keys(ORBIT) as NodeKey[]).forEach((k) => { ang.current[k] += dt * (ORBIT[k].ring === 0 ? 0.0032 : -0.0042); });
+        (Object.keys(ORBIT) as NodeKey[]).forEach((k) => { ang.current[k] += dt * (ORBIT[k].ring === 0 ? 0.006 : -0.0045); });
         paint();
         d.raf = requestAnimationFrame(tick);
       }
@@ -137,17 +138,17 @@ export function AiSection() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [paint]);
-  useEffect(() => { if (inView) startDrift(2200); else { cancelAnimationFrame(drift.current.raf); drift.current.raf = 0; } }, [inView, startDrift]);
+  useEffect(() => { if (inView) startDrift(Infinity); else { cancelAnimationFrame(drift.current.raf); drift.current.raf = 0; } }, [inView, startDrift]);
   useEffect(() => () => cancelAnimationFrame(drift.current.raf), []);
   // when the run finishes the capability returns to its orbit and the scene settles
   useEffect(() => {
     if (docked && step >= N) {
-      const t = setTimeout(() => { setDocked(null); startDrift(2500); }, reduced ? 0 : 1300);
+      const t = setTimeout(() => { setDocked(null); startDrift(Infinity); }, reduced ? 0 : 1300);
       return () => clearTimeout(t);
     }
   }, [docked, step, N, reduced, startDrift]);
 
-  const dock = (i: number, key: NodeKey) => { setTab(i); setDocked(key); track("scene_replay", { scene: "ai", scenario: SCENARIOS[i].id, node: key }); if (reduced) setStep(SCENARIOS[i].steps.length); else play(SCENARIOS[i].steps.length); };
+  const dock = (i: number, key: NodeKey, auto = false) => { if (!auto) lastUser.current = Date.now(); setTab(i); setDocked(key); if (!auto) track("scene_replay", { scene: "ai", scenario: SCENARIOS[i].id, node: key }); if (reduced) setStep(SCENARIOS[i].steps.length); else play(SCENARIOS[i].steps.length); };
   const pick = (i: number) => dock(i, LEAD[i]);
   const pickByNode = (key: NodeKey) => { const i = LEAD.indexOf(key); dock(i >= 0 ? i : SCENARIOS.findIndex((s) => s.steps.some((x) => x.node === key)), key); };
   const onKey = (e: React.KeyboardEvent) => {
@@ -156,6 +157,15 @@ export function AiSection() {
     else if (e.key === "ArrowUp" || e.key === "ArrowLeft") i = (tab - 1 + SCENARIOS.length) % SCENARIOS.length;
     if (i >= 0) { e.preventDefault(); pick(i); tabs.current[i]?.focus(); }
   };
+
+  // Gentle auto-cycle while the chapter stays in view: the next scenario docks a few seconds after one finishes,
+  // unless the visitor chose a scenario in the last 12 seconds.
+  useEffect(() => {
+    if (reduced || !inView || docked || step < N) return;
+    const t = setTimeout(() => { if (Date.now() - lastUser.current < 12000) return; const n = (tab + 1) % SCENARIOS.length; dock(n, LEAD[n], true); }, 4200);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docked, step, N, inView, reduced, tab]);
 
   // state of each node derived from the steps played so far
   const nodeState = (k: NodeKey): "idle" | "active" | "done" | "blocked" => {
@@ -167,7 +177,6 @@ export function AiSection() {
     });
     return st;
   };
-  const current = sc.steps[Math.min(step, N - 1)];
   return (
     <section id="ai" className="section section--alt aisec" aria-labelledby="ai-title">
       <div className="container">
@@ -176,7 +185,7 @@ export function AiSection() {
           <h2 id="ai-title" className="h2">{copy.ai.title}</h2>
         </Reveal>
         <div className="aix">
-          <div className="aorb" ref={box} data-docked={docked ?? ""} onPointerEnter={() => { drift.current.paused = true; }} onPointerLeave={() => { drift.current.paused = false; }}>
+          <div className="aorb" ref={box} data-docked={docked ?? ""} onPointerEnter={() => { drift.current.paused = true; }} onPointerLeave={() => { drift.current.paused = false; startDrift(Infinity); }}>
             <div className="aorb__plane" ref={orb}>
               <svg className="aorb__rings" width={dim.w} height={dim.h} viewBox={`0 0 ${dim.w} ${dim.h}`} aria-hidden>
                 {[0, 1].map((r) => <ellipse key={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * rxFor(dim.w)[r]} ry={dim.h * RY[r]} data-ring={r} />)}
@@ -199,18 +208,13 @@ export function AiSection() {
               ))}
             </div>
             <div id="ai-panel" role="tabpanel" aria-labelledby={`ai-${sc.id}`}>
-              <ol className="aix__steps" aria-label="What the system does">
-                {sc.steps.map((s, i) => {
-                  const st = step > i ? "done" : step === i ? (s.state === "blocked" ? "blocked" : "active") : "idle";
-                  return <li key={sc.id + i} data-st={st}><span className="mono">{String(i + 1).padStart(2, "0")}</span>{s.text}</li>;
-                })}
-              </ol>
               <div className="aix__ui" aria-hidden>
                 <div className="aix__ui-h"><b>{sc.ui.title}</b><span className="mono" data-done={step >= N}>{step >= N ? "DONE" : "WORKING"}</span></div>
+                <div className="aix__trail" aria-hidden><i style={{ width: `${(Math.min(step, N) / N) * 100}%` }} /><em className="mono">{String(Math.min(step + 1, N)).padStart(2, "0")} / {String(N).padStart(2, "0")} · {sc.steps[Math.min(step, N - 1)].text}</em></div>
                 {(() => { const App = APPS[sc.id]; return <App step={step} />; })()}
                 <div className="aix__ui-f" data-on={step >= N}>{sc.ui.result}</div>
               </div>
-              <p className="sr-only" aria-live="polite">{current.text}</p>
+              <p className="sr-only">{sc.steps.map((x) => x.text).join(", ")}.</p>
             </div>
             <Link href="/#start" className="btn btn--primary" onClick={(e) => { track("ai_cta", { placement: "ai", scenario: sc.id }); goToBuilder(e, "AI System"); }}>{sc.cta}<ArrowRight className="arrow" aria-hidden /></Link>
           </div>

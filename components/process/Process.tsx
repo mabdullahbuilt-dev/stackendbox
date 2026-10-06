@@ -1,9 +1,9 @@
 "use client";
 import { Blocks, Check, ClipboardList, Database, Gauge, LayoutTemplate, PackageCheck, PenTool, Plug, Rocket, ShieldCheck, Smartphone, Target, TriangleAlert, Users, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useChapterStep } from "@/lib/chapters";
 import { copy } from "@/content/copy";
 import { steps } from "@/content/process";
-import { useInView } from "@/lib/hooks";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { Reveal } from "@/components/ui/Reveal";
 import { Aperture } from "@/components/site/Aperture";
@@ -17,14 +17,14 @@ const icons: LucideIcon[] = [Target, PenTool, Blocks, ShieldCheck, PackageCheck]
  */
 export function Process() {
   const { reduced } = useMotionPreference();
-  const [stage, setStage] = useState(0);
+  // Scroll drives one artifact through the bench and back: discover, design, build, verify (issue caught), verify (fixed), ship.
+  const raw = useChapterStep("process", 6);
+  const [pickd, setPickd] = useState<{ i: number; at: number } | null>(null);
+  const s6 = reduced ? 5 : raw;
+  const stage = pickd && pickd.at === raw ? pickd.i : [0, 1, 2, 3, 3, 4][s6];
+  const fix = pickd && pickd.at === raw ? pickd.i > 3 : s6 >= 4;
   const box = useRef<HTMLDivElement>(null);
-  const inView = useInView(box, "-20% 0px -20% 0px", true);
-  const [fix, setFix] = useState(false);
-  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  useEffect(() => { if (reduced) { setStage(4); setFix(true); } }, [reduced]);
   // Measurement guide that follows the pointer over the workbench only (one rAF, fine pointer, no particles).
   useEffect(() => {
     const el = box.current;
@@ -37,22 +37,7 @@ export function Process() {
     el.addEventListener("pointerleave", leave);
     return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
   }, [reduced]);
-  useEffect(() => {
-    if (reduced || !inView) return;
-    let k = 0;
-    setStage(0);
-    timer.current = setInterval(() => { k += 1; setStage(k); if (k >= 4) clearInterval(timer.current); }, 1500);
-    return () => clearInterval(timer.current);
-  }, [inView, reduced]);
-  useEffect(() => {
-    // the verify stage shows one failing check, then the fix
-    if (stage !== 3) { setFix(stage > 3); return; }
-    setFix(false);
-    const t = setTimeout(() => setFix(true), reduced ? 0 : 900);
-    return () => clearTimeout(t);
-  }, [stage, reduced]);
-
-  const pick = (i: number) => { clearInterval(timer.current); setStage(i); };
+  const pick = (i: number) => setPickd({ i, at: raw });
   const onKey = (e: React.KeyboardEvent) => {
     let i = -1;
     if (e.key === "ArrowDown" || e.key === "ArrowRight") i = Math.min(4, stage + 1);
@@ -63,14 +48,15 @@ export function Process() {
   const cur = steps[stage];
 
   const stations: [string, string[]][] = [
-    ["Brief, users, constraints", ["USERS", "CONSTRAINTS", "OUTCOME"]],
+    ["Brief, users, constraints, outcome", ["REQUIREMENTS", "USERS", "CONSTRAINTS", "OUTCOME"]],
     ["Flow, wireframe, architecture", ["FLOW", "WIREFRAME", "SYSTEM MAP"]],
     ["Components, API, data", ["COMPONENTS", "API", "DATA"]],
     ["Responsive, tests, edge cases", ["RESPONSIVE", "TEST SUITE", "PERMISSIONS"]],
     ["Deploy, monitor, iterate", ["BUILD", "RELEASE", "MONITOR"]],
   ];
   return (
-    <section id="process" className="section proc" aria-labelledby="process-title">
+    <section id="process" className="proc" data-scroll="pin" aria-labelledby="process-title">
+      <div className="proc__sticky">
       <div className="container">
         <Reveal className="sec-head">
           <p className="eyebrow">{copy.process.eyebrow}</p>
@@ -93,19 +79,11 @@ export function Process() {
           <div id="px-panel" role="tabpanel" aria-labelledby={`px-${cur.id}`} className="wb" ref={box} data-s={stage} style={{ ["--z" as string]: stage }}>
             <div className="wb__bench" aria-hidden>
               <i className="wb__guide wb__guide--x" /><i className="wb__guide wb__guide--y" />
-              <div className="wb__zones">
-                {stations.map(([t, cells], i) => (
-                  <div key={t} className="wb__zone" data-st={stage > i ? "done" : stage === i ? "active" : "idle"}>
-                    <span className="wb__zl mono">{steps[i].n} {steps[i].word.toUpperCase()}</span>
-                    <ul className="wb__cells mono">{cells.map((c) => <li key={c}>{c}</li>)}</ul>
-                    <em className="wb__tick">{stage > i ? <Check /> : null}</em>
-                  </div>
-                ))}
-              </div>
               <div className="wb__rule" />
               <ul className="wb__out mono" aria-hidden>
                 {OUT.map(([t, at]) => <li key={t} data-on={stage >= at}>{stage >= at ? <Check /> : null}{t}</li>)}
               </ul>
+              <div className="wb__note" key={stage}><ul>{stations[stage][1].map((c) => <li key={c} className="mono">{c}</li>)}</ul><p>{stations[stage][0]}</p></div>
               <div className="wb__art">
                 <div className="wb__face wb__face--note" data-on={stage === 0}><span className="mono">BRIEF</span><p>Client portal: accounts, requests, payments, admin</p>
                   <div className="px-reqs">{[[Users, "Users"], [Plug, "Systems"], [ClipboardList, "Rules"]].map(([Ic, t]) => { const I = Ic as LucideIcon; return <span key={t as string}><I />{t as string}</span>; })}</div>
@@ -130,6 +108,7 @@ export function Process() {
             </div>
           </div>
         </div>
+      </div>
       </div>
       <Aperture kind="live" />
     </section>

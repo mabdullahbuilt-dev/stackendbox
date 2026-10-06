@@ -88,3 +88,9 @@
 @media (prefers-reduced-motion: reduce) { .ixnet__pkt { transition: none; } }
 
 .ixops__json { margin: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.03); color: var(--text-secondary); font-size: 11px; white-space: pre-wrap; opacity: 0.35; transition: opacity 300ms, border-color 300ms; } .ixops__json[data-on="true"] { opacity: 1; border-color: var(--border-active); color: var(--orange-300); }
+/* AI: one viewport chapter (title, orbit, application). Step trail replaces the long step list. */
+.aisec { padding-block: clamp(72px, 9vh, 112px); }
+.aisec .sec-head { margin-bottom: clamp(18px, 2.6vh, 32px); }
+.aix__trail { position: relative; display: grid; gap: 6px; padding: 8px 12px 10px; border-bottom: 1px solid var(--border); } .aix__trail::before { content: ""; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); } .aix__trail i { position: absolute; left: 12px; top: 8px; height: 3px; max-width: calc(100% - 24px); border-radius: 2px; background: var(--green-400); transition: width 500ms var(--ease-out); } .aix__trail em { font-style: normal; font-size: 11px; color: var(--text-secondary); letter-spacing: 0.04em; }
+.aix__side { gap: 16px; }
+@media (min-width: 1000px) { .aix { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); } .aorb { max-width: 600px; } }

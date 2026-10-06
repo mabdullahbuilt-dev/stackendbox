@@ -1,10 +1,10 @@
 "use client";
 import { ArrowRight, Bot, Check, Database, Lock, Rocket, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useChapterStep } from "@/lib/chapters";
 import { copy } from "@/content/copy";
 import { track } from "@/lib/analytics";
-import { useInView } from "@/lib/hooks";
 import { goToBuilder } from "@/lib/intent";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 import { BrandIcon } from "@/components/ui/BrandIcon";
@@ -85,23 +85,14 @@ function Slab({ id }: { id: string }) {
  */
 export function UnderInterface() {
   const { reduced } = useMotionPreference();
-  const [sel, setSel] = useState<number | null>(null);
+  // Scroll drives the layer sequence (and reverses it): 0 complete product, 1..9 one layer each, 10 complete and verified.
+  const raw = useChapterStep("depth", LAYERS.length + 2);
+  const [pickd, setPickd] = useState<{ i: number | null; at: number } | null>(null);
+  const auto = reduced ? null : raw >= 1 && raw <= LAYERS.length ? raw - 1 : null;
+  const sel = pickd && pickd.at === raw ? pickd.i : auto;
   const box = useRef<HTMLDivElement>(null);
-  const inView = useInView(box, "-20% 0px -20% 0px");
-  const tour = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const toured = useRef(false);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  const stopTour = useCallback(() => { clearInterval(tour.current); tour.current = undefined; }, []);
-  // One short tour on first view so the stack explains itself, then it rests on the complete product.
-  useEffect(() => {
-    if (reduced || !inView || toured.current) return;
-    toured.current = true;
-    let k = 0;
-    setSel(0);
-    tour.current = setInterval(() => { k += 1; if (k >= LAYERS.length) { stopTour(); setSel(null); } else setSel(k); }, 1100);
-  }, [inView, reduced, stopTour]);
-  useEffect(() => stopTour, [stopTour]);
+  const setSel = (i: number | null) => setPickd({ i, at: raw });
 
   // Pointer parallax (max 2.5 degrees), this stage only, one rAF, fine pointer only.
   useEffect(() => {
@@ -116,7 +107,7 @@ export function UnderInterface() {
     return () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerleave", leave); if (raf) cancelAnimationFrame(raf); };
   }, [reduced]);
 
-  const pick = (i: number | null, how: string) => { stopTour(); setSel(i); if (i !== null) track("scene_replay", { scene: "depth", layer: LAYERS[i].id, method: how }); };
+  const pick = (i: number | null, how: string) => { setSel(i); if (i !== null) track("scene_replay", { scene: "depth", layer: LAYERS[i].id, method: how }); };
   const onKey = (e: React.KeyboardEvent) => {
     const n = LAYERS.length;
     const cur = sel ?? -1;
@@ -129,7 +120,8 @@ export function UnderInterface() {
 
   const L = sel !== null ? LAYERS[sel] : null;
   return (
-    <section id="depth" className="dpx" aria-labelledby="depth-title" data-sel={sel ?? "none"}>
+    <section id="depth" className="dpx" data-scroll="pin" aria-labelledby="depth-title" data-sel={sel ?? "none"}>
+      <div className="dpx__sticky">
       <div className="container dpx__in">
         <div className="dpx__copy">
           <p className="eyebrow">{copy.depth.eyebrow}</p>
@@ -138,7 +130,7 @@ export function UnderInterface() {
           <div className="dpx__list" role="tablist" aria-orientation="vertical" aria-label="Layers behind the interface" onKeyDown={onKey}>
             {LAYERS.map((l, i) => (
               <button key={l.id} ref={(el) => { tabs.current[i] = el; }} role="tab" id={`xr-${l.id}`} aria-selected={sel === i} aria-controls="xr-panel" tabIndex={sel === i || (sel === null && i === 0) ? 0 : -1} className="dpx__tab" data-st={sel === i ? "active" : "idle"}
-                onClick={() => pick(sel === i ? null : i, "click")} onPointerEnter={(e) => { if (e.pointerType === "mouse" && !tour.current) setSel((s) => (s === null ? i : s)); }}>
+                onClick={() => pick(sel === i ? null : i, "click")} >
                 <span className="mono">{String(i + 1).padStart(2, "0")}</span><b>{l.title}</b><em>{l.sub}</em>
               </button>
             ))}
@@ -170,11 +162,12 @@ export function UnderInterface() {
             {L ? (
               <div key={L.id} className="xr__ins"><b className="mono">{String((sel ?? 0) + 1).padStart(2, "0")} {L.inspect}</b><Inspector id={L.id} /></div>
             ) : (
-              <p className="xr__hint mono">SELECT A LAYER</p>
+              <p className="xr__hint mono">NINE LAYERS UNDER ONE INTERFACE · SCROLL TO INSPECT EACH</p>
             )}
           </div>
-          <span className="xr__live" data-on={sel === null}><ShieldCheck /> Complete product, all checks passing</span>
+          <span className="xr__live" data-on={sel === null && raw > LAYERS.length}><ShieldCheck /> Complete product, all checks passing</span>
         </div>
+      </div>
       </div>
       <p className="sr-only">An application is shown with nine layers beneath its interface: logic, authentication, API, database, AI, integrations, testing and delivery. Selecting a layer opens an inspector for it.</p>
     </section>
