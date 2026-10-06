@@ -87,3 +87,4 @@
 }
 @media (prefers-reduced-motion: reduce) { .spc *, .spc *::before { transition: none !important; animation: none !important; } }
 :root[data-motion="reduced"] .spc *, :root[data-motion="reduced"] .spc *::before { transition: none !important; animation: none !important; }
+.w3 { pointer-events: none; } .w3 > * { pointer-events: auto; } .w3__meta { pointer-events: none; }
