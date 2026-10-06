@@ -10,5 +10,5 @@ for (let y = 0; y < total; y += 500) { await p.evaluate((y) => scrollTo(0, y), y
 await p.evaluate((s) => { const e = document.querySelector(s); const r = e.getBoundingClientRect(); scrollTo(0, scrollY + r.top - Math.max(70, (innerHeight - r.height) / 2)); }, stage);
 await p.waitForTimeout(500);
 const n = await p.locator(tabSel).count();
-for (let i = 0; i < n; i++) { await p.locator(tabSel).nth(i).click(); await p.waitForTimeout(+wait); const box = await p.locator(stage).boundingBox(); await p.screenshot({ path: `${out}-${i}.png`, clip: box }); }
+for (let i = 0; i < n; i++) { await p.locator(tabSel).nth(i).click(); await p.waitForTimeout(+wait); await p.locator(stage).screenshot({ path: `${out}-${i}.png` }); }
 await b.close();
