@@ -84,3 +84,12 @@
 .ipv-req li { display: flex; align-items: center; gap: 8px; padding: calc(var(--u) * 9) calc(var(--u) * 12); border-radius: 10px; border: 1px solid rgba(255, 122, 26, 0.4); background: rgba(255, 122, 26, 0.06); color: var(--text-secondary); font-size: max(9px, calc(var(--u) * 11)); letter-spacing: 0.06em; transition: opacity 400ms var(--ease-out), translate 400ms var(--ease-out); transition-delay: calc(var(--i) * 50ms); } .ipv-req i { width: 6px; height: 6px; border-radius: 50%; background: var(--orange-500); flex: none; }
 .ipv__canvas:not([data-focus="true"]) .ipv-req { left: calc(var(--u) * 210); top: calc(var(--u) * 300); width: calc(var(--u) * 360); grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 767px) { .ipv-req { left: calc(var(--u) * 12); top: calc(var(--u) * 330); width: calc(var(--u) * 396); grid-template-columns: repeat(3, 1fr); } }
+/* phones and tablets: sign-in and payments sit side by side under the window, the phone ends above them and the
+   status chips get their own row, so no card covers another at any stage */
+@media (max-width: 899px) {
+  .ipv-phone { height: calc(var(--u) * 168); }
+  .ipv-auth { top: calc(var(--u) * 372); width: calc(var(--u) * 152); }
+  .ipv-bill { left: calc(var(--u) * 172); top: calc(var(--u) * 372); width: calc(var(--u) * 152); }
+  .ipv-chips { top: calc(var(--u) * 478); }
+}
+@media (max-width: 899px) { .ipv__canvas .ipv-req, .ipv__canvas:not([data-focus="true"]) .ipv-req { left: calc(var(--u) * 12); top: calc(var(--u) * 300); width: calc(var(--u) * 396); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } }

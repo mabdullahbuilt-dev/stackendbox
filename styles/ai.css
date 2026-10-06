@@ -42,19 +42,6 @@
 .ixnet__core { align-self: center; justify-self: center; position: relative; z-index: 1; display: grid; justify-items: center; gap: 4px; text-align: center; padding: 14px 10px; border-radius: 16px; border: 1px solid var(--border-strong); background: var(--surface-raised); box-shadow: var(--shadow-2); width: 100%; transition: border-color 500ms; } .ixnet__core svg { width: 26px; height: 26px; color: var(--orange-400); stroke-width: 1.5; } .ixnet__core b { font-size: clamp(11px, 1.4vw, 14px); font-weight: 500; } .ixnet__core em { font-style: normal; font-size: clamp(7px, .9vw, 9px); color: var(--text-secondary); letter-spacing: .06em; } .ixnet__core[data-done="true"] { border-color: rgba(47,210,122,.55); } .ixnet__core[data-done="true"] svg { color: var(--success); }
 
 /* AI orbit: the only orbital scene on the page. Ellipses seen at an angle, six capabilities, dock > run > return > settle. */
-.aorb { position: relative; width: 100%; max-width: 680px; aspect-ratio: 16 / 11; margin-inline: auto; } .aorb__plane { position: absolute; inset: 0; }
-.aorb__rings { position: absolute; inset: 0; overflow: visible; } .aorb__rings ellipse { fill: none; stroke: rgba(247, 248, 245, 0.16); stroke-width: 1; stroke-dasharray: 2 6; } .aorb__rings ellipse[data-ring="1"] { stroke: rgba(47, 210, 122, 0.22); }
-.aorb__core { pointer-events: none; position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 1; width: clamp(92px, 17%, 118px); aspect-ratio: 1; border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 2px; text-align: center; background: radial-gradient(circle at 50% 35%, var(--surface-higher), var(--surface-raised)); border: 1px solid rgba(47, 210, 122, 0.45); box-shadow: 0 0 0 8px rgba(47, 210, 122, 0.05), var(--shadow-2); transition: border-color 400ms, box-shadow 500ms; }
-.aorb__core svg { width: 26px; height: 26px; color: var(--green-400); stroke-width: 1.5; } .aorb__core b { font-size: clamp(10px, 1.3vw, 13px); font-weight: 500; } .aorb__core em { font-style: normal; font-size: clamp(7px, .85vw, 9px); color: var(--text-secondary); max-width: 90%; }
-.aorb__core[data-busy="true"] { border-color: var(--orange-500); box-shadow: 0 0 0 10px rgba(255, 122, 26, 0.08), var(--shadow-2); } .aorb__core[data-busy="true"] svg { color: var(--orange-400); } .aorb__core[data-done="true"] { border-color: rgba(47, 210, 122, 0.8); }
-.aorb__sat { --tx: 0px; --ty: 0px; --sc: 1; --op: 1; position: absolute; left: 50%; top: 50%; display: grid; justify-items: center; gap: 3px; width: 76px; padding: 0; color: inherit; cursor: pointer; opacity: var(--op); translate: calc(-50% + var(--tx)) calc(-50% + var(--ty)); scale: var(--sc); transition: translate 650ms var(--ease-out), scale 650ms var(--ease-out), opacity 300ms; }
-.aorb__sat > span { display: grid; place-items: center; width: clamp(36px, 5.6vw, 46px); aspect-ratio: 1; border-radius: 13px; border: 1px solid var(--border-strong); background: var(--surface-higher); color: var(--text-secondary); transition: border-color 300ms, background 300ms, color 300ms; } .aorb__sat svg { width: 46%; height: auto; stroke-width: 1.6; }
-.aorb__sat b { font-size: clamp(9px, 1.15vw, 12px); font-weight: 500; color: var(--text-secondary); text-align: center; line-height: 1.15; }
-@media (hover: hover) { .aorb__sat:hover { --tx: calc(var(--tx) * 1.03); } .aorb__sat:hover > span { border-color: rgba(255, 122, 26, 0.6); } .aorb__sat:hover b { color: var(--text-primary); } }
-.aorb__sat:focus-visible > span { box-shadow: var(--focus-ring); }
-.aorb__sat[data-st="active"] > span { border-color: var(--orange-500); background: rgba(255, 122, 26, 0.14); color: var(--orange-400); } .aorb__sat[data-st="done"] > span { border-color: rgba(47, 210, 122, 0.55); background: var(--green-dark); color: var(--success); } .aorb__sat[data-st="blocked"] > span { border-color: var(--red-500); background: var(--red-dark); color: var(--red-400); }
-.aorb__sat[data-docked="true"] { translate: -50% calc(-50% - 104px); scale: 1.05; z-index: 30 !important; opacity: 1; } .aorb__sat[data-docked="true"] > span { border-color: var(--orange-500); }
-@media (prefers-reduced-motion: reduce) { .aorb__sat, .aorb__core { transition: none !important; } }
 :root[data-motion="reduced"] .aorb__sat, :root[data-motion="reduced"] .aorb__core { transition: none !important; }
 
 /* AI application panels: real surfaces for each scenario */
@@ -93,4 +80,41 @@
 .aisec .sec-head { margin-bottom: clamp(18px, 2.6vh, 32px); }
 .aix__trail { position: relative; display: grid; gap: 6px; padding: 8px 12px 10px; border-bottom: 1px solid var(--border); } .aix__trail::before { content: ""; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); } .aix__trail i { position: absolute; left: 12px; top: 8px; height: 3px; max-width: calc(100% - 24px); border-radius: 2px; background: var(--green-400); transition: width 500ms var(--ease-out); } .aix__trail em { font-style: normal; font-size: 11px; color: var(--text-secondary); letter-spacing: 0.04em; }
 .aix__side { gap: 16px; }
-@media (min-width: 1000px) { .aix { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); } .aorb { max-width: 600px; } }
+@media (min-width: 1000px) { .aix { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); } }
+
+/* AI orbit: one core, two orbital planes, six engineered modules. Orange = running, green = done, red = exception. */
+.aorb { position: relative; width: 100%; max-width: 620px; aspect-ratio: 580 / 480; margin-inline: auto; } .aorb__plane { position: absolute; inset: 0; }
+.aorb[data-compact="true"] { aspect-ratio: 1 / 1; max-width: 420px; }
+.aorb__rings { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.aorb__ring { fill: none; stroke: url(#aorb-ring); stroke-width: 1.25; } .aorb__ring[data-ring="1"] { stroke-dasharray: 1 5; stroke-linecap: round; stroke-width: 1.6; }
+.aorb__beam { stroke: transparent; stroke-width: 1.5; stroke-linecap: round; transition: stroke 300ms; } .aorb__beam[data-st="active"] { stroke: rgba(255, 122, 26, 0.85); stroke-dasharray: 3 5; animation: aorb-flow 700ms linear infinite; } .aorb__beam[data-st="done"] { stroke: rgba(47, 210, 122, 0.45); } .aorb__beam[data-st="blocked"] { stroke: rgba(240, 82, 82, 0.8); }
+@keyframes aorb-flow { to { stroke-dashoffset: -16; } }
+.aorb__core { pointer-events: none; position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 10; width: calc(var(--k) * 124px); aspect-ratio: 1; border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 3px; text-align: center;
+  background: radial-gradient(circle at 50% 30%, #1d2420, #0e1210 70%); border: 1px solid rgba(47, 210, 122, 0.5); box-shadow: 0 0 0 calc(var(--k) * 10px) rgba(47, 210, 122, 0.05), 0 0 42px rgba(47, 210, 122, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08); transition: border-color 400ms, box-shadow 500ms; }
+.aorb__core svg { width: calc(var(--k) * 24px); height: calc(var(--k) * 24px); color: var(--green-400); stroke-width: 1.5; }
+.aorb__core b { font-size: calc(var(--k) * 12.5px); font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+.aorb__core em { font-style: normal; font-size: calc(var(--k) * 9px); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); max-width: 84%; line-height: 1.25; }
+.aorb__core[data-busy="true"] { border-color: var(--orange-500); box-shadow: 0 0 0 calc(var(--k) * 12px) rgba(255, 122, 26, 0.07), 0 0 46px rgba(255, 122, 26, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08); } .aorb__core[data-busy="true"] svg { color: var(--orange-400); }
+.aorb__core[data-done="true"] { border-color: rgba(47, 210, 122, 0.85); }
+.aorb__sat { --tx: 0px; --ty: 0px; --sc: 1; --op: 1; position: absolute; left: 50%; top: 50%; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 11px 6px 6px; border-radius: 13px; color: inherit; cursor: pointer; opacity: var(--op); translate: calc(-50% + var(--tx)) calc(-50% + var(--ty)); scale: var(--sc); will-change: translate;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)), #121513; border: 1px solid rgba(255, 255, 255, 0.11); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 10px 24px rgba(0, 0, 0, 0.4); transition: border-color 300ms, box-shadow 300ms; }
+.aorb__ic { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; flex: none; background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-secondary); transition: color 300ms, background 300ms, border-color 300ms; } .aorb__ic svg { width: 15px; height: 15px; stroke-width: 1.7; }
+.aorb__sat b { font-size: 12px; font-weight: 500; color: var(--text-primary); line-height: 1.15; text-align: left; max-width: 9ch; white-space: normal; }
+.aorb__dot { position: absolute; top: 5px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, 0.22); }
+.aorb__sat[data-st="active"] { border-color: rgba(255, 122, 26, 0.75); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 3px rgba(255, 122, 26, 0.12), 0 10px 24px rgba(0, 0, 0, 0.4); } .aorb__sat[data-st="active"] .aorb__ic { color: var(--orange-400); background: rgba(255, 122, 26, 0.14); border-color: rgba(255, 122, 26, 0.5); } .aorb__sat[data-st="active"] .aorb__dot { background: var(--orange-500); box-shadow: 0 0 6px var(--orange-500); }
+.aorb__sat[data-st="done"] { border-color: rgba(47, 210, 122, 0.45); } .aorb__sat[data-st="done"] .aorb__ic { color: var(--success); background: var(--green-dark); border-color: rgba(47, 210, 122, 0.4); } .aorb__sat[data-st="done"] .aorb__dot { background: var(--success); }
+.aorb__sat[data-st="blocked"] { border-color: rgba(240, 82, 82, 0.75); } .aorb__sat[data-st="blocked"] .aorb__ic { color: var(--red-400); background: var(--red-dark); } .aorb__sat[data-st="blocked"] .aorb__dot { background: var(--red-500); }
+.aorb__sat[data-docked="true"] { border-color: var(--orange-500); }
+@media (hover: hover) { .aorb__sat:hover { border-color: rgba(255, 122, 26, 0.6); } }
+.aorb__sat:focus-visible { box-shadow: var(--focus-ring); }
+.aorb[data-compact="true"] .aorb__sat { flex-direction: column; gap: 4px; padding: 6px 6px 5px; } .aorb[data-compact="true"] .aorb__sat b { font-size: 11px; text-align: center; max-width: 10ch; }
+@media (prefers-reduced-motion: reduce) { .aorb__sat, .aorb__core { transition: none !important; } .aorb__beam { animation: none !important; } }
+:root[data-motion="reduced"] .aorb__sat, :root[data-motion="reduced"] .aorb__core { transition: none !important; } :root[data-motion="reduced"] .aorb__beam { animation: none !important; }
+/* AI panel: compact, the step trail carries progress so rows do not reserve empty height */
+.aix .ap { min-height: 0; }
+/* rows not reached yet show as a faint preview of what the run will fill in, so the panel never looks empty */
+.aix .ap [data-on="false"] { opacity: 0.16; translate: 0 0; }
+.aix .ap { padding: 10px 12px; gap: 8px; }
+.aix__ui { margin-top: 8px; padding: 12px; }
+@media (min-width: 1000px) and (max-height: 820px) { .aisec { padding-block: 84px 40px; } .aisec .sec-head { margin-bottom: 8px; } .aix__side { gap: 12px; } }
+.aorb[data-compact="true"] .aorb__core { width: calc(var(--k) * 112px); }

@@ -116,7 +116,7 @@ export const copy = {
     support: "",
   },
   testimonials: { eyebrow: "CLIENT WORDS", title: "What clients say." },
-  why: { eyebrow: "WHY STACKENDBOX", title: "Why clients bring StackEndBox in." },
+  why: { eyebrow: "WHY STACKENDBOX", title: "Why clients bring StackEndBox in.", support: "What changes when one team owns the whole build, from the first conversation to the system running in production." },
   builder: {
     eyebrow: "CONTACT US",
     title: "Tell us what needs to work.",

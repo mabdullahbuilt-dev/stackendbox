@@ -11,14 +11,14 @@ import type { HeroModule } from "./modules";
  * explode 0..1 (small, contained separation), zoom 0..1 (camera closer), active slab index (-1 none),
  * pulse 0..1 (bottom to top), settle 0..1 (final 6 degree turn).
  */
-export type HeroBus = { explode: number; zoom: number; active: number; pulse: number; settle: number; px: number; py: number; invalidate?: () => void };
+export type HeroBus = { explode: number; zoom: number; active: number; pulse: number; settle: number; px: number; py: number; sep?: number[]; invalidate?: () => void };
 
 const W = 1.6;
 const H = 0.19;
 const D = 1.6;
 const SEAM = 0.012;
-/** Max extra gap per slab: about 16px at the default stage size, so the stack stays inside its frame. */
-const GAP = 0.07;
+/** Max extra gap between two slabs when the stack is fully separated (the rig scales down a touch to stay framed). */
+const GAP = 0.135;
 const GREEN = new THREE.Color("#2fd27a");
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -31,6 +31,8 @@ type Props = {
   /** Static render for poster generation. */
   still?: { explode: number };
   animateIn?: boolean;
+  /** Gentle sway and edge breathing while the hero is visible (throttled to about 30fps, nothing when hidden). */
+  ambient?: boolean;
   frameloop?: "demand" | "never";
   dpr?: number;
   lite?: boolean;
@@ -110,7 +112,7 @@ function Slab({ index, mod, seed, hovered, onHover, innerRef, stillMode, accents
   );
 }
 
-function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onReady }: Props) {
+function Stack({ bus, modules, hovered, onHover, still, animateIn = false, ambient = false, onReady }: Props) {
   const invalidate = useThree((s) => s.invalidate);
   const n = modules.length;
   const rig = useRef<THREE.Group>(null);
@@ -126,6 +128,11 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
   const readyFired = useRef(false);
   const hoveredRef = useRef(hovered);
   hoveredRef.current = hovered;
+  const ambRef = useRef(ambient);
+  ambRef.current = ambient;
+  const ambTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(ambTimer.current), []);
+  useEffect(() => { if (ambient) invalidate(); }, [ambient, invalidate]);
 
   useEffect(() => {
     bus.invalidate = invalidate;
@@ -144,20 +151,27 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
 
     // pointer response: 2 to 3 degrees maximum
     const tx = still ? 0 : bus.py * THREE.MathUtils.degToRad(2.5);
-    const ty = still ? 0 : bus.px * THREE.MathUtils.degToRad(3) + (still ? 0 : bus.settle) * THREE.MathUtils.degToRad(6);
+    const amb = !still && ambRef.current;
+    const sway = amb ? Math.sin((state.clock.elapsedTime / 14) * Math.PI * 2) * THREE.MathUtils.degToRad(1.6) : 0;
+    const ty = still ? 0 : bus.px * THREE.MathUtils.degToRad(3) + bus.settle * THREE.MathUtils.degToRad(6) + sway;
     rot.current.x += (tx - rot.current.x) * k;
     rot.current.y += (ty - rot.current.y) * k;
     if (Math.abs(tx - rot.current.x) > 1e-4 || Math.abs(ty - rot.current.y) > 1e-4) busy = true;
 
     const breath = still ? 0 : Math.sin((state.clock.elapsedTime / 12) * Math.PI * 2) * 0.003;
     const act = still ? -1 : bus.active;
+    // Per-gap separation (gap j sits above slab j counted from the bottom). Eased, then accumulated upwards.
+    const sep = still ? null : bus.sep;
+    const gapE = (j: number) => { const v = sep ? (sep[j] ?? 0) : rawE; return v * v * (3 - 2 * v); };
+    const cum: number[] = [0];
+    for (let j = 0; j < n - 1; j++) cum.push(cum[j] + gapE(j));
+    const totalE = cum[n - 1];
 
     for (let i = 0; i < n; i++) {
       const g = slabs.current[i];
       if (!g) continue;
       const fromBottom = n - 1 - i;
-      const ee = rawE * rawE * (3 - 2 * rawE);
-      let y = fromBottom * (H + SEAM + breath) + fromBottom * GAP * ee;
+      let y = fromBottom * (H + SEAM + breath) + GAP * cum[fromBottom];
       if (animateIn && !still) {
         const a = clamp01((t - fromBottom * 0.07) / 0.9);
         if (a < 1) busy = true;
@@ -174,7 +188,7 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
       y += actAmt.current[i] * 0.03;
       const ac = accents.current[i];
       if (ac) {
-        const o = Math.min(1, modules[i].accentOpacity + actAmt.current[i] * 0.6);
+        const o = Math.min(1, modules[i].accentOpacity + actAmt.current[i] * 0.6 + (amb ? 0.08 * (0.5 + 0.5 * Math.sin(state.clock.elapsedTime * 1.2 + i * 0.7)) : 0));
         // BUILD is orange, CONNECTED is green: a layer the signal has reached turns green, and the
         // delivery layer stays green once the stack settles (the LIVE state).
         const reached = !still && rawE > 0.3 && bus.pulse * n > fromBottom + 0.5;
@@ -184,22 +198,22 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
         if (ac.b) { ac.b.opacity = o; ac.b.color.lerp(col, 0.25); }
         if (ac.a && (Math.abs(ac.a.color.r - col.r) + Math.abs(ac.a.color.g - col.g) + Math.abs(ac.a.color.b - col.b)) > 0.01) busy = true;
       }
-      g.position.y += (y - g.position.y) * (still || !animateIn ? 1 : 1 - Math.pow(1 - 0.35, dt * 60));
+      g.position.y += (y - g.position.y) * (still ? 1 : 1 - Math.pow(1 - 0.22, dt * 60));
       if (Math.abs(y - g.position.y) > 0.0008) busy = true;
     }
 
     if (rig.current) {
       rig.current.rotation.x = rot.current.x;
       rig.current.rotation.y = rot.current.y;
-      rig.current.scale.setScalar(1 + 0.05 * (still ? 0 : bus.zoom));
-      // keep the opened stack centred in its frame
-      rig.current.position.y = -0.5 * (n - 1) * GAP * (rawE * rawE * (3 - 2 * rawE));
+      // keep the opened stack centred and framed: it scales down slightly as the gaps open
+      rig.current.scale.setScalar((1 + 0.04 * (still ? 0 : bus.zoom)) * (1 - 0.22 * (totalE / (n - 1))));
+      rig.current.position.y = -0.5 * GAP * totalE;
     }
     if (pulse.current) {
       const on = !still && bus.pulse > 0.001 && bus.pulse < 0.999 && rawE > 0.5;
       pulse.current.visible = on;
       if (on) {
-        const top = (n - 1) * (H + SEAM) + (n - 1) * GAP * rawE;
+        const top = (n - 1) * (H + SEAM) + GAP * totalE;
         pulse.current.position.y = top * bus.pulse;
       }
     }
@@ -209,6 +223,7 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
       onReady?.();
     }
     if (busy || frames.current < 4) invalidate();
+    else if (amb && !ambTimer.current) ambTimer.current = window.setTimeout(() => { ambTimer.current = 0; invalidate(); }, 33);
   });
 
   return (
@@ -223,7 +238,7 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
           accents={accents}
           hovered={hovered === i}
           onHover={onHover}
-          innerRef={(g) => { slabs.current[i] = g; if (g && g.position.y === 0) g.position.y = (n - 1 - i) * (H + SEAM) + (still ? 0 : 1.2); }}
+          innerRef={(g) => { slabs.current[i] = g; if (g && g.position.y === 0) g.position.y = (n - 1 - i) * (H + SEAM) + (animateIn && !still ? 1.2 : 0); }}
         />
       ))}
       {/* signal travelling through the layers: a thin orange plane, no arrows */}
@@ -237,14 +252,16 @@ function Stack({ bus, modules, hovered, onHover, still, animateIn = true, onRead
 
 export default function HeroObject(props: Props) {
   const { dpr = 1.5, frameloop = "demand", still, onDegrade, lite } = props;
+  // A sustained FPS drop lowers the resolution; it never swaps the scene for the static poster mid-visit.
+  const [dprMax, setDprMax] = useState(Math.min(dpr, 1.5));
   return (
     <Canvas
       frameloop={frameloop}
-      dpr={[1, Math.min(dpr, 1.5)]}
-      camera={{ fov: 28, position: [4.6, 3.7, 4.6], near: 0.1, far: 50 }}
+      dpr={[1, dprMax]}
+      camera={{ fov: 28, position: [3.95, 3.2, 3.95], near: 0.1, far: 50 }}
       gl={{ alpha: true, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: !!still }}
       onCreated={({ camera, gl }) => {
-        camera.lookAt(0, 0.7, 0);
+        camera.lookAt(0, 0.66, 0);
         // a lost WebGL context drops back to the poster instead of a blank or looping canvas
         gl.domElement.addEventListener("webglcontextlost", (e) => { e.preventDefault(); onDegrade?.(); }, { once: true });
       }}
@@ -252,7 +269,7 @@ export default function HeroObject(props: Props) {
       aria-hidden
       style={{ background: "transparent" }}
     >
-      {!still && onDegrade && <PerformanceMonitor flipflops={2} onDecline={onDegrade} bounds={() => [40, 120]} />}
+      {!still && <PerformanceMonitor bounds={() => [30, 120]} onDecline={() => setDprMax(1)} onIncline={() => setDprMax(Math.min(dpr, 1.5))} />}
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 6, 2]} intensity={0.6} />
       <Environment resolution={lite ? 64 : 128} frames={1}>

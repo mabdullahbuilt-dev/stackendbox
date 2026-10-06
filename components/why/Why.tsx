@@ -6,10 +6,10 @@ import { copy } from "@/content/copy";
 import { useMotionPreference } from "@/lib/useMotionPreference";
 
 const POINTS: { icon: LucideIcon; stop: string; title: string; text: string }[] = [
-  { icon: Layers, stop: "BRIEF", title: "One team across the build", text: "Product, interface, backend, AI and integrations are engineered together instead of handed between disconnected vendors." },
-  { icon: MonitorPlay, stop: "PRODUCT", title: "Working software you can see", text: "Review real flows and functioning product states as the build takes shape, not just decks and mockups." },
-  { icon: Plug, stop: "SYSTEMS", title: "Built around the real operation", text: "The product is designed around the workflows, permissions, data and tools your team already uses." },
-  { icon: ShieldCheck, stop: "PRODUCTION", title: "Production from day one", text: "Performance, edge cases, integrations, deployment and operating reality are considered from the start." },
+  { icon: Layers, stop: "BRIEF", title: "One engineering partner, problem to production", text: "The same team scopes the problem, designs the product and ships it. No hand-offs between an agency, freelancers and an internal team, and no context lost between them." },
+  { icon: Plug, stop: "PRODUCT", title: "Every layer designed together", text: "Product, interface, backend, data, AI and integrations are decided together, so they fit from the start instead of being patched together later." },
+  { icon: MonitorPlay, stop: "SYSTEMS", title: "Working software you can review", text: "You review real flows running on the real data model as the build takes shape, not slide decks and static mockups." },
+  { icon: ShieldCheck, stop: "PRODUCTION", title: "Built for your operation and for production", text: "Roles, permissions, failure states, responsive layouts and deployment are designed in from day one, around the way your team actually works." },
 ];
 
 /** The one light section: a continuous delivery path. Current stop is orange, completed stops are green. */
@@ -25,6 +25,7 @@ export function Why() {
         <div className="sec-head">
           <p className="eyebrow">{copy.why.eyebrow}</p>
           <h2 id="why-title" className="h2">{copy.why.title}</h2>
+          <p className="body-l">{copy.why.support}</p>
         </div>
         <ol className="why__path" ref={ref} style={{ ["--p" as string]: Math.min(step, POINTS.length) }}>
           <span className="why__obj" aria-hidden><b className="mono">{POINTS[Math.min(Math.max(step - 1, 0), POINTS.length - 1)].stop}</b><i /><i /></span>

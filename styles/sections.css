@@ -23,7 +23,7 @@
 .hero__ctas { display: flex; flex-wrap: wrap; gap: 12px; }
 .hero__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; max-width: 52ch; }
 .hero__chips li { height: 30px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); font-size: 0.8125rem; color: var(--text-secondary); background: rgba(255, 255, 255, 0.02); }
-.hero__cap { position: absolute; left: 50%; bottom: 3%; transform: translate(-50%, 6px); display: grid; gap: 2px; justify-items: center; padding: 8px 14px; border-radius: 12px; background: var(--surface-higher); border: 1px solid var(--border-strong); opacity: 0; transition: opacity 180ms linear, transform 180ms var(--ease-out); pointer-events: none; text-align: center; z-index: 3; }
+.hero__cap { position: absolute; left: 50%; bottom: 3%; transform: translate(-50%, 6px); max-width: 46%; display: grid; gap: 2px; justify-items: center; padding: 8px 14px; border-radius: 12px; background: var(--surface-higher); border: 1px solid var(--border-strong); opacity: 0; transition: opacity 180ms linear, transform 180ms var(--ease-out); pointer-events: none; text-align: center; z-index: 3; }
 .hero__cap[data-on="true"] { opacity: 1; transform: translate(-50%, 0); }
 .hero__cap strong { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; font-weight: 500; }
 .hero__cap span { font-size: 0.875rem; color: var(--text-secondary); }
@@ -58,7 +58,7 @@
   .hero__grid { grid-template-columns: minmax(0, 52fr) minmax(0, 48fr); column-gap: clamp(16px, 2vw, 40px); }
   .hero__copy { grid-column: 1; grid-row: 1; padding-bottom: 24px; position: relative; z-index: 2; }
   .hero__visual { grid-row: 1; grid-column: 2; max-height: calc(100svh - 96px); width: 128%; margin-left: -18%; margin-right: -10%; justify-self: end; aspect-ratio: 1 / 1; align-self: center; }
-  .hero { height: calc(100svh + 40vh); }
+  .hero { height: calc(100svh + 120vh); }
   .hero__sticky { position: sticky; top: 0; height: 100svh; }
 }
 @media (min-width: 1280px) { .hero__h1 .line:last-child .line__in { white-space: nowrap; } }
@@ -295,3 +295,8 @@ html[data-motion="reduced"] .hero__sticky { position: relative; height: auto; }
   .shw__rail { display: flex; overflow: hidden; } .shw__thumb { flex: 1; justify-content: center; padding: 6px; } .shw__thumb b { display: none; } .shw__thumbimg { width: 100%; max-width: 64px; }
 }
 @media (prefers-reduced-motion: reduce) { .shw__track, .shw__slide { transition: none; } .shw__prog { display: none; } }
+
+/* Desktop: the scan caption sits beside the separated stack (left of it), never over a slab. */
+@media (min-width: 1024px) { .hero__cap { left: 16%; bottom: 22%; transform: translate(0, 6px); justify-items: start; text-align: left; } .hero__cap[data-on="true"] { transform: none; } }
+/* final headline: two lines that never touch (descenders of line one clear the caps of line two) */
+.final h2 .block { line-height: 1.06; }

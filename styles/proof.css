@@ -105,3 +105,16 @@
 .bw-node { position: absolute; translate: 0 -50%; display: inline-flex; align-items: center; gap: 8px; padding: calc(var(--u) * 8) calc(var(--u) * 12); border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-higher); color: var(--text-secondary); transition: border-color 300ms; } .bw-node b { font-weight: 500; } .bw-node--l { right: 78%; } .bw-node--r { left: 78%; } .bw-node[data-on="true"] { border-color: var(--border-active); color: var(--text-primary); }
 .bw-core { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: grid; justify-items: center; gap: 3px; padding: calc(var(--u) * 12) calc(var(--u) * 16); border-radius: 14px; border: 1px solid rgba(47, 210, 122, 0.45); background: #0e1310; transition: border-color 300ms; } .bw-core b { color: var(--text-primary); font-weight: 600; } .bw-core em { font-style: normal; font-size: max(7px, calc(var(--u) * 9)); color: var(--text-muted); } .bw-core[data-bad="true"] { border-color: rgba(240, 82, 82, 0.6); }
 @media (prefers-reduced-motion: reduce) { .bw-card--move { animation: none; } .bw-caret { animation: none; } }
+
+/* One composition at laptop sizes: selector | product frame | caption. The frame height follows the viewport,
+   so the active product, its caption and CTA are visible together. */
+@media (min-width: 1200px) {
+  .proof__grid { grid-template-columns: 200px minmax(0, 1fr); gap: 24px; }
+  .proof__main { grid-template-columns: minmax(0, 1fr) minmax(250px, 300px); column-gap: 28px; align-items: start; }
+  .proof__stage { aspect-ratio: 16 / 10; width: min(100%, calc((100svh - 300px) * 1.6)); }
+  .proof__cap { grid-column: 2; grid-row: 1; grid-template-columns: 1fr; gap: 18px; }
+  .proof__capmain h3 { font-size: clamp(1.5rem, 1rem + 1vw, 2rem); } .proof__capmain .body-l { font-size: 1rem; }
+  .proof__brief { font-size: 0.875rem; padding: 12px 14px; }
+  .proof__meta { grid-column: 1 / -1; }
+}
+@media (min-width: 1200px) and (max-height: 820px) { .proof { padding-top: 84px; } .proof .sec-head { margin-bottom: 20px; } }

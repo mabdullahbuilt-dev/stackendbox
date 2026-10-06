@@ -88,7 +88,9 @@ export function UnderInterface() {
   // Scroll drives the layer sequence (and reverses it): 0 complete product, 1..9 one layer each, 10 complete and verified.
   const raw = useChapterStep("depth", LAYERS.length + 2);
   const [pickd, setPickd] = useState<{ i: number | null; at: number } | null>(null);
-  const auto = reduced ? null : raw >= 1 && raw <= LAYERS.length ? raw - 1 : null;
+  // Frame zero already inspects the interface layer; each scroll step goes one layer deeper; the last step shows the
+  // complete product. The inspector is never an empty placeholder.
+  const auto = reduced ? null : raw <= LAYERS.length ? Math.min(raw, LAYERS.length - 1) : null;
   const sel = pickd && pickd.at === raw ? pickd.i : auto;
   const box = useRef<HTMLDivElement>(null);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -162,7 +164,9 @@ export function UnderInterface() {
             {L ? (
               <div key={L.id} className="xr__ins"><b className="mono">{String((sel ?? 0) + 1).padStart(2, "0")} {L.inspect}</b><Inspector id={L.id} /></div>
             ) : (
-              <p className="xr__hint mono">NINE LAYERS UNDER ONE INTERFACE · SCROLL TO INSPECT EACH</p>
+              <div className="xr__ins xr__sum"><b className="mono">ALL NINE LAYERS · CHECKS PASSING</b>
+                <ul>{LAYERS.map((l, i) => <li key={l.id}><Check aria-hidden /><span className="mono">{String(i + 1).padStart(2, "0")}</span>{l.title}</li>)}</ul>
+              </div>
             )}
           </div>
           <span className="xr__live" data-on={sel === null && raw > LAYERS.length}><ShieldCheck /> Complete product, all checks passing</span>

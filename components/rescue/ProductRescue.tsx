@@ -24,7 +24,7 @@ const STAGES = [["DIAGNOSE", 0], ["REDESIGN", 1], ["HARDEN", 3], ["EXTEND", 6], 
 /** Diagnostic hotspots on the product: the fix that resolves each one, and where it sits. */
 const PINS = [
   { k: "RESPONSIVE", fix: 1, x: 80, y: 40 },
-  { k: "AUTH", fix: 2, x: 63, y: 55 },
+  { k: "AUTH", fix: 2, x: 44, y: 56 },
   { k: "API", fix: 3, x: 56, y: 30 },
   { k: "TESTS", fix: 4, x: 22, y: 47 },
   { k: "REPORTS", fix: 5, x: 40, y: 17 },

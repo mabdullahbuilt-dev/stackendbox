@@ -1,7 +1,7 @@
 "use client";
 import { ArrowRight, BarChart3, Bot, Boxes, Building2, Plug, Rocket, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { copy } from "@/content/copy";
 import { proofItems, type ProofId } from "@/content/proof";
 import { track } from "@/lib/analytics";
@@ -20,6 +20,9 @@ import { SupportGrid } from "./apps/SupportGrid";
 const APPS: Record<ProofId, (p: { step: number }) => React.JSX.Element> = { launchkit: LaunchKit, opsboard: OpsBoard, supportgrid: SupportGrid, connecthub: ConnectHub, chaindesk: ChainDesk, marketdesk: MarketDesk };
 const ICONS: Record<ProofId, LucideIcon> = { launchkit: Rocket, opsboard: Building2, supportgrid: Bot, connecthub: Plug, chaindesk: Boxes, marketdesk: BarChart3 };
 
+/** Wall clock for the manual-override window (read in handlers and timers only, never during render). */
+const clock = () => Date.now();
+
 export function ProofSection({ children }: { children?: React.ReactNode }) {
   const { reduced } = useMotionPreference();
   const [active, setActive] = useState(0);
@@ -30,10 +33,17 @@ export function ProofSection({ children }: { children?: React.ReactNode }) {
   const near = useInView(stage, "900px 0px 900px 0px", true);
   const item = proofItems[active];
   const App = APPS[item.id];
-  // Only the visible, selected product runs its one scripted interaction; it then rests.
+  // Only the visible, selected product runs its scripted interaction.
   const step = useScript(item.steps, 850, inView, reduced, `${item.id}-${replay}`);
-
-  const pick = (i: number, how: string) => { setActive(i); track("lab_opened", { product: proofItems[i].id, method: how }); };
+  const lastUser = useRef(0);
+  const pick = (i: number, how: string) => { lastUser.current = clock(); setActive(i); track("lab_opened", { product: proofItems[i].id, method: how }); };
+  // Calm auto-cycle while the chapter is visible: the next product opens a few seconds after the current one
+  // finishes, so the breadth is visible without clicking. A manual choice holds for 15 seconds.
+  useEffect(() => {
+    if (reduced || !inView || step < item.steps) return;
+    const t = setTimeout(() => { if (clock() - lastUser.current < 15000) return; setActive((a) => (a + 1) % proofItems.length); }, 3200);
+    return () => clearTimeout(t);
+  }, [step, item.steps, inView, reduced]);
   const onKey = (e: React.KeyboardEvent) => {
     const n = proofItems.length;
     let i = -1;

@@ -88,3 +88,17 @@
 @media (prefers-reduced-motion: reduce) { .spc *, .spc *::before { transition: none !important; animation: none !important; } }
 :root[data-motion="reduced"] .spc *, :root[data-motion="reduced"] .spc *::before { transition: none !important; animation: none !important; }
 .w3 { pointer-events: none; } .w3 > * { pointer-events: auto; } .w3__meta { pointer-events: none; }
+
+/* One-composition layout: copy, mode tabs and the CTA in a left column; one fixed product frame on the right.
+   The frame keeps the scene's 1000:600 design ratio, so a mode changes state inside it instead of growing taller. */
+.spc__side { display: grid; gap: 18px; align-content: start; } .spc__side .sec-head { margin-bottom: 0; }
+.spc__foot { margin-top: 18px; }
+@media (min-width: 1100px) {
+  .spc { padding-block: clamp(72px, 10vh, 108px); }
+  .spc__in { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 2fr); grid-template-rows: auto 1fr; column-gap: clamp(28px, 3.4vw, 56px); align-items: start; }
+  .spc__side { grid-column: 1; grid-row: 1; } #spc-panel { grid-column: 2; grid-row: 1 / span 2; align-self: center; } .spc__foot { grid-column: 1; grid-row: 2; align-self: end; display: grid; justify-items: start; gap: 16px; margin-top: 24px; }
+  .spc__side .h2 { font-size: clamp(1.9rem, 1rem + 1.6vw, 2.7rem); }
+  .spc__tabs { flex-direction: column; align-items: stretch; margin-bottom: 0; } .spc__tabs .itab { justify-content: flex-start; }
+  .spc__stage { aspect-ratio: 1000 / 600; min-height: 0; max-height: none; height: auto; }
+  .spc__foot .body-l { font-size: 1rem; }
+}
