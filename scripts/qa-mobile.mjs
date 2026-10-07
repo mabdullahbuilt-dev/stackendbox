@@ -319,6 +319,25 @@ async function perViewport([w, h, dpr]) {
     }
   }
 
+  if (want("swipe") && ENGINE !== "chromium") {
+    // Playwright cannot synthesise native touch swipes outside Chromium. What WebKit can verify: the carousel declares pan-y (so a
+    // vertical gesture stays with the page), its pointer-event drag still advances the slide, and a wheel scroll over it moves the page.
+    await goTo(p, "#work .shw__view", 120);
+    const ta = await p.evaluate(() => getComputedStyle(document.querySelector("#work .shw__view")).touchAction);
+    if (!/pan-y/.test(ta)) fail(vp, `Selected Work touch-action is "${ta}", expected pan-y`);
+    const box = await p.locator("#work .shw__view").boundingBox();
+    if (box) {
+      const cur = () => p.evaluate(() => document.querySelector("#work .shw__tab[aria-current=true] .shw__tabn")?.textContent);
+      const c0 = await cur();
+      const y = Math.round(Math.min(box.y + box.height / 2, h - 120)), x0 = Math.round(box.x + box.width * 0.8);
+      await p.mouse.move(x0, y); await p.mouse.down(); await p.mouse.move(x0 - 120, y, { steps: 8 }); await p.mouse.move(x0 - 240, y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(700);
+      if (c0 === (await cur())) fail(vp, `pointer drag did not advance Selected Work (${c0})`);
+      const sy0 = await p.evaluate(() => scrollY);
+      await p.mouse.move(Math.round(box.x + box.width / 2), y); await p.mouse.wheel(0, 300); await p.waitForTimeout(500);
+      if ((await p.evaluate(() => scrollY)) - sy0 < 100) fail(vp, "wheel scroll over Selected Work did not move the page");
+    }
+  }
+
   if (want("meta")) {
     const vm = await p.evaluate(() => document.querySelector("meta[name=viewport]")?.getAttribute("content") || "");
     if (/user-scalable\s*=\s*(no|0)|maximum-scale/i.test(vm)) fail(vp, `pinch zoom disabled by viewport meta: ${vm}`);
