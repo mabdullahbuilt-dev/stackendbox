@@ -1,12 +1,13 @@
 "use client";
-import { ArrowRight, CalendarClock, Check, Lightbulb, Mail, Send } from "lucide-react";
+import { ArrowRight, CalendarClock, Check, Mail, Phone, Send } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { copy } from "@/content/copy";
-import { siteConfig } from "@/site.config";
+import { siteConfig, telHref } from "@/site.config";
 import { track } from "@/lib/analytics";
 import type { Need } from "@/lib/briefOptions";
 import { intentNeed, readIntent } from "@/lib/intent";
 import { Reveal } from "@/components/ui/Reveal";
+import { BrandIcon } from "@/components/ui/BrandIcon";
 import { CalButton } from "@/components/ui/CalButton";
 import { Turnstile } from "./Turnstile";
 
@@ -180,29 +181,44 @@ export function Builder() {
             )}
           </div>
 
-          <div className="ct__side">
-            {email && (
-              <div className="ct__opt">
-                <span className="ct__ic"><Mail aria-hidden /></span>
-                <h3>Email us</h3>
-                <a className="ct__mail" href={`mailto:${email}`} onClick={() => track("contact_clicked", { placement: "builder", kind: "email" })}>{email}</a>
-                <p>Send details, files or questions straight to the team.</p>
-                <a className="btn btn--secondary" href={`mailto:${email}`} onClick={() => track("contact_clicked", { placement: "builder-btn", kind: "email" })}>Email StackEndBox</a>
-              </div>
+          <aside className="ct__side" aria-labelledby={`${uid}-reach`}>
+            <h3 id={`${uid}-reach`} className="mono ct__sidehd">Contact us</h3>
+            <ul className="ct__ways">
+              {email && (
+                <li>
+                  <a className="ct__way" href={`mailto:${email}`} onClick={() => track("contact_clicked", { placement: "builder", kind: "email" })}>
+                    <span className="ct__ic" aria-hidden><Mail /></span>
+                    <span className="ct__txt"><b>Email</b><span className="ct__val">{email}</span><span className="ct__sub">Send details, files or questions.</span></span>
+                    <ArrowRight className="ct__go" aria-hidden />
+                  </a>
+                </li>
+              )}
+              {siteConfig.whatsappUrl && (
+                <li>
+                  <a className="ct__way ct__way--wa" href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label="Message StackEndBox on WhatsApp" onClick={() => track("contact_clicked", { placement: "builder", kind: "whatsapp" })}>
+                    <span className="ct__ic" aria-hidden><BrandIcon name="whatsapp" size={20} /></span>
+                    <span className="ct__txt"><b>WhatsApp</b><span className="ct__val">Message StackEndBox</span><span className="ct__sub">A direct conversation with the team.</span></span>
+                    <ArrowRight className="ct__go" aria-hidden />
+                  </a>
+                </li>
+              )}
+              {siteConfig.calUrl && (
+                <li>
+                  <CalButton placement="builder" className="ct__way" icon={false}>
+                    <span className="ct__ic" aria-hidden><CalendarClock /></span>
+                    <span className="ct__txt"><b>Book a call</b><span className="ct__val">Choose a time</span><span className="ct__sub">Talk it through with an engineer.</span></span>
+                    <ArrowRight className="ct__go" aria-hidden />
+                  </CalButton>
+                </li>
+              )}
+            </ul>
+            {siteConfig.contactPhone && (
+              <p className="ct__phone mono">
+                <Phone aria-hidden />
+                <a href={telHref(siteConfig.contactPhone)} onClick={() => track("contact_clicked", { placement: "builder", kind: "phone" })}>{siteConfig.contactPhone}</a>
+              </p>
             )}
-            <div className="ct__opt">
-              <span className="ct__ic"><CalendarClock aria-hidden /></span>
-              <h3>Book a call</h3>
-              <p>Talk the project through with an engineer. Pick a time that suits you.</p>
-              <CalButton placement="builder" className="btn btn--primary" />
-            </div>
-            <div className="ct__opt">
-              <span className="ct__ic"><Lightbulb aria-hidden /></span>
-              <h3>Something custom?</h3>
-              <p>Not sure where it fits? Describe it in your own words in the brief. A rough idea is a fine start.</p>
-              <a className="btn btn--ghost" href="#start" onClick={(e) => { e.preventDefault(); (document.getElementById(`${uid}-context`) as HTMLElement | null)?.focus(); }}>Describe it <ArrowRight className="arrow" aria-hidden /></a>
-            </div>
-          </div>
+          </aside>
         </div>
       </div>
     </section>

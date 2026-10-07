@@ -73,8 +73,9 @@ for (const it of list) {
     const covered = await loc.evaluate((el) => { const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = Math.min(Math.max(r.top + r.height / 2, 2), window.innerHeight - 2); const t = document.elementFromPoint(x, y); return (t && (t === el || el.contains(t) || t.contains(el))) ? null : (t ? t.tagName + "." + String(t.className).slice(0, 40) + "@" + (t.closest("section,header,footer")?.id || t.closest("header,footer")?.tagName) : "none"); });
     if (covered) { r.ok = false; r.why.push("covered by " + covered); }
     const before = await sig(); const p0 = popups; const e0 = errs.length;
-    const isMail = it.href?.startsWith("mailto:"), isExt = /^https?:\/\//.test(it.href ?? "") && !it.href.includes("stackendbox.com");
-    if (isMail) { if (!/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+/.test(it.href)) { r.ok = false; r.why.push("bad mailto"); } }
+    const isTel = it.href?.startsWith("tel:"), isMail = it.href?.startsWith("mailto:") || isTel, isExt = /^https?:\/\//.test(it.href ?? "") && !it.href.includes("stackendbox.com");
+    if (isTel) { if (!/^tel:\+?\d{7,15}$/.test(it.href)) { r.ok = false; r.why.push("bad tel"); } }
+    else if (isMail) { if (!/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+/.test(it.href)) { r.ok = false; r.why.push("bad mailto"); } }
     else if (isExt) { if (!(await loc.getAttribute("target"))) { r.ok = false; r.why.push("external without target"); } }
     if (!isMail) {
       if (mode === "keyboard") { await loc.focus(); await p.keyboard.press(it.tag === "A" ? "Enter" : "Enter"); }
