@@ -13,7 +13,7 @@
   .shw__zoom::before { inset: -6px 0; }
   /* text links that can wrap: pad the box and cancel it with a negative margin, so the tappable area grows but layout does not move */
   .hero__mail a { padding-block: 10px; margin-block: -10px; }
-  .ct__phone a { padding-block: 13px; margin-block: -7px; }
+  .ct__phone a { padding-block: 14px; margin-block: -8px; }
   .shw__btn::before { content: ""; position: absolute; inset: -3px; }
   /* stacked tabs have no room for an extended area: give them a real 44px height instead */
   .dpx__tab { min-height: 44px; }
