@@ -1,10 +1,12 @@
 "use client";
 import { CalendarClock } from "lucide-react";
 import { track } from "@/lib/analytics";
-import { calParts, openCal, prepareCal } from "@/lib/cal";
+import { useEffect } from "react";
+import { calParts, openCal, prepareCal, warmCalOnFirstTouch } from "@/lib/cal";
 
 /** Book a Call. Renders nothing unless NEXT_PUBLIC_CAL_URL is configured. */
 export function CalButton({ children = "Book a Call", className = "btn btn--lg btn--secondary", placement, icon = true }: { children?: React.ReactNode; className?: string; placement: string; icon?: boolean }) {
+  useEffect(() => { warmCalOnFirstTouch(); }, []);
   if (!calParts()) return null;
   return (
     <button

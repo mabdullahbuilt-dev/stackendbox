@@ -10,6 +10,7 @@ const args = process.argv.slice(2);
 const opt = (k, d) => (args.find((a) => a.startsWith(`--${k}=`)) ?? `--${k}=${d}`).split("=")[1];
 const ENGINE = opt("engine", "chromium");
 const ONLY = opt("only", "").split(",").filter(Boolean);
+const DESKTOP = args.includes("--desktop"); // fine pointer, no touch: used for the desktop reduced-motion / overflow check
 const URL = process.env.URL || "http://localhost:3100/";
 const WA = "https://wa.me/message/4LZFXFNE5TT7O1";
 
@@ -39,7 +40,7 @@ const fail = (vp, m) => { fails.push(`${vp} ${m}`); };
 const note = (vp, m) => { notes.push(`${vp} ${m}`); };
 
 async function open(w, h, dpr, extra = {}) {
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr, isMobile: ENGINE !== "firefox", hasTouch: true, ...extra });
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr, isMobile: !DESKTOP && ENGINE !== "firefox", hasTouch: !DESKTOP, ...extra });
   const p = await ctx.newPage();
   const errs = [];
   p.on("pageerror", (e) => errs.push("pageerror: " + e.message));
@@ -82,20 +83,59 @@ const TAPS = () => {
     const inline = el.tagName === "A" && cs.display === "inline" && !!el.closest("p, li, dd, blockquote");
     if (inline) continue;
     if (el.closest(".sec-head") && el.tagName === "H2") continue;
-    if (el.classList.contains("aorb__sat")) { const pb = parseFloat(getComputedStyle(el, "::before").height) || 0; if (Math.max(r.height, pb) < 40) out.push({ t: "button.aorb__sat", label: el.getAttribute("aria-label").slice(0, 28), w: Math.round(r.width), h: Math.round(Math.max(r.height, pb)), sec: "ai" }); continue; } // orbiting: probed by its computed ::before instead
-    // effective hit area: probe outward from the centre and see how far a tap still lands on this control (or its pseudo-element)
+    if (el.classList.contains("aorb__sat")) { const pb = parseFloat(getComputedStyle(el, "::before").height) || 0; if (Math.max(r.height, pb) < 43.5) out.push({ t: "button.aorb__sat", label: el.getAttribute("aria-label").slice(0, 28), w: Math.round(r.width), h: Math.round(Math.max(r.height, pb)), sec: "ai" }); continue; } // orbiting: probed by its computed ::before instead
+    // effective hit area, exact: the control's box united with an absolutely positioned ::before extension. The point probe only
+    // confirms that the centre really lands on this control (not covered / mid-transition).
     const hits = (x, y) => { const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };
     const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
-    if (cy < 76 || cy > vh - 6 || r.top < 70) continue; // under the fixed nav or on the fold edge here: sampled at another scroll stop
+    if (!el.closest("header, .nav") && (cy < 76 || cy > vh - 6 || r.top < 70)) continue; // under the fixed nav or on the fold edge here: sampled at another scroll stop
     if (!hits(cx, cy)) continue; // covered or mid-transition at this instant: covered controls are qa-clicks' job
-    let up = 0, down = 0, left = 0, right = 0;
-    while (up < 30 && hits(cx, cy - up - 1)) up++;
-    while (down < 30 && hits(cx, cy + down + 1)) down++;
-    while (left < 40 && hits(cx - left - 1, cy)) left++;
-    while (right < 40 && hits(cx + right + 1, cy)) right++;
-    const ew = left + right + 1, eh = up + down + 1;
-    const m = Math.min(Math.max(r.width, ew), Math.max(r.height, eh));
-    if (m < 40) out.push({ t: `${el.tagName.toLowerCase()}.${String(el.className).split(" ")[0] || ""}`, label: (el.getAttribute("aria-label") || el.innerText || el.getAttribute("href") || "").trim().replace(/\s+/g, " ").slice(0, 28), w: Math.round(ew), h: Math.round(eh), sec: el.closest("section,header,footer")?.id || el.closest("header,footer")?.tagName || "?" });
+    let L = r.left, T = r.top, R = r.right, B = r.bottom;
+    const pc = getComputedStyle(el, "::before");
+    if (pc.content !== "none" && pc.position === "absolute") {
+      const pl = parseFloat(pc.left), pt = parseFloat(pc.top), pw = parseFloat(pc.width), ph = parseFloat(pc.height);
+      if ([pl, pt, pw, ph].every(Number.isFinite)) { const bl = r.left + el.clientLeft, bt = r.top + el.clientTop; L = Math.min(L, bl + pl); T = Math.min(T, bt + pt); R = Math.max(R, bl + pl + pw); B = Math.max(B, bt + pt + ph); }
+    }
+    const ew = R - L, eh = B - T;
+    const m = Math.min(ew, eh);
+    if (m < 43.9) out.push({ t: `${el.tagName.toLowerCase()}.${String(el.className).split(" ")[0] || ""}`, label: (el.getAttribute("aria-label") || el.innerText || el.getAttribute("href") || "").trim().replace(/\s+/g, " ").slice(0, 28), w: Math.round(ew * 10) / 10, h: Math.round(eh * 10) / 10, sec: el.closest("section,header,footer")?.id || el.closest("header,footer")?.tagName || "?" });
+  }
+  return out;
+};
+
+// extended hit rectangles (element box united with an absolutely positioned ::before) must not overlap a neighbour's
+const HITS = () => {
+  const out = [];
+  const vh = innerHeight, vw = innerWidth;
+  const sel = "a[href], button, [role=tab], [role=button], input, select, textarea, summary";
+  const els = [];
+  for (const el of document.querySelectorAll(sel)) {
+    if (el.closest("[inert], [aria-hidden=true]")) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === "hidden" || cs.display === "none" || cs.pointerEvents === "none" || +cs.opacity < 0.2) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) continue;
+    if (el.classList.contains("sr-only") || el.classList.contains("skip") || el.closest(".hp")) continue;
+    let h = { l: r.left, t: r.top, r: r.right, b: r.bottom };
+    const pc = getComputedStyle(el, "::before");
+    if (pc.content !== "none" && pc.position === "absolute") {
+      const pl = parseFloat(pc.left), pt = parseFloat(pc.top), w = parseFloat(pc.width), hh = parseFloat(pc.height);
+      if ([pl, pt, w, hh].every(Number.isFinite)) {
+        const bl = r.left + el.clientLeft, bt = r.top + el.clientTop;
+        h = { l: Math.min(h.l, bl + pl), t: Math.min(h.t, bt + pt), r: Math.max(h.r, bl + pl + w), b: Math.max(h.b, bt + pt + hh) };
+      }
+    }
+    els.push({ el, r, h, label: (el.getAttribute("aria-label") || el.innerText || "").trim().replace(/\s+/g, " ").slice(0, 22) });
+  }
+  const inter = (a, b) => ({ l: Math.max(a.l, b.l), t: Math.max(a.t, b.t), r: Math.min(a.r, b.r), b: Math.min(a.b, b.b) });
+  const inside = (i, r) => i.l >= r.left - 1 && i.t >= r.top - 1 && i.r <= r.right + 1 && i.b <= r.bottom + 1;
+  for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
+    const A = els[i], B = els[j];
+    if (A.el.contains(B.el) || B.el.contains(A.el)) continue;
+    const x = inter(A.h, B.h);
+    if (x.r - x.l < 2 || x.b - x.t < 2) continue;
+    if (inside(x, A.r) || inside(x, B.r)) continue; // the boxes themselves overlap: a layout matter (qa-collide), not an extension
+    out.push(`${A.label} <> ${B.label} (${Math.round(x.r - x.l)}x${Math.round(x.b - x.t)}px) #${A.el.closest("section,header,footer")?.id || "?"}`);
   }
   return out;
 };
@@ -142,7 +182,10 @@ async function perViewport([w, h, dpr]) {
   if (want("taps")) {
     const seen = new Map();
     await sweep(p, null, () => p.evaluate(TAPS).then((a) => { for (const x of a) seen.set(`${x.t}|${x.label}|${x.sec}`, x); }));
-    for (const x of seen.values()) (x.t.startsWith("a.nav__link") || x.t.startsWith("a.nav__pill") ? note : fail)(vp, `effective tap area ${x.w}x${x.h} ${x.t} "${x.label}" #${x.sec}`);
+    const ov = new Set();
+    await sweep(p, null, () => p.evaluate(HITS).then((a) => a.forEach((x) => ov.add(x))));
+    for (const x of ov) fail(vp, `overlapping tap areas: ${x}`);
+    for (const x of seen.values()) fail(vp, `effective tap area (< 44px) ${x.w}x${x.h} ${x.t} "${x.label}" #${x.sec}`);
   }
 
   if (want("inputs")) {
@@ -276,6 +319,63 @@ async function perViewport([w, h, dpr]) {
     }
   }
 
+  if (want("meta")) {
+    const vm = await p.evaluate(() => document.querySelector("meta[name=viewport]")?.getAttribute("content") || "");
+    if (/user-scalable\s*=\s*(no|0)|maximum-scale/i.test(vm)) fail(vp, `pinch zoom disabled by viewport meta: ${vm}`);
+    if (!/width=device-width/.test(vm)) fail(vp, `viewport meta: ${vm}`);
+  }
+
+  if (want("reveal")) {
+    // information that used to be hover-only must be reachable by tap: Web3 transaction metadata
+    await goTo(p, "#specialized");
+    const tab = p.getByRole("tab", { name: /web3/i }).first();
+    if (await tab.count()) {
+      await tab.tap(); await p.waitForTimeout(500);
+      let shown = false;
+      for (let k = 0; k < 24 && !shown; k++) { shown = await p.evaluate(() => { const m = document.querySelector(".w3__mid"); return !!m && m.getAttribute("data-pos") !== "hidden" && m.getBoundingClientRect().width > 0; }); if (!shown) await p.waitForTimeout(500); }
+      if (!shown) note(vp, "web3 transaction card did not appear in 12s; metadata tap not exercised");
+      else {
+        const mid = p.locator(".w3__mid").first();
+        await mid.evaluate((e) => e.scrollIntoView({ block: "center", behavior: "instant" })); await p.waitForTimeout(300);
+        await mid.tap({ force: true }); await p.waitForTimeout(500);
+        const op = await p.evaluate(() => +getComputedStyle(document.querySelector(".w3__meta")).opacity);
+        if (op < 0.9) fail(vp, `web3 metadata not shown after tap (opacity ${op})`);
+        // keyboard path: focus via Tab must show it too
+        await p.evaluate(() => document.activeElement && document.activeElement.blur());
+        await mid.focus(); await p.keyboard.press("Shift+Tab"); await p.keyboard.press("Tab"); await p.waitForTimeout(300);
+        const op2 = await p.evaluate(() => +getComputedStyle(document.querySelector(".w3__meta")).opacity);
+        if (op2 < 0.9) fail(vp, `web3 metadata not shown on keyboard focus (opacity ${op2})`);
+      }
+    } else note(vp, "no web3 tab found");
+  }
+
+  if (want("overlays")) {
+    // fixed overlays must not sit flush against the viewport edge
+    const edge = async (label, sel) => {
+      const r = await p.evaluate((sel) => [...document.querySelectorAll(sel)].filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: innerWidth - b.right, b: innerHeight - b.bottom, name: (e.getAttribute("aria-label") || e.innerText || "").trim().slice(0, 18) }; }), sel);
+      for (const x of r) if (x.l < 8 || x.t < 8 || x.r < 8 || x.b < 0) fail(vp, `${label} control "${x.name}" is flush against the viewport edge (l${Math.round(x.l)} t${Math.round(x.t)} r${Math.round(x.r)})`);
+    };
+    if (w < 768) {
+      await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(300);
+      await p.getByRole("button", { name: /menu/i }).first().tap(); await p.waitForTimeout(600);
+      await edge("menu", '[role=dialog] button, [role=dialog] a.btn');
+      await p.keyboard.press("Escape"); await p.waitForTimeout(300);
+    }
+    await goTo(p, "#work .shw__view", 120);
+    const z = p.locator("#work .shw__zoom").first();
+    if (await z.count()) {
+      await z.tap(); await p.waitForTimeout(600);
+      if (!(await p.evaluate(() => !!document.querySelector("dialog.shw__dlg[open]")))) fail(vp, "Full size viewer did not open on tap");
+      else {
+        await edge("viewer", "dialog.shw__dlg .shw__x");
+        const closeSz = await p.evaluate(() => { const b = document.querySelector("dialog.shw__dlg .shw__x").getBoundingClientRect(); return Math.min(b.width, b.height); });
+        if (closeSz < 43.5) fail(vp, `viewer close button ${closeSz}px < 44`);
+        await p.locator("dialog.shw__dlg .shw__x").tap(); await p.waitForTimeout(500);
+        if (await p.evaluate(() => !!document.querySelector("dialog.shw__dlg[open]"))) fail(vp, "viewer did not close on tap of the close button");
+      }
+    }
+  }
+
   if (want("hover")) {
     // anything revealed only by :hover must be reachable by tap/visible on touch: list rules outside a (hover:hover) gate
     const gated = await p.evaluate(() => {
@@ -314,7 +414,7 @@ async function perViewport([w, h, dpr]) {
   }
 
   if (want("reduced")) {
-    const rctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr, isMobile: ENGINE !== "firefox", hasTouch: true, reducedMotion: "reduce" });
+    const rctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr, isMobile: !DESKTOP && ENGINE !== "firefox", hasTouch: !DESKTOP, reducedMotion: "reduce" });
     const rp = await rctx.newPage(); const re = [];
     rp.on("pageerror", (e) => re.push(e.message)); rp.on("console", (m) => m.type() === "error" && !/ERR_TUNNEL_CONNECTION_FAILED/.test(m.text()) && re.push(m.text()));
     await rp.goto(URL, { waitUntil: "networkidle" }); await rp.waitForTimeout(600);

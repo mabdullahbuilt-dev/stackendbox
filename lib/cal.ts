@@ -25,6 +25,7 @@ export function calParts() {
 }
 
 let ready: Promise<boolean> | null = null;
+let embedLoaded = false;
 
 function load(ns: string): Promise<boolean> {
   if (ready) return ready;
@@ -50,7 +51,7 @@ function load(ns: string): Promise<boolean> {
       const s = document.createElement("script");
       s.src = EMBED;
       s.async = true;
-      s.onload = () => resolve(true);
+      s.onload = () => { embedLoaded = true; resolve(true); };
       s.onerror = () => resolve(false);
       document.head.appendChild(s);
       w.Cal("init", ns, { origin: "https://app.cal.com" });
@@ -64,6 +65,12 @@ function load(ns: string): Promise<boolean> {
   return ready;
 }
 
+/** Touch devices have no hover: warm the embed after the first touch so later taps open the popup instead of a tab. */
+export function warmCalOnFirstTouch() {
+  if (typeof window === "undefined" || !calParts() || !matchMedia("(pointer: coarse)").matches) return;
+  window.addEventListener("touchstart", () => prepareCal(), { once: true, passive: true });
+}
+
 /** Warm the embed on hover or focus so the click feels immediate. */
 export function prepareCal() {
   const c = calParts();
@@ -74,6 +81,13 @@ export function prepareCal() {
 export async function openCal() {
   const c = calParts();
   if (!c) return;
+  // Touch browsers (iOS Safari especially) only allow a new tab opened synchronously inside the tap. If the embed is not ready
+  // yet, open the booking page right now instead of after an await, so a tap can never do nothing.
+  if (!embedLoaded && typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches) {
+    window.open(c.url, "_blank", "noopener,noreferrer");
+    void load(c.namespace);
+    return;
+  }
   const ok = await load(c.namespace);
   const api = window.Cal?.ns?.[c.namespace];
   if (!ok || !api) {
