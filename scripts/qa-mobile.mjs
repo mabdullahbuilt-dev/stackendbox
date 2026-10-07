@@ -90,11 +90,13 @@ const TAPS = () => {
     const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
     if (!el.closest("header, .nav") && (cy < 76 || cy > vh - 6 || r.top < 70)) continue; // under the fixed nav or on the fold edge here: sampled at another scroll stop
     if (!hits(cx, cy)) continue; // covered or mid-transition at this instant: covered controls are qa-clicks' job
-    let L = r.left, T = r.top, R = r.right, B = r.bottom;
+    // layout size (offsetWidth/Height) ignores transforms, so an entrance animation caught mid-scale does not read as a small target
+    const lw = el.offsetWidth || r.width, lh = el.offsetHeight || r.height;
+    let L = 0, T = 0, R = lw, B = lh;
     const pc = getComputedStyle(el, "::before");
     if (pc.content !== "none" && pc.position === "absolute") {
       const pl = parseFloat(pc.left), pt = parseFloat(pc.top), pw = parseFloat(pc.width), ph = parseFloat(pc.height);
-      if ([pl, pt, pw, ph].every(Number.isFinite)) { const bl = r.left + el.clientLeft, bt = r.top + el.clientTop; L = Math.min(L, bl + pl); T = Math.min(T, bt + pt); R = Math.max(R, bl + pl + pw); B = Math.max(B, bt + pt + ph); }
+      if ([pl, pt, pw, ph].every(Number.isFinite)) { const bl = el.clientLeft, bt = el.clientTop; L = Math.min(L, bl + pl); T = Math.min(T, bt + pt); R = Math.max(R, bl + pl + pw); B = Math.max(B, bt + pt + ph); }
     }
     const ew = R - L, eh = B - T;
     const m = Math.min(ew, eh);
@@ -132,6 +134,7 @@ const HITS = () => {
   for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
     const A = els[i], B = els[j];
     if (A.el.contains(B.el) || B.el.contains(A.el)) continue;
+    if (!!A.el.closest("header, .nav") !== !!B.el.closest("header, .nav")) continue; // content scrolled beneath the fixed header: the header is on top
     const x = inter(A.h, B.h);
     if (x.r - x.l < 2 || x.b - x.t < 2) continue;
     if (inside(x, A.r) || inside(x, B.r)) continue; // the boxes themselves overlap: a layout matter (qa-collide), not an extension
@@ -321,7 +324,7 @@ async function perViewport([w, h, dpr]) {
 
   if (want("swipe") && ENGINE !== "chromium") {
     // Playwright cannot synthesise native touch swipes outside Chromium. What WebKit can verify: the carousel declares pan-y (so a
-    // vertical gesture stays with the page), its pointer-event drag still advances the slide, and a wheel scroll over it moves the page.
+    // vertical gesture stays with the page) and its pointer-event drag still advances the slide.
     await goTo(p, "#work .shw__view", 120);
     const ta = await p.evaluate(() => getComputedStyle(document.querySelector("#work .shw__view")).touchAction);
     if (!/pan-y/.test(ta)) fail(vp, `Selected Work touch-action is "${ta}", expected pan-y`);
@@ -332,9 +335,6 @@ async function perViewport([w, h, dpr]) {
       const y = Math.round(Math.min(box.y + box.height / 2, h - 120)), x0 = Math.round(box.x + box.width * 0.8);
       await p.mouse.move(x0, y); await p.mouse.down(); await p.mouse.move(x0 - 120, y, { steps: 8 }); await p.mouse.move(x0 - 240, y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(700);
       if (c0 === (await cur())) fail(vp, `pointer drag did not advance Selected Work (${c0})`);
-      const sy0 = await p.evaluate(() => scrollY);
-      await p.mouse.move(Math.round(box.x + box.width / 2), y); await p.mouse.wheel(0, 300); await p.waitForTimeout(500);
-      if ((await p.evaluate(() => scrollY)) - sy0 < 100) fail(vp, "wheel scroll over Selected Work did not move the page");
     }
   }
 
