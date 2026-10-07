@@ -83,7 +83,7 @@ const TAPS = () => {
     const inline = el.tagName === "A" && cs.display === "inline" && !!el.closest("p, li, dd, blockquote");
     if (inline) continue;
     if (el.closest(".sec-head") && el.tagName === "H2") continue;
-    if (el.classList.contains("aorb__sat")) { const pb = parseFloat(getComputedStyle(el, "::before").height) || 0; if (Math.max(r.height, pb) < 43.5) out.push({ t: "button.aorb__sat", label: el.getAttribute("aria-label").slice(0, 28), w: Math.round(r.width), h: Math.round(Math.max(r.height, pb)), sec: "ai" }); continue; } // orbiting: probed by its computed ::before instead
+    if (el.classList.contains("aorb__sat")) { const pb = parseFloat(getComputedStyle(el, "::before").height) || 0; const sw = el.offsetWidth, sh = Math.max(el.offsetHeight, pb); if (Math.min(sw, sh) < 43.9) out.push({ t: "button.aorb__sat", label: el.getAttribute("aria-label").slice(0, 28), w: Math.round(sw), h: Math.round(sh), sec: "ai" }); continue; } // orbiting: probed by its computed ::before instead
     // effective hit area, exact: the control's box united with an absolutely positioned ::before extension. The point probe only
     // confirms that the centre really lands on this control (not covered / mid-transition).
     const hits = (x, y) => { const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };

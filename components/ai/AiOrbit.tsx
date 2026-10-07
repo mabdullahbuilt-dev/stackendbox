@@ -109,7 +109,7 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
         for (let push = 0; push <= 64; push += 4) {
           const x = f.x * (1 + push / len), y = f.y * (1 + push / len);
           need = push;
-          const gx = coarseRef.current ? 20 : 10, gy = coarseRef.current ? 22 : 8; // coarse: room for the extended tap areas
+          const gx = coarseRef.current ? 12 : 10, gy = coarseRef.current ? 22 : 8; // coarse: room for the vertically extended tap areas
           if (!placed.some((q) => Math.abs(q.x - x) < (PW + gx) * k && Math.abs(q.y - y) < (PH + gy) * k)) break;
         }
         const cur = yieldOff.current[n.key] ?? 0;

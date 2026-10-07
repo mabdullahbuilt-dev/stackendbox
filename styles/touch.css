@@ -17,7 +17,9 @@
   .shw__btn::before { content: ""; position: absolute; inset: -3px; }
   /* stacked tabs have no room for an extended area: give them a real 44px height instead */
   .dpx__tab { min-height: 44px; }
-  .aorb__sat::before { inset: -7px -4px; }
+  /* the narrowest pills get a real 44px width (a few px), so the extension can stay vertical and never touch a neighbour sideways */
+  .aorb__sat { min-width: 44px; }
+  .aorb__sat::before { inset: -7px 0; }
   .shw__tab::before { content: ""; position: absolute; inset: -6px 0; }
 
   /* footer links are a stack of short rows: give each row a real 44px height instead of overlapping extensions */
