@@ -87,6 +87,7 @@ const TAPS = () => {
     const hits = (x, y) => { const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };
     const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
     if (cy < 76 || cy > vh - 6 || r.top < 70) continue; // under the fixed nav or on the fold edge here: sampled at another scroll stop
+    if (!hits(cx, cy)) continue; // covered or mid-transition at this instant: covered controls are qa-clicks' job
     let up = 0, down = 0, left = 0, right = 0;
     while (up < 30 && hits(cx, cy - up - 1)) up++;
     while (down < 30 && hits(cx, cy + down + 1)) down++;
@@ -163,6 +164,32 @@ async function perViewport([w, h, dpr]) {
     await p.evaluate(() => document.activeElement && document.activeElement.blur());
   }
 
+  if (want("keyboard")) {
+    // software keyboard: the viewport loses ~45% of its height. The focused field must stay visible below the nav and the submit
+    // button must stay reachable; closing the keyboard must restore the layout.
+    await goTo(p, "#start");
+    const kh = Math.round(h * 0.55);
+    const fields = p.locator("#start input:not([type=hidden]):not(.hp), #start textarea");
+    const n = await fields.count();
+    for (const i of [0, n - 1]) {
+      await fields.nth(i).focus();
+      await p.setViewportSize({ width: w, height: kh }); await p.waitForTimeout(350);
+      await fields.nth(i).evaluate((e) => e.scrollIntoView({ block: "center", behavior: "instant" })).catch(() => {});
+      await p.waitForTimeout(200);
+      const r = await p.evaluate((i) => { const e = document.querySelectorAll("#start input:not([type=hidden]):not(.hp), #start textarea")[i]; const b = e.getBoundingClientRect(); const nav = document.querySelector(".nav, header"); return { top: b.top, bottom: b.bottom, vh: innerHeight, nav: nav ? nav.getBoundingClientRect().bottom : 0, sx: document.documentElement.scrollWidth - innerWidth }; }, i);
+      if (r.top < r.nav - 2 || r.bottom > r.vh + 1) fail(vp, `keyboard open: field #${i} not fully visible (${Math.round(r.top)}..${Math.round(r.bottom)}, nav ${Math.round(r.nav)}, vh ${r.vh})`);
+      if (r.sx > 1) fail(vp, `keyboard open: horizontal overflow ${r.sx}`);
+      const btn = p.locator("#start button[type=submit]");
+      await btn.evaluate((e) => e.scrollIntoView({ block: "center", behavior: "instant" }));
+      const bb = await btn.boundingBox();
+      if (!bb || bb.y < 0 || bb.y + bb.height > kh) fail(vp, "keyboard open: submit button not reachable");
+      await p.setViewportSize({ width: w, height: h }); await p.waitForTimeout(350);
+      const o = await p.evaluate(OVERFLOW);
+      if (o.sw > o.vw + 1) fail(vp, "keyboard closed: overflow " + o.sw);
+    }
+    await p.evaluate(() => document.activeElement && document.activeElement.blur());
+  }
+
   if (want("contact")) {
     await goTo(p, "#start");
     const r = await p.evaluate(() => {
@@ -180,10 +207,13 @@ async function perViewport([w, h, dpr]) {
     // tapping WhatsApp opens a tab at the wa.me URL; Book a call opens a modal/tab
     const [pop] = await Promise.all([ctx.waitForEvent("page", { timeout: 4000 }).catch(() => null), p.locator("#start .ct__way--wa").tap()]);
     if (!pop) fail(vp, "whatsapp tap opened nothing"); else { if (pop.url() !== WA) fail(vp, "whatsapp popup url " + pop.url()); await pop.close(); }
-    await p.locator("#start button.ct__way").tap(); await p.waitForTimeout(1200);
+    await p.locator("#start button.ct__way").tap(); await p.waitForTimeout(3500);
     const cal = await p.evaluate(() => !!document.querySelector("cal-modal-box, iframe[src*='cal.com'], [id^='cal-']")) || ctx.pages().length > 1;
     if (!cal) fail(vp, "book a call tap opened nothing");
     for (const x of ctx.pages()) if (x !== p) await x.close().catch(() => {});
+    // the live Cal modal (when the network allows it) sits over the page until closed
+    await p.keyboard.press("Escape").catch(() => {}); await p.waitForTimeout(500);
+    await p.evaluate(() => document.querySelectorAll("cal-modal-box, [id^='cal-'], iframe[src*='cal.com']").forEach((e) => e.remove())).catch(() => {});
   }
 
   if (want("nav")) {

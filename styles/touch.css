@@ -3,14 +3,15 @@
 
 /* Hit areas: extend, never resize. The visible control keeps its size; its tappable area grows to about 44px. */
 @media (pointer: coarse) {
-  .nav__link::before, .nav__pill::before, .rx-stage::before, .shw__zoom::before, .aorb__sat::before, .hero__mail a::before, .ct__phone a::before { content: ""; position: absolute; }
-  .nav__pill, .rx-stage, .hero__mail a, .ct__phone a, .shw__btn { position: relative; }
+  .nav__link::before, .nav__pill::before, .rx-stage::before, .shw__zoom::before, .aorb__sat::before { content: ""; position: absolute; }
+  .nav__pill, .rx-stage, .shw__btn { position: relative; }
   .nav__link::before { inset: -6px -4px; }
   .nav__pill::before { inset: -4px -2px; }
   .rx-stage::before { inset: -4px -2px; }
   .shw__zoom::before { inset: -6px -4px; }
-  .hero__mail a::before { inset: -12px -4px; }
-  .ct__phone a::before { inset: -8px -4px; }
+  /* text links that can wrap: pad the box and cancel it with a negative margin, so the tappable area grows but layout does not move */
+  .hero__mail a { padding-block: 10px; margin-block: -10px; }
+  .ct__phone a { padding-block: 13px; margin-block: -7px; }
   .shw__btn::before { content: ""; position: absolute; inset: -3px; }
   /* stacked tabs have no room for an extended area: give them a real 40px height instead */
   .dpx__tab { min-height: 40px; }
