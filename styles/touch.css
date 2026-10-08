@@ -1,0 +1,35 @@
+/* TOUCH HARDENING. Everything here is gated on input capability, never on width alone, so mouse-driven desktop and laptop
+   layouts are untouched. An iPad in landscape gets the laptop layout but still gets these rules. */
+
+/* Hit areas: extend, never resize. The visible control keeps its size; its tappable area grows to 44px. A ::before is positioned from
+   the padding box, so bordered controls need 1px more per side than their visible gap suggests. */
+@media (pointer: coarse) {
+  .nav__link::before, .nav__pill::before, .rx-stage::before, .shw__zoom::before, .aorb__sat::before { content: ""; position: absolute; }
+  .nav__pill, .rx-stage, .shw__btn { position: relative; }
+  .nav__link::before { inset: -6px 0; }
+  .nav__pill::before { inset: -4px 0; }
+  .rx-stages { row-gap: 10px; }
+  .rx-stage::before { inset: -5px 0; }
+  .shw__zoom::before { inset: -6px 0; }
+  /* text links that can wrap: pad the box and cancel it with a negative margin, so the tappable area grows but layout does not move */
+  .hero__mail a { padding-block: 10px; margin-block: -10px; }
+  .ct__phone a { padding-block: 14px; margin-block: -8px; }
+  .shw__btn::before { content: ""; position: absolute; inset: -3px; }
+  /* stacked tabs have no room for an extended area: give them a real 44px height instead */
+  .dpx__tab { min-height: 44px; }
+  /* the narrowest pills get a real 44px width (a few px), so the extension can stay vertical and never touch a neighbour sideways */
+  .aorb__sat { min-width: 44px; }
+  .aorb__sat::before { inset: -7px 0; }
+  .shw__tab::before { content: ""; position: absolute; inset: -6px 0; }
+
+  /* footer links are a stack of short rows: give each row a real 44px height instead of overlapping extensions */
+  .footer__cols li a, .footer__cols .link-btn { display: inline-flex; align-items: center; min-height: 44px; padding-block: 0; }
+
+  /* no double-tap-to-zoom delay or accidental zoom on controls; pinch zoom stays available */
+  a, button, [role="tab"], label, summary, input, textarea, select { touch-action: manipulation; }
+}
+
+/* Reveals that were hover-only must also open on tap (the card takes focus when tapped). */
+@media (hover: none) {
+  .w3__mid:focus .w3__meta { opacity: 1; translate: 0 0; }
+}

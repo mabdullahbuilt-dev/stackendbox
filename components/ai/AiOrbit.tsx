@@ -61,6 +61,9 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
   dockedRef.current = docked;
   const compactRef = useRef(compact);
   compactRef.current = compact;
+  // touch devices extend each module's tap area by a few px; keep that extension from touching a neighbour's
+  const coarseRef = useRef(false);
+  useEffect(() => { coarseRef.current = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches; }, []);
 
   const paint = useCallback((dt = 0) => {
     const { w, h } = size.current;
@@ -106,7 +109,8 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
         for (let push = 0; push <= 64; push += 4) {
           const x = f.x * (1 + push / len), y = f.y * (1 + push / len);
           need = push;
-          if (!placed.some((q) => Math.abs(q.x - x) < (PW + 10) * k && Math.abs(q.y - y) < (PH + 8) * k)) break;
+          const gx = coarseRef.current ? 12 : 10, gy = coarseRef.current ? 22 : 8; // coarse: room for the vertically extended tap areas
+          if (!placed.some((q) => Math.abs(q.x - x) < (PW + gx) * k && Math.abs(q.y - y) < (PH + gy) * k)) break;
         }
         const cur = yieldOff.current[n.key] ?? 0;
         const next = dt && !reduced ? cur + (need - cur) * Math.min(1, dt / 160) : need;

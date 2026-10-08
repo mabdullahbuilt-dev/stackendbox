@@ -45,7 +45,7 @@ for (const [w, h] of VPS) {
   const [pop] = await Promise.all([ctx.waitForEvent("page", { timeout: 4000 }).catch(() => null), p.locator("#start .ct__way--wa").click()]);
   if (!pop) fail("whatsapp did not open a new tab"); else { const u = pop.url(); if (u !== WA) fail("popup url " + u); await pop.close(); }
   // Book a call opens the Cal popup / tab
-  await p.locator("#start button.ct__way").click(); await p.waitForTimeout(1200);
+  await p.locator("#start button.ct__way").click(); await p.waitForTimeout(3500);
   const calOpen = await p.evaluate(() => !!document.querySelector("cal-modal-box, iframe[src*='cal.com'], [id^='cal-']")) || ctx.pages().length > 1;
   if (!calOpen) fail("book a call did not open anything");
   await ctx.close();
