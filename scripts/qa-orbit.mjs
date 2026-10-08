@@ -14,8 +14,14 @@ for (const [w, h] of SIZES) {
   const p = await c.newPage();
   await p.goto(URL, { waitUntil: "load", timeout: 60000 });
   await p.waitForTimeout(1500);
-  await p.evaluate(() => { const e = document.querySelector("#ai"); scrollTo(0, e.getBoundingClientRect().top + scrollY + 120); });
-  await p.waitForTimeout(1500);
+  // late layout (images, fonts) moves the section: keep scrolling to it until it is really on screen and its entrance has played
+  for (let t = 0; t < 8; t++) {
+    await p.evaluate(() => { const e = document.querySelector("#ai"); scrollTo(0, e.getBoundingClientRect().top + scrollY + 120); });
+    await p.waitForTimeout(1200);
+    const on = await p.evaluate(() => { const r = document.querySelector(".aorb").getBoundingClientRect(); return r.top >= -50 && r.bottom <= innerHeight + 50 + 400; });
+    if (on) break;
+  }
+  await p.waitForTimeout(2500);
   let over = 0, worst = "", vis = 0;
   for (let i = 0; i < SAMPLES; i++) {
     const r = await p.evaluate(() => {
