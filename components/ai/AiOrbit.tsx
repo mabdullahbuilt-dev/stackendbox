@@ -62,8 +62,13 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
   const compactRef = useRef(compact);
   compactRef.current = compact;
   // touch devices extend each module's tap area by a few px; keep that extension from touching a neighbour's
+  // and a pill that keeps moving under a finger is hard to hit, so touch devices get the static ring at every width
   const coarseRef = useRef(false);
-  useEffect(() => { coarseRef.current = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches; }, []);
+  const [coarse, setCoarse] = useState(false);
+  useEffect(() => { const c = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches; coarseRef.current = c; setCoarse(c); }, []);
+  const still = compact || coarse;
+  const stillRef = useRef(still);
+  stillRef.current = still;
 
   const paint = useCallback((dt = 0) => {
     const { w, h } = size.current;
@@ -72,7 +77,7 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
     const pos: Record<string, { x: number; y: number; t: number }> = {};
     // compact (phones): one static ring of six, evenly spaced, no orbit motion
     NODES.forEach((n, i) => {
-      if (compactRef.current) {
+      if (stillRef.current) {
         const th = ((-90 + i * 60) * Math.PI) / 180;
         pos[n.key] = { x: Math.cos(th) * w * 0.37, y: Math.sin(th) * h * 0.4, t: (Math.sin(th) + 1) / 2 };
         return;
@@ -106,11 +111,13 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
         if (rank(n) === 0) { placed.push(f); return; }
         const len = Math.hypot(f.x, f.y) || 1;
         let need = 0;
-        for (let push = 0; push <= 64; push += 4) {
+        const maxPush = coarseRef.current ? 110 : 64;
+        for (let push = 0; push <= maxPush; push += 4) {
           const x = f.x * (1 + push / len), y = f.y * (1 + push / len);
           need = push;
-          const gx = coarseRef.current ? 12 : 10, gy = coarseRef.current ? 22 : 8; // coarse: room for the vertically extended tap areas
-          if (!placed.some((q) => Math.abs(q.x - x) < (PW + gx) * k && Math.abs(q.y - y) < (PH + gy) * k)) break;
+          const co = coarseRef.current; // coarse: the tap areas extend a fixed number of px (not scaled with k), so keep a fixed vertical gap
+          const gx = co ? 12 : 10, rowH = co ? PH * k + 34 : (PH + 8) * k;
+          if (!placed.some((q) => Math.abs(q.x - x) < (PW + gx) * k && Math.abs(q.y - y) < rowH)) break;
         }
         const cur = yieldOff.current[n.key] ?? 0;
         const next = dt && !reduced ? cur + (need - cur) * Math.min(1, dt / 160) : need;
@@ -138,7 +145,7 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
   // one rAF loop, only while the chapter is visible and motion is allowed
   useEffect(() => {
     const L = loop.current;
-    if (!live || reduced || compact) { cancelAnimationFrame(L.raf); L.raf = 0; paint(); return; }
+    if (!live || reduced || still) { cancelAnimationFrame(L.raf); L.raf = 0; paint(); return; }
     L.last = performance.now();
     const tick = (now: number) => {
       const dt = Math.min(48, now - L.last); L.last = now;
@@ -148,9 +155,9 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
     };
     L.raf = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(L.raf); L.raf = 0; };
-  }, [live, reduced, compact, paint]);
+  }, [live, reduced, still, paint]);
   // docking changes repaint at once when no loop runs (reduced motion, compact)
-  useEffect(() => { if (!loop.current.raf) paint(); }, [docked, paint]);
+  useEffect(() => { if (!loop.current.raf) paint(); }, [docked, still, paint]);
 
   useEffect(() => {
     const el = plane.current;
@@ -176,7 +183,7 @@ export function AiOrbit({ docked, stateOf, hub, busy, done, live, reduced, onPic
             <radialGradient id="aorb-glow"><stop offset="0" stopColor="rgba(47,210,122,0.16)" /><stop offset="1" stopColor="rgba(47,210,122,0)" /></radialGradient>
           </defs>
           <ellipse cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * 0.2} ry={dim.h * 0.2} fill="url(#aorb-glow)" />
-          {compact
+          {still
             ? <ellipse className="aorb__ring" cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * 0.37} ry={dim.h * 0.4} />
             : [0, 1].map((r) => <ellipse key={r} className="aorb__ring" data-ring={r} cx={dim.w / 2} cy={dim.h / 2} rx={dim.w * RX[r]} ry={dim.h * RY[r]} />)}
           {NODES.map((n) => { const st = stateOf(n.key); return <line key={n.key} ref={(l) => { beams.current[n.key] = l; }} className="aorb__beam" data-st={docked && st !== "idle" ? st : "off"} />; })}

@@ -186,7 +186,8 @@ async function perViewport([w, h, dpr]) {
     const seen = new Map();
     await sweep(p, null, () => p.evaluate(TAPS).then((a) => { for (const x of a) seen.set(`${x.t}|${x.label}|${x.sec}`, x); }));
     const ov = new Set();
-    await sweep(p, null, () => p.evaluate(HITS).then((a) => a.forEach((x) => ov.add(x))));
+    // an overlap seen while a chapter's entrance is still playing is re-measured once it has settled; only a settled overlap fails
+    await sweep(p, null, async () => { let a = await p.evaluate(HITS); if (a.length) { await p.waitForTimeout(1500); a = await p.evaluate(HITS); } a.forEach((x) => ov.add(x)); });
     for (const x of ov) fail(vp, `overlapping tap areas: ${x}`);
     for (const x of seen.values()) fail(vp, `effective tap area (< 44px) ${x.w}x${x.h} ${x.t} "${x.label}" #${x.sec}`);
   }
