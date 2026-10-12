@@ -23,6 +23,15 @@ beforeEach(() => {
   auth.signOut.mockResolvedValue({error:null});
 });
 describe("email link confirmation", () => {
+  it("reloads a changed fragment without consuming its credentials",async()=>{
+    const html=await(await GET()).text(),script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+    let changed=()=>{};
+    const location={pathname:"/client-portal/auth/callback",search:"",hash:"#token_hash=first&type=invite",reload:vi.fn()};
+    const fetcher=vi.fn();
+    runInNewContext(script!,{location,history:{},URLSearchParams,window:{addEventListener:(_event:string,fn:()=>void)=>{changed=fn;}},document:{getElementById:()=>({addEventListener:vi.fn()}),querySelector:()=>({})},fetch:fetcher});
+    location.hash="#token_hash=newer&type=recovery";changed();
+    expect(location.reload).toHaveBeenCalledOnce();expect(fetcher).not.toHaveBeenCalled();expect(location.hash).toContain("newer");
+  });
   it("verifies initial-password email without forcing a reset",async()=>{
     auth.verifyOtp.mockResolvedValue({error:null,data:{user:{app_metadata:{portal_credential_mode:"initial_password"}}}});
     const r=await POST(request({token_hash:"fixture-token-hash",type:"invite"}));
@@ -45,7 +54,7 @@ describe("email link confirmation", () => {
     const status={textContent:"",appendChild:vi.fn()};
     const history={replaceState:(_state:unknown,_title:string,url:string)=>{const parsed=new URL(url,"https://portal.example");location.search=parsed.search;location.hash=parsed.hash;}};
     const fetcher=vi.fn(async()=>({ok:true,json:async()=>({next:"/client-portal/reset-password"})}));
-    const context={location,history,URLSearchParams,document:{getElementById:(id:string)=>id==="confirm"?button:status,querySelector:()=>({}),createElement:()=>({})},fetch:fetcher};
+    const context={location,history,URLSearchParams,window:{addEventListener:vi.fn()},document:{getElementById:(id:string)=>id==="confirm"?button:status,querySelector:()=>({}),createElement:()=>({})},fetch:fetcher};
     runInNewContext(script!,context);
     expect(location.search).toBe("");expect(location.hash).toContain("token_hash=fixture-token-hash");expect(fetcher).not.toHaveBeenCalled();
     runInNewContext(script!,context); // A fresh JS context reads the preserved fragment.
