@@ -134,7 +134,8 @@ export function AdminDomains({
         </p>
       )}
       <section className="portal-panel">
-        <h2>Registrar inventory</h2>
+        <h2>Client-domain registrar inventory</h2>
+        <p>Use the dedicated StackEndBox client-domains Spaceship account. Keep personal domains outside this integration.</p>
         <button
           disabled={busy}
           className="portal-button"
@@ -174,7 +175,7 @@ export function AdminDomains({
           isn&apos;t proof of ownership.
         </p>
         {!inventory.length ? (
-          <p>No domains were returned by the configured registrar account.</p>
+          <p>The configured client-domain account returned no domains. An empty inventory is valid before client domains are purchased or transferred into that account. No personal domains are imported automatically.</p>
         ) : (
           <div className="portal-table-wrap">
             <table>

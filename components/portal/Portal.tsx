@@ -1074,7 +1074,7 @@ export function AdminDomainSearch({ clientSelect }: { clientSelect: ReactNode })
           <p>Initial sales are handled by StackEndBox. Registrar purchasing is disabled until acceptance and authorization are complete.</p>
           <p>A domain does not include a website, hosting, database, mailboxes, or paid third-party services.</p>
           <p>Ownership and registration contact details must be confirmed before any live registration.</p>
-              <Form
+              {typeof selected.retail_minor === "number" ? <Form
                 button="Review final quote"
                 onSubmit={async (f) => {
                   const q = await api("admin/quotes", {
@@ -1087,7 +1087,7 @@ export function AdminDomainSearch({ clientSelect }: { clientSelect: ReactNode })
                 }}
               >
                 {clientSelect}
-              </Form>
+              </Form> : <p><button className="portal-button" disabled>Supplier pricing verification required</button></p>}
         </section>
       )}
       {quote && <section className="portal-panel"><h2>Saved customer quote</h2><p>{str(quote.domain)} · {money(quote.retail_minor)} · valid until {date(quote.valid_until)}</p><p>No payment or registration was performed. Reference: {str(quote.id)}</p></section>}
@@ -1100,8 +1100,7 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
   const nameservers = d.nameservers as { hosts?: string[] } | undefined;
   const latestRenewal = rows(data, "quotes").filter(q => q.domain_id === d.id && q.kind === "renewal" && Date.parse(str(q.valid_until)) > now).sort((a, b) => str(b.created_at).localeCompare(str(a.created_at)))[0];
   const linkedWebsites = rows(data, "websites").filter(w => w.domain_id === d.id);
-  const [tab, setTab] = useState("Overview"),
-    [quote, setQuote] = useState<Row | null>(null);
+  const [tab, setTab] = useState("Overview");
   const assignment = rows(data, "domain_assignments").find(
     (a) => a.domain_id === d.id,
   );
@@ -1221,22 +1220,11 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
               before checkout. Unpaid renewals do not trigger a registrar
               request.
             </p>
-            {assignment && (
-              <Action
-                title="Prepare renewal quote"
-                run={async () => {
-                  setQuote(
-                    await api("quotes", {
-                      domain: d.name,
-                      client_id: assignment.client_id,
-                      kind: "renewal",
-                    }),
-                  );
-                  return { message: "Quote prepared." };
-                }}
-              />
-            )}
-            {quote && (data.sandbox_checkout_enabled === true ? <QuoteCheckout quote={quote} /> : <p>Renewal quote: {money(quote.retail_minor)}. <Link href="/client-portal/requests">Contact StackEndBox to arrange renewal</Link>.</p>)}
+            {assignment && latestRenewal ? (
+              data.sandbox_checkout_enabled === true ? <QuoteCheckout quote={latestRenewal} /> : <p>Verified renewal quote: {money(latestRenewal.retail_minor)}. Online payments remain disabled pending acceptance.</p>
+            ) : <p>A current verified renewal quote hasn&apos;t been issued. StackEndBox must confirm supplier pricing before you can approve a renewal.</p>}
+            {(!latestRenewal || data.sandbox_checkout_enabled !== true) && <button className="portal-button" disabled>Online renewal unavailable</button>}
+            <p><Link href="/client-portal/requests">Contact StackEndBox about renewal</Link></p>
           </>
         )}
         {tab === "Activity" && (

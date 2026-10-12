@@ -6,6 +6,7 @@ const clientId=process.env.PORTAL_ACCEPTANCE_CLIENT_ID;
 if(!email||!clientId||!process.env.PORTAL_VERCEL_CONFIG||!process.env.PORTAL_ACCEPTANCE_REPORT)throw new Error('Explicit authorized test identity and private report path required');
 const measurements=[];
 const sessions=[];
+const supportOnly=process.argv.includes('--support-only');
 try {
  const {token}=JSON.parse(await readFile(`${process.env.PORTAL_VERCEL_CONFIG}/auth.json`,'utf8'));
  const project=JSON.parse(await readFile('.vercel/project.json','utf8'));
@@ -34,7 +35,7 @@ try {
  }
  // Existing admin-issued one-time email tokens remain in memory. These do not
  // replace or claim to benchmark the browser's password/Turnstile login flow.
- for(let i=0;i<5;i++){
+ for(let i=0;i<(supportOnly?2:5);i++){
   const start=performance.now();
   const link=await admin.auth.admin.generateLink({type:'magiclink',email});
   const auth=newSession();
@@ -45,7 +46,7 @@ try {
   const jar=new Map();sessions.push({auth,jar});
   await request(jar,'/api/portal/auth/session',{access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token});
  }
- await Promise.all(sessions.map(async({jar})=>{
+ if(!supportOnly)await Promise.all(sessions.map(async({jar})=>{
   for(let repeat=0;repeat<2;repeat++)for(const section of ['dashboard','domains','websites','billing','requests']){
    const html=await request(jar,`/client-portal/${section}`);
    if(typeof html!=='string'||!html.includes('CLIENT PORTAL'))throw new Error('Authenticated page did not render');
@@ -55,16 +56,19 @@ try {
  }));
  await request(sessions[0].jar,'/api/portal/admin/workspace',undefined,403);
  await request(new Map(),'/api/portal/data',undefined,401);
- if(process.argv.includes('--support')){
+ if(process.argv.includes('--support')||supportOnly){
   const jar=sessions[0].jar;
   const existing=await request(jar,'/api/portal/data?section=requests');
   let record=existing.requests.find(record=>record.subject==='TEST ONLY hosted support acceptance');
   if(!record)record=await request(jar,'/api/portal/requests',{client_id:clientId,subject:'TEST ONLY hosted support acceptance',description:'Authorized temporary client functional acceptance. No real customer work or registrar change requested.',category:'General support'});
+  const replyText='TEST ONLY client conversation persistence acceptance';
+  if(!existing.messages.some(message=>message.request_id===record.id&&message.body===replyText))await request(jar,`/api/portal/requests/${record.id}/messages`,{body:replyText});
   const reread=await request(sessions[1].jar,'/api/portal/data?section=requests');
   if(!reread.requests.some(saved=>saved.id===record.id))throw new Error('Support persistence failed across independent sessions');
+  if(!reread.messages.some(message=>message.request_id===record.id&&message.body===replyText))throw new Error('Support conversation persistence failed');
  }
  const dataTimes=measurements.filter(m=>m.path.startsWith('/api/portal/data?')).map(m=>m.totalMs).sort((a,b)=>a-b);
- const result={at:new Date().toISOString(),origin,concurrentSessions:5,registeredTestClients:1,authenticatedNavigationRequests:100,errors:0,dataRequestMedianMs:dataTimes[Math.floor(dataTimes.length/2)],dataRequestP95Ms:dataTimes[Math.ceil(dataTimes.length*.95)-1],measuredResponseBytes:measurements.reduce((total,m)=>total+(m.responseBytes||0),0),supportPersistence:process.argv.includes('--support'),scope:'Hosted authenticated navigation and session restoration using authorized one-time email tokens. Not a password/Turnstile login benchmark, five different tenants, registrar acceptance, or provider billing-meter measurement.',measurements};
+ const result={at:new Date().toISOString(),origin,concurrentSessions:supportOnly?2:5,registeredTestClients:1,authenticatedNavigationRequests:supportOnly?0:100,errors:0,dataRequestMedianMs:dataTimes[Math.floor(dataTimes.length/2)],dataRequestP95Ms:dataTimes[Math.ceil(dataTimes.length*.95)-1],measuredResponseBytes:measurements.reduce((total,m)=>total+(m.responseBytes||0),0),supportPersistence:process.argv.includes('--support')||supportOnly,scope:supportOnly?'Hosted support request and conversation persistence across two independent sessions. Not a navigation load benchmark.':'Hosted authenticated navigation and session restoration using authorized one-time email tokens. Not a password/Turnstile login benchmark, five different tenants, registrar acceptance, or provider billing-meter measurement.',measurements};
  await writeFile(process.env.PORTAL_ACCEPTANCE_REPORT,JSON.stringify(result,null,2));
  console.log(JSON.stringify({...result,measurements:undefined}));
 }catch(error){
