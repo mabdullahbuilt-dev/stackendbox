@@ -74,3 +74,7 @@ Run `scripts/portal-backup.mjs` with `SUPABASE_CLI_BIN`, `POSTGRES_BIN` and an o
 A CLI dry-run initially exposed a temporary database credential in tool output. Its password was immediately cleared. The temporary login role was later re-enabled with a null password, and the CLI obtained a fresh credential. The exposed credential was not reused. Backup helpers now capture connection details privately and never print connection strings or command errors containing secrets.
 
 Existing authentication email delivery still uses Supabase-generated one-time links through the verified Brevo API. Supabase SMTP was not configured or falsely reported as tested. Public signup configuration was not changed in this shared project.
+
+### Deployment evidence
+
+Code commit `cb2001c` is deployed as Ready Preview `stackendbox-l1ufyqnnv-portfolio-ab4e.vercel.app`, with the stable portal Preview alias verified against that deployment. Ten deployed unauthenticated/unsigned endpoint checks passed, including the new client directory and health APIs. Browser navigation to `/admin/clients` returned the expected authenticator gate for the existing AAL1 session. No production deployment was requested. Supabase's migration history now lists all three applied versions.
