@@ -2,7 +2,7 @@ import next from "eslint-config-next";
 
 const config = [
   ...next,
-  { ignores: [".next/**", "node_modules/**", "scripts/**", "next-env.d.ts"] },
+  { ignores: [".next/**", "dist/**", ".wrangler/**", ".vinext/**", "node_modules/**", "scripts/**", "next-env.d.ts"] },
   {
     rules: {
       // Scroll/animation code intentionally reads refs and writes DOM in effects.

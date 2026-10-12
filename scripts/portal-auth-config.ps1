@@ -1,4 +1,4 @@
-param([ValidateSet('Inspect','Prepare','Activate')][string]$Action='Inspect')
+param([ValidateSet('Inspect','Prepare','Activate','Acceptance')][string]$Action='Inspect')
 $ErrorActionPreference='Stop'
 # Use the existing supported CLI credential. Never emit secrets or full config.
 Add-Type @'
@@ -21,8 +21,13 @@ try {
   $portalConfig=Invoke-RestMethod -Uri $portalEndpoint -Headers $portalHeaders -TimeoutSec 30
   if ($Action -ne 'Inspect') {
     $portalRedirects=@($portalConfig.uri_allow_list -split ',' | Where-Object {$_})
-    $portalRedirects+=@('https://www.stackendbox.com/client-portal/auth/callback','https://stackendbox-portal-preview.vercel.app/client-portal/auth/callback')
-    $portalChanges=@{uri_allow_list=($portalRedirects|Select-Object -Unique)-join ',';disable_signup=$true}
+    if ($Action -eq 'Acceptance') {
+      $portalRedirects+='https://stackendbox-cf-acceptance.stackendbox.workers.dev/client-portal/auth/callback'
+      $portalChanges=@{uri_allow_list=($portalRedirects|Select-Object -Unique)-join ','}
+    } else {
+      $portalRedirects+=@('https://www.stackendbox.com/client-portal/auth/callback','https://stackendbox-portal-preview.vercel.app/client-portal/auth/callback')
+      $portalChanges=@{uri_allow_list=($portalRedirects|Select-Object -Unique)-join ',';disable_signup=$true}
+    }
     if ($Action -eq 'Activate') {$portalChanges.site_url='https://www.stackendbox.com/client-portal/auth/callback'}
     $null=Invoke-RestMethod -Method Patch -Uri $portalEndpoint -Headers $portalHeaders -ContentType 'application/json' -Body ($portalChanges|ConvertTo-Json -Compress) -TimeoutSec 30
     $portalConfig=Invoke-RestMethod -Uri $portalEndpoint -Headers $portalHeaders -TimeoutSec 30

@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stackendbox-cf-acceptance",
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "WHOP_MODE": "sandbox",
+    "PORTAL_SANDBOX_CHECKOUT_ENABLED": "false",
+    "PORTAL_JOBS_ENABLED": "false",
+    "DOMAIN_LIVE_PURCHASES_ENABLED": "false",
+    "DOMAIN_LIVE_RENEWALS_ENABLED": "false",
+    "DOMAIN_LIVE_MUTATIONS_ENABLED": "false",
+    "DOMAIN_MUTATION_ALLOWLIST": "",
+    "VERCEL_ENV": "preview"
+  },
+  "compatibility_date": "2026-10-12",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "vinext/server/fetch-handler",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS",
+    "run_worker_first": ["/_vinext/static-cache/*"]
+  }
+}

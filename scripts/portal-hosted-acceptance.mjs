@@ -1,30 +1,35 @@
 import {readFile,writeFile} from 'node:fs/promises';
 import {projectClients} from './lib/supabase-access.mjs';
-const origin='https://stackendbox-portal-preview.vercel.app';
+const origin=process.env.PORTAL_ACCEPTANCE_ORIGIN||'https://stackendbox-portal-preview.vercel.app';
+if(!['https://stackendbox-portal-preview.vercel.app','https://stackendbox-cf-acceptance.stackendbox.workers.dev'].includes(origin))throw new Error('Unapproved acceptance origin');
+const vercelPreview=origin.includes('.vercel.app');
 const email=process.env.PORTAL_ACCEPTANCE_EMAIL;
 const clientId=process.env.PORTAL_ACCEPTANCE_CLIENT_ID;
-if(!email||!clientId||!process.env.PORTAL_VERCEL_CONFIG||!process.env.PORTAL_ACCEPTANCE_REPORT)throw new Error('Explicit authorized test identity and private report path required');
+if(!email||!clientId||(vercelPreview&&!process.env.PORTAL_VERCEL_CONFIG)||!process.env.PORTAL_ACCEPTANCE_REPORT)throw new Error('Explicit authorized test identity and private report path required');
 const measurements=[];
 const sessions=[];
 const supportOnly=process.argv.includes('--support-only');
 const recordsOnly=process.argv.includes('--records-only');
 const bounded=supportOnly||recordsOnly;
 try {
+ let bypass;
+ if(vercelPreview){
  const {token}=JSON.parse(await readFile(`${process.env.PORTAL_VERCEL_CONFIG}/auth.json`,'utf8'));
  const project=JSON.parse(await readFile('.vercel/project.json','utf8'));
  if(project.projectId!=='prj_K2ZRC5sHMG1y2BE6BetT3mRGOGvz')throw new Error('Wrong project');
  const response=await fetch(`https://api.vercel.com/v9/projects/${project.projectId}?teamId=${project.orgId}`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(30000)});
  if(!response.ok)throw new Error('Project access unavailable');
  const info=await response.json();
- const bypass=Object.entries(info.protectionBypass||{}).find(([,value])=>value.scope==='automation-bypass')?.[0];
+ bypass=Object.entries(info.protectionBypass||{}).find(([,value])=>value.scope==='automation-bypass')?.[0];
  if(!bypass)throw new Error('Existing supported automation bypass unavailable');
+ }
  const {admin,newSession}=await projectClients();
  const membership=await admin.from('portal_memberships').select('user_id,portal_clients(business_name),portal_accounts(approved_email,role,active)').eq('client_id',clientId).single();
  const member=membership.data;
  if(membership.error||!member||member.portal_accounts?.approved_email!==email||member.portal_accounts.role!=='client'||!member.portal_accounts.active||!member.portal_clients?.business_name.startsWith('TEST ONLY '))throw new Error('Authorized test fixture could not be verified');
  async function request(jar,path,body,expected=200){
   const start=performance.now();
-  const response=await fetch(origin+path,{method:body?'POST':'GET',headers:{'x-vercel-protection-bypass':bypass,Origin:origin,...(jar?.size?{Cookie:[...jar].map(([key,value])=>`${key}=${value}`).join('; ')}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),redirect:'manual',signal:AbortSignal.timeout(30000)});
+  const response=await fetch(origin+path,{method:body?'POST':'GET',headers:{...(bypass?{'x-vercel-protection-bypass':bypass}:{}),Origin:origin,...(jar?.size?{Cookie:[...jar].map(([key,value])=>`${key}=${value}`).join('; ')}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),redirect:'manual',signal:AbortSignal.timeout(30000)});
   const firstByteMs=performance.now()-start;
   const text=await response.text();
   for(const cookie of response.headers.getSetCookie()){

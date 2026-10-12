@@ -15,3 +15,6 @@ supabase/.temp/
 supabase/.branches/
 backups/
 .local-db/
+/dist/
+.vinext/
+.wrangler/
