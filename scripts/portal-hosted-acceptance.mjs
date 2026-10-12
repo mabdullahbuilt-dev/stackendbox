@@ -7,6 +7,8 @@ if(!email||!clientId||!process.env.PORTAL_VERCEL_CONFIG||!process.env.PORTAL_ACC
 const measurements=[];
 const sessions=[];
 const supportOnly=process.argv.includes('--support-only');
+const recordsOnly=process.argv.includes('--records-only');
+const bounded=supportOnly||recordsOnly;
 try {
  const {token}=JSON.parse(await readFile(`${process.env.PORTAL_VERCEL_CONFIG}/auth.json`,'utf8'));
  const project=JSON.parse(await readFile('.vercel/project.json','utf8'));
@@ -35,7 +37,7 @@ try {
  }
  // Existing admin-issued one-time email tokens remain in memory. These do not
  // replace or claim to benchmark the browser's password/Turnstile login flow.
- for(let i=0;i<(supportOnly?2:5);i++){
+ for(let i=0;i<(bounded?2:5);i++){
   const start=performance.now();
   const link=await admin.auth.admin.generateLink({type:'magiclink',email});
   const auth=newSession();
@@ -46,7 +48,7 @@ try {
   const jar=new Map();sessions.push({auth,jar});
   await request(jar,'/api/portal/auth/session',{access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token});
  }
- if(!supportOnly)await Promise.all(sessions.map(async({jar})=>{
+ if(!bounded)await Promise.all(sessions.map(async({jar})=>{
   for(let repeat=0;repeat<2;repeat++)for(const section of ['dashboard','domains','websites','billing','requests']){
    const html=await request(jar,`/client-portal/${section}`);
    if(typeof html!=='string'||!html.includes('CLIENT PORTAL'))throw new Error('Authenticated page did not render');
@@ -56,6 +58,17 @@ try {
  }));
  await request(sessions[0].jar,'/api/portal/admin/workspace',undefined,403);
  await request(new Map(),'/api/portal/data',undefined,401);
+ if(recordsOnly){
+  for(const {jar} of sessions){
+   const websiteData=await request(jar,'/api/portal/data?section=websites');
+   if(websiteData.account?.user_id!==member.user_id||websiteData.websites.some(record=>record.client_id!==clientId)||!websiteData.websites.some(record=>record.name==='TEST ONLY Website Assignment Fixture'&&record.url==='https://example.com/'))throw new Error('Website assignment persistence or isolation failed');
+   const support=await request(jar,'/api/portal/data?section=requests');
+   const record=support.requests.find(record=>record.subject==='TEST ONLY hosted support acceptance');
+   if(!record||record.status!=='under_review'||record.client_id!==clientId||!support.messages.some(message=>message.request_id===record.id&&message.body.startsWith('TEST ONLY staff reply acceptance')))throw new Error('Staff reply or status persistence failed');
+   const billing=await request(jar,'/api/portal/data?section=billing');
+   if(['orders','payments','invoices'].some(table=>(billing[table]||[]).some(record=>record.client_id!==clientId)))throw new Error('Billing isolation failed');
+  }
+ }
  if(process.argv.includes('--support')||supportOnly){
   const jar=sessions[0].jar;
   const existing=await request(jar,'/api/portal/data?section=requests');
@@ -68,7 +81,7 @@ try {
   if(!reread.messages.some(message=>message.request_id===record.id&&message.body===replyText))throw new Error('Support conversation persistence failed');
  }
  const dataTimes=measurements.filter(m=>m.path.startsWith('/api/portal/data?')).map(m=>m.totalMs).sort((a,b)=>a-b);
- const result={at:new Date().toISOString(),origin,concurrentSessions:supportOnly?2:5,registeredTestClients:1,authenticatedNavigationRequests:supportOnly?0:100,errors:0,dataRequestMedianMs:dataTimes[Math.floor(dataTimes.length/2)],dataRequestP95Ms:dataTimes[Math.ceil(dataTimes.length*.95)-1],measuredResponseBytes:measurements.reduce((total,m)=>total+(m.responseBytes||0),0),supportPersistence:process.argv.includes('--support')||supportOnly,scope:supportOnly?'Hosted support request and conversation persistence across two independent sessions. Not a navigation load benchmark.':'Hosted authenticated navigation and session restoration using authorized one-time email tokens. Not a password/Turnstile login benchmark, five different tenants, registrar acceptance, or provider billing-meter measurement.',measurements};
+ const result={at:new Date().toISOString(),origin,concurrentSessions:bounded?2:5,registeredTestClients:1,authenticatedNavigationRequests:bounded?0:100,errors:0,dataRequestMedianMs:dataTimes[Math.floor(dataTimes.length/2)],dataRequestP95Ms:dataTimes[Math.ceil(dataTimes.length*.95)-1],measuredResponseBytes:measurements.reduce((total,m)=>total+(m.responseBytes||0),0),supportPersistence:process.argv.includes('--support')||supportOnly,recordsPersistence:recordsOnly,scope:recordsOnly?'Read-only hosted website, staff reply/status and billing-isolation checks across two independently authenticated client sessions. Website is a labelled fixture, not a registrar asset. No load benchmark or password login claim.':supportOnly?'Hosted support request and conversation persistence across two independent sessions. Not a navigation load benchmark.':'Hosted authenticated navigation and session restoration using authorized one-time email tokens. Not a password/Turnstile login benchmark, five different tenants, registrar acceptance, or provider billing-meter measurement.',measurements};
  await writeFile(process.env.PORTAL_ACCEPTANCE_REPORT,JSON.stringify(result,null,2));
  console.log(JSON.stringify({...result,measurements:undefined}));
 }catch(error){
