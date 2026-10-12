@@ -25,15 +25,18 @@ create function public.portal_role() returns text language sql stable security d
     and lower(u.email)=a.approved_email and lower(auth.jwt()->>'email')=a.approved_email
     and (u.banned_until is null or u.banned_until < now())
 $$;
+create function public.portal_admin() returns boolean language sql stable security definer set search_path='' as $$
+  select coalesce(public.portal_role()='super_admin' and auth.jwt()->>'aal'='aal2',false)
+$$;
 create function public.portal_access(target uuid) returns boolean language sql stable security definer set search_path='' as $$
-  select coalesce(public.portal_role()='super_admin' or (
-    public.portal_role() is not null and exists (
+  select coalesce(public.portal_admin() or (
+    public.portal_role() in ('client','staff') and exists (
       select 1 from public.portal_memberships m join public.portal_clients c on c.id=m.client_id
       where m.user_id=auth.uid() and m.client_id=target and c.status='active'
     )),false)
 $$;
-revoke all on function public.portal_role(), public.portal_access(uuid) from public, anon;
-grant execute on function public.portal_role(), public.portal_access(uuid) to authenticated, service_role;
+revoke all on function public.portal_role(), public.portal_admin(), public.portal_access(uuid) from public, anon;
+grant execute on function public.portal_role(), public.portal_admin(), public.portal_access(uuid) to authenticated, service_role;
 
 create table public.portal_domains (
   id uuid primary key default gen_random_uuid(), provider text not null default 'spaceship',
@@ -240,14 +243,14 @@ do $$ declare t text; begin
   end loop;
   foreach t in array array['pricing','settings','quote_evidence','ledger','events','jobs','email_outbox','audit'] loop
     execute format('grant select on public.portal_%I to authenticated',t);
-    execute format('create policy admin_read on public.portal_%I for select to authenticated using (public.portal_role()=''super_admin'')',t);
+    execute format('create policy admin_read on public.portal_%I for select to authenticated using (public.portal_admin())',t);
   end loop;
 end $$;
 grant select on public.portal_accounts,public.portal_memberships,public.portal_clients,public.portal_domains to authenticated;
-create policy account_read on public.portal_accounts for select to authenticated using(public.portal_role()='super_admin' or (user_id=auth.uid() and public.portal_role() is not null));
-create policy membership_read on public.portal_memberships for select to authenticated using(public.portal_role()='super_admin' or (user_id=auth.uid() and public.portal_role() is not null));
+create policy account_read on public.portal_accounts for select to authenticated using(public.portal_admin() or (user_id=auth.uid() and public.portal_role() is not null));
+create policy membership_read on public.portal_memberships for select to authenticated using(public.portal_admin() or (user_id=auth.uid() and public.portal_role() is not null));
 create policy client_read on public.portal_clients for select to authenticated using(public.portal_access(id));
-create policy domain_read on public.portal_domains for select to authenticated using(public.portal_role()='super_admin' or (not protected and exists(select 1 from public.portal_domain_assignments a where a.domain_id=id and public.portal_access(a.client_id))));
+create policy domain_read on public.portal_domains for select to authenticated using(public.portal_admin() or (not protected and exists(select 1 from public.portal_domain_assignments a where a.domain_id=id and public.portal_access(a.client_id))));
 grant usage,select on sequence public.portal_audit_id_seq to service_role;
 
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
