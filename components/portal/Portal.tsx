@@ -69,6 +69,8 @@ const errors: Record<string, string> = {
   invalid_credentials:
     "The email or password is incorrect, or this account is not approved.",
   verification_failed: "Please complete the security check again.",
+  verification_required:
+    "Security verification hasn't completed. Wait for the check to succeed, or use Retry verification if it fails.",
   quote_expired: "This quote has expired. Request a fresh quote.",
   renewal_requires_administrator_review:
     "This domain needs an administrator review before renewal. Contact support.",
@@ -233,6 +235,7 @@ export function Portal({ path }: { path: string[] }) {
             <Form
               button={section === "login" ? "Sign in" : "Send recovery link"}
               onSubmit={async (f) => {
+                if (!token) throw new Error(errors.verification_required);
                 try {
                   const r = await api(
                     section === "login" ? "auth/login" : "auth/recover",
@@ -251,6 +254,24 @@ export function Portal({ path }: { path: string[] }) {
                 <Field name="password" title="Password" type="password" />
               )}
               <Turnstile key={tokenKey} onToken={setToken} />
+              {!token && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                <div>
+                  <p className="portal-small" role="status">
+                    Complete the security check before continuing. If it fails,
+                    retry verification or reload this page.
+                  </p>
+                  <button
+                    type="button"
+                    className="portal-button"
+                    onClick={() => {
+                      setToken("");
+                      setTokenKey((k) => k + 1);
+                    }}
+                  >
+                    Retry verification
+                  </button>
+                </div>
+              )}
               {!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
                 <p role="alert">
                   Security verification is not configured. Sign-in is

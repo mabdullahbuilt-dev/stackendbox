@@ -52,6 +52,8 @@ async function handle(req: NextRequest, context: Context) {
       req.method === "POST" &&
       ["auth/login", "auth/recover"].includes(route)
     ) {
+      if (typeof body.token !== "string" || !body.token.trim())
+        throw new PortalError("verification_required", 400);
       const input = z
         .object({
           email: z.email().max(254),

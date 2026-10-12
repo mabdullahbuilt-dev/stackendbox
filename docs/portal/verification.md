@@ -14,14 +14,14 @@ The portal is under `/client-portal` on a feature branch. Do not merge or promot
 - Supabase Site URL and its exact redirect allowlist now use `https://stackendbox-portal-preview.vercel.app/client-portal/auth/callback`, saved after explicit approval. Local recovery and invitation redirects were aligned with that exact URL.
 - Whop sandbox payment-read access is verified against the existing company. No payment records were returned.
 - After explicit approval and the user's Whop identity check, `developer:manage_webhook` was added to the existing sandbox key. Sandbox registration product `prod_PDDbs2Lxnr2XU`, renewal product `prod_FI2F8qY7L7sta`, and signed webhook `hook_bNPTtzciu4UaW` were provisioned. The webhook is enabled on the stable Preview callback. Its secret, product IDs, `PORTAL_APP_URL`, and a random `CRON_SECRET` were saved only to Preview. The temporary provisioning endpoint and script were removed after success.
-- Login UI renders in Preview. Cloudflare reports `110200` because the Preview hostname is not on the existing widget's allowlist.
+- Login UI renders in Preview. After explicit approval, the stable Preview hostname was added to the existing Turnstile widget, preserving both production hostnames and Managed mode. A fresh Preview login load showed Cloudflare's green "Success!" state. Missing verification tokens now receive `verification_required` before password authentication, with a clear UI explanation and retry button.
 
 ## Remaining release gates
 
 - Disable public Supabase signups after the requested browser confirmation.
 - Verify the authenticated administrator session in the stable Preview. The user confirmed password and MFA setup, but browser verification remains outstanding.
 - Configure Brevo SMTP credentials for Supabase invitation and recovery email delivery.
-- Add the chosen stable Preview hostname to the existing Turnstile widget. Do not weaken or bypass authentication for testing.
+- Complete an authenticated login with the user's credentials and MFA. The successful browser challenge alone does not prove a completed login.
 - Account-profile diagnostics returned 403 because `company:basic:read` is absent. Payment-read access was independently verified without expanding the key's permissions.
 - Complete a real sandbox checkout and observe verified webhook processing, durable job completion, invoice creation, and email acceptance. Provisioning succeeded after the approved webhook permission update, but this is not evidence of a completed payment.
 - Verify refund/dispute reconciliation before accepting production payments. Signed refund/dispute events retrieve authoritative resources, hold pending simulations, retain review evidence and record the verified cumulative sandbox refund total. Final dispute resolution remains an administrative review, and no registrar mutation is implemented.
