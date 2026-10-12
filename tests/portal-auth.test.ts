@@ -12,9 +12,12 @@ vi.mock("@/lib/portal/services", () => ({
 }));
 vi.mock("@/lib/portal/whop", () => ({ checkout: vi.fn() }));
 vi.mock("@/lib/portal/spaceship", () => ({ spaceship: vi.fn() }));
+vi.mock("@/lib/portal/search-service", () => ({ searchDomains: vi.fn() }));
+vi.mock("@/lib/portal/domain-operations", () => ({ authorizedDomain: vi.fn(), changeDomain: vi.fn(), readDomainState: vi.fn() }));
+vi.mock("@/lib/portal/auth-email", () => ({ sendAuthEmail: vi.fn() }));
 
-import { POST } from "@/app/api/portal/[...path]/route";
-import { sessionDb, turnstile } from "@/lib/portal/server";
+import { GET, POST } from "@/app/api/portal/[...path]/route";
+import { identity, sessionDb, turnstile } from "@/lib/portal/server";
 
 describe("authentication verification errors", () => {
   for (const action of ["login", "recover"]) {
@@ -36,4 +39,19 @@ describe("authentication verification errors", () => {
       },
     );
   }
+});
+
+it("returns empty client data for an unassigned administrator without querying tenant tables", async () => {
+  const from = vi.fn(() => ({ select: () => ({ eq: async () => ({data:[],error:null}) }) }));
+  vi.mocked(identity).mockResolvedValue({
+    user:{id:"fixture"}, account:{user_id:"fixture",role:"super_admin"},
+    db:{from,auth:{mfa:{listFactors:async()=>({data:{totp:[]},error:null})}}},
+  } as unknown as Awaited<ReturnType<typeof identity>>);
+  const response = await GET(new NextRequest("https://portal.example/api/portal/data"), {params:Promise.resolve({path:["data"]})});
+  expect(response.status).toBe(200);
+  const data = await response.json();
+  expect(data.domains).toEqual([]);
+  expect(data.clients).toEqual([]);
+  expect(data.invoices).toEqual([]);
+  expect(from.mock.calls).toEqual([["portal_memberships"]]);
 });

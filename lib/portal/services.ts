@@ -149,6 +149,8 @@ export async function createQuote(
     .select("*")
     .single();
   checkDb(se);
+  if (settings.registration_minor !== 4500 || settings.markup_basis_points !== 3000)
+    throw new PortalError("pricing_policy_requires_review", 409);
   const suffix = name.split(".").slice(1).join(".");
   if (
     kind === "registration" &&

@@ -23,8 +23,10 @@ export async function GET(req: Request) {
     return new Response(null, { status: 404 });
   sandboxOnly();
   async function check(run: () => Promise<unknown>) {
+    const start = performance.now();
     try {
-      return { ok: true, result: await run() };
+      const result = await run();
+      return { ok: true, result, elapsedMs: Math.round(performance.now() - start) };
     } catch (e) {
       return {
         ok: false,
@@ -46,7 +48,11 @@ export async function GET(req: Request) {
       if (error) return { ready: false, databaseCode: error.code };
       return { ready: true, approvedAccounts: count };
     }),
-    check(async () => ({ domainsRead: (await spaceship.inventory()).length })),
+    check(async () => {
+      const domains = await spaceship.inventory();
+      const availability = await spaceship.availabilityBatch(["example.com", "example.net"]);
+      return { domainsRead: domains.length, availability };
+    }),
     check(async () => {
       const payments = await whop().payments.list({
         account_id: env("WHOP_SANDBOX_COMPANY_ID"),

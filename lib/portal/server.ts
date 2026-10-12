@@ -72,16 +72,13 @@ export async function identity() {
     throw new PortalError("account_not_authorized", 403);
   return { db, user, account: account as Account };
 }
-export async function superAdmin() {
-  const auth = await identity();
+export async function superAdmin(existing?: Awaited<ReturnType<typeof identity>>) {
+  const auth = existing || await identity();
   if (auth.account.role !== "super_admin")
     throw new PortalError("administrator_required", 403);
-  if (process.env.PORTAL_REQUIRE_ADMIN_MFA !== "false") {
-    const { data, error } =
-      await auth.db.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (error || data?.currentLevel !== "aal2")
-      throw new PortalError("administrator_mfa_required", 403);
-  }
+  const { data, error } = await auth.db.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error || data?.currentLevel !== "aal2")
+    throw new PortalError("administrator_mfa_required", 403);
   return auth;
 }
 export async function clientAccess(id: string) {

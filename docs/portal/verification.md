@@ -19,9 +19,8 @@ The portal is under `/client-portal` on a feature branch. Do not merge or promot
 ## Remaining release gates
 
 - Disable public Supabase signups after the requested browser confirmation.
-- Verify the authenticated administrator session in the stable Preview. The user confirmed password and MFA setup, but browser verification remains outstanding.
-- Configure Brevo SMTP credentials for Supabase invitation and recovery email delivery.
-- Complete an authenticated login with the user's credentials and MFA. The successful browser challenge alone does not prove a completed login.
+- A password-authenticated administrator account was observed in the built-in browser. The new `/admin` route correctly requires a fresh MFA-verified session. Full administrator browser acceptance remains outstanding.
+- Invitation and recovery now generate Supabase one-time links and send them through the configured client Brevo API. This path does not require Supabase SMTP. Actual recovery and new-client invitation acceptance still need end-to-end verification.
 - Account-profile diagnostics returned 403 because `company:basic:read` is absent. Payment-read access was independently verified without expanding the key's permissions.
 - Complete a real sandbox checkout and observe verified webhook processing, durable job completion, invoice creation, and email acceptance. Provisioning succeeded after the approved webhook permission update, but this is not evidence of a completed payment.
 - Verify refund/dispute reconciliation before accepting production payments. Signed refund/dispute events retrieve authoritative resources, hold pending simulations, retain review evidence and record the verified cumulative sandbox refund total. Final dispute resolution remains an administrative review, and no registrar mutation is implemented.
@@ -31,6 +30,18 @@ The portal is under `/client-portal` on a feature branch. Do not merge or promot
 
 ## Operational boundaries
 
-Every order is sandbox-only. There is no implementation of Spaceship registration, renewal, DNS mutation, auto-renew changes or transfer. Registrar inventory is separate from simulated fulfillment. `stackendbox.com` cannot be assigned to a client. Processor fees remain unreconciled when not verified. A browser success redirect never marks an order paid.
+Every order is sandbox-only. Registration, renewal, auto-renew changes, contact updates, personal nameservers and transfer execution remain unimplemented and disabled. DNS, custom nameserver and privacy mutation code now exists behind MFA, explicit confirmation, a disabled live flag and an empty per-domain allowlist. The new operation-lock migration must be applied and reviewed before enabling writes. No real registrar writes were tested. Registrar inventory is separate from the clearly labeled sandbox purchase view. `stackendbox.com` cannot be assigned to a client. Processor fees remain unreconciled when not verified. A browser success redirect never marks an order paid.
+
+## October 12 redesign verification
+
+- Client navigation and client data are separated from `/admin`, including when a super-admin uses the client portal. MFA enforcement has no environment-variable bypass.
+- Authenticated browser checks confirmed the simplified navigation, zero-domain state, website empty state and live Spaceship name search. Seven actual available alternatives were returned for a partial name. Missing supplier evidence correctly withheld retail quotes.
+- Deployed read-only diagnostics confirmed database access, zero registrar domains, Whop sandbox payment-read access with zero payment records, and an active Brevo sender. Observed check durations were 1203 ms for the database, 1110 ms for registrar inventory plus availability, 116 ms for Whop and 385 ms for Brevo. These are one-run diagnostic timings, not a load test or a before/after performance claim.
+- Real Spaceship responses use `taken` for registered names. The adapter mapping and regression test now cover that value.
+- Downloadable HTML sandbox receipts validate money and escape untrusted text. They are explicitly not tax invoices or registration proof.
+- Local tests cover domain candidates including IDNs, DNS types/conflicts/replacement safety, provider write guards, admin MFA and receipt escaping. See the latest test run for the exact count.
+- Final local run: 104 tests across 14 files passed, with type checking and lint clean. Production builds passed. Eight deployed unauthenticated/unsigned endpoint checks returned the expected denials. Mobile navigation and domain/search pages had no horizontal overflow at the tested mobile widths. These checks do not substitute for paid checkout or two-tenant browser acceptance.
+- Empty client accounts now skip 13 tenant-table queries and the assignment query. MFA-factor lookup runs concurrently with membership lookup. Session-local data reuse reduces repeated warm navigation loads. No numerical user-perceived speedup is claimed without a controlled before/after run.
+- Remaining engineering work includes durable live purchase/renewal execution and reconciliation, contact/personal-nameserver workflows, advanced transfer authorization, admin reconciliation tooling and scalable cursor pagination. These are not represented as completed features.
 
 `/api/portal-diagnostics` is read-only, disabled outside Vercel Preview, and requires a per-deployment random secret. `scripts/portal-preview.mjs` keeps that token in process memory. No token is logged or committed.

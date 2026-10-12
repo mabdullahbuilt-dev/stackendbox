@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -14,7 +15,6 @@ import {
   Bell,
   Building2,
   CreditCard,
-  Files,
   Globe2,
   LayoutDashboard,
   LifeBuoy,
@@ -24,12 +24,13 @@ import {
   Plus,
   RefreshCw,
   Settings,
-  ShieldCheck,
 } from "lucide-react";
 import { Turnstile } from "@/components/builder/Turnstile";
+import { usePortalCache } from "./PortalCache";
+import { DomainControls } from "./DomainControls";
 
 type Row = Record<string, unknown>;
-type Data = {
+export type Data = {
   account: {
     name: string;
     approved_email: string;
@@ -78,16 +79,22 @@ const errors: Record<string, string> = {
   checkout_requires_reconciliation:
     "Checkout could not be confirmed. StackEndBox needs to check its status before you retry.",
 };
-async function api(path: string, body?: unknown) {
+export async function api(path: string, body?: unknown, signal?: AbortSignal) {
   const r = await fetch(`/api/portal/${path}`, {
     method: body ? "POST" : "GET",
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(25000)]) : AbortSignal.timeout(25000),
   });
   const data = await r.json();
   if (!r.ok) throw new Error(errors[data.error] || label(data.error));
   return data;
+}
+function SandboxDomains({ orders }: { orders: Row[] }) {
+  const paid = orders.filter(o => o.environment === "sandbox" && o.kind === "registration" && o.payment_id && ["simulation_queued", "simulated_complete", "action_required", "refunded", "disputed"].includes(str(o.status)));
+  if (!paid.length) return null;
+  return <section className="portal-panel"><h2>Sandbox domain purchases</h2><p>These are paid test orders, separate from your real domains. No domain was registered, and DNS controls are unavailable.</p>{paid.map(o => <article key={str(o.id)}><h3>{str(o.domain)}</h3><Status value={o.status} /><p>{money(o.amount_minor)} · {date(o.paid_at)}</p><Link href="/client-portal/billing">View payment and receipt</Link></article>)}</section>;
 }
 function Form({
   children,
@@ -170,18 +177,18 @@ const nav = [
   ["websites", "My Websites", Building2],
   ["renewals", "Renewals", RefreshCw],
   ["billing", "Billing & Invoices", CreditCard],
-  ["requests", "Support & Requests", LifeBuoy],
-  ["documents", "Documents", Files],
+  ["requests", "Support", LifeBuoy],
   ["settings", "Account Settings", Settings],
 ] as const;
 
-export function Portal({ path }: { path: string[] }) {
+export function Portal({ path, userId = "" }: { path: string[]; userId?: string }) {
+  const { cache, save } = usePortalCache();
   const router = useRouter();
   const section = path[0],
     page = path.join("/");
-  const [data, setData] = useState<Data | null>(null),
+  const [data, setData] = useState<Data | null>(() => cache?.userId === userId ? cache.data : null),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(true),
+    [busy, setBusy] = useState(() => cache?.userId !== userId),
     [open, setOpen] = useState(false);
   const [token, setToken] = useState(""),
     [tokenKey, setTokenKey] = useState(0);
@@ -189,17 +196,21 @@ export function Portal({ path }: { path: string[] }) {
   const reload = useCallback(async () => {
     setBusy(true);
     try {
-      setData(await api("data"));
+      const next = await api("data");
+      setData(next);
+      save({ userId, data: next, loadedAt: Date.now() });
       setError("");
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [save, userId]);
   useEffect(() => {
-    if (!publicPage) void reload();
-  }, [publicPage, reload]);
+    if (publicPage) return;
+    if (cache?.userId === userId && Date.now() - cache.loadedAt < 30000) return;
+    void reload();
+  }, [publicPage, reload, cache, userId]);
   if (publicPage)
     return (
       <main id="main" className="portal-auth">
@@ -208,15 +219,12 @@ export function Portal({ path }: { path: string[] }) {
         </Link>
         <div className="portal-auth-grid">
           <section>
-            <span className="portal-eyebrow">YOUR BUSINESS, SUPPORTED</span>
+            <span className="portal-eyebrow">CLIENT PORTAL</span>
             <h1>
-              A clear view of
-              <br />
-              what comes next.
+              Your domains and websites.
             </h1>
             <p>
-              Your domains, websites, and ongoing work with StackEndBox. One
-              place to stay informed and ask for help.
+              Manage your domains, review renewals, and request support.
             </p>
             <div className="portal-auth-note">
               <LockKeyhole size={18} />
@@ -310,15 +318,6 @@ export function Portal({ path }: { path: string[] }) {
               {title}
             </Link>
           ))}
-          {data?.account.role === "super_admin" && (
-            <Link
-              href="/client-portal/admin"
-              aria-current={section === "admin" ? "page" : undefined}
-            >
-              <ShieldCheck size={18} />
-              Administration
-            </Link>
-          )}
         </nav>
         <div className="portal-sidebar-foot">
           <p>Need a hand?</p>
@@ -328,6 +327,8 @@ export function Portal({ path }: { path: string[] }) {
           <button
             onClick={async () => {
               await api("auth/logout", {});
+              save(null);
+              save(null);
               router.replace("/client-portal/login");
               router.refresh();
             }}
@@ -346,7 +347,7 @@ export function Portal({ path }: { path: string[] }) {
           >
             <Menu />
           </button>
-          <span>{data?.account.name || "Client workspace"}</span>
+          <span>{rows(data, "clients")[0]?.business_name as string || data?.account.name || "StackEndBox"}</span>
           <div>
             <Link href="/client-portal/dashboard" aria-label="Notifications">
               <Bell size={18} />
@@ -361,8 +362,8 @@ export function Portal({ path }: { path: string[] }) {
             Sandbox billing · Test payments do not purchase or renew real
             domains.
           </div>
-          {busy ? (
-            <p role="status">Loading your workspace…</p>
+          {busy && !data ? (
+            <p role="status">Loading {section === "dashboard" ? "account overview" : section === "renewals" ? "renewal details" : section}…</p>
           ) : error ? (
             <div role="alert" className="portal-error">
               {error}
@@ -386,18 +387,21 @@ export function Portal({ path }: { path: string[] }) {
     </div>
   );
 }
-function PortalContent({
+export function PortalContent({
   section,
   path,
   data,
   reload,
+  adminMode = false,
 }: {
   section: string;
   path: string[];
   data: Data;
   reload: () => Promise<void>;
+  adminMode?: boolean;
 }) {
   const [now] = useState(() => Date.now());
+  const requestedDomain = (useSearchParams().get("domain") || "").slice(0, 253);
   const domains = rows(data, "domains"),
     websites = rows(data, "websites"),
     requests = rows(data, "requests");
@@ -418,11 +422,10 @@ function PortalContent({
     return (
       <>
         <div className="portal-heading">
-          <span className="portal-eyebrow">YOUR WORKSPACE</span>
-          <h1>Good to see you, {data.account.name.split(" ")[0]}.</h1>
-          <p>Stay on top of your websites, domains, and work in progress.</p>
+          <h1>Overview</h1>
+          <p>{str(clients[0]?.business_name || data.account.name)}</p>
         </div>
-        <div className="portal-stats">
+        {(domains.length > 0 || websites.length > 0 || requests.length > 0) && <div className="portal-stats">
           {[
             ["My domains", domains.length],
             ["My websites", websites.length],
@@ -447,7 +450,7 @@ function PortalContent({
               <strong>{count}</strong>
             </div>
           ))}
-        </div>
+        </div>}
         <div className="portal-section-title">
           <h2>Your domains</h2>
           <Link href="/client-portal/domains">
@@ -468,7 +471,7 @@ function PortalContent({
                 </p>
               ))
             ) : (
-              <Empty>No websites assigned yet.</Empty>
+              <Empty>No websites have been assigned to your account.</Empty>
             )}
           </section>
           <section className="portal-panel">
@@ -482,7 +485,7 @@ function PortalContent({
                 </article>
               ))
             ) : (
-              <Empty>You’re all caught up. Updates will appear here.</Empty>
+              <p>No updates to show.</p>
             )}
           </section>
         </div>
@@ -511,6 +514,7 @@ function PortalContent({
         <Link className="portal-button" href="/client-portal/domains/buy">
           Find a domain
         </Link>
+        <SandboxDomains orders={rows(data, "orders")} />
       </>
     );
   if (section === "websites")
@@ -546,8 +550,7 @@ function PortalContent({
           </div>
         ) : (
           <Empty>
-            No websites assigned yet. Contact StackEndBox to connect your
-            project.
+            No websites have been assigned to your account. Contact StackEndBox to discuss a website project.
           </Empty>
         )}
       </>
@@ -556,10 +559,10 @@ function PortalContent({
     return (
       <>
         <Heading
-          title="Renewals"
+          title="Domain renewals"
           description="Review a verified quote and decide whether to renew. Payments are one-time."
         />
-        <DomainList domains={domains} />
+        {domains.length ? <DomainList domains={[...domains].sort((a, b) => str(a.expiration_date).localeCompare(str(b.expiration_date)))} /> : <Empty>You don&apos;t have any domains to renew. <Link href="/client-portal/domains/buy">Buy a domain</Link></Empty>}
         <section className="portal-panel">
           <h2>Renewal orders</h2>
           <OrderList
@@ -578,6 +581,7 @@ function PortalContent({
         />
         <OrderList orders={rows(data, "orders")} reload={reload} />
         <h2>Receipts</h2>
+        {!rows(data, "invoices").length && <Empty>No payment receipts yet.</Empty>}
         {rows(data, "invoices").map((i) => (
           <section className="portal-panel" key={str(i.id)}>
             <h3>{str(i.description)}</h3>
@@ -588,6 +592,7 @@ function PortalContent({
             <p className="portal-small">
               Sandbox receipt {str(i.id)}. This is not a tax invoice.
             </p>
+            <a href={`/api/portal/invoices/${str(i.id)}/download`} download>Download receipt</a>
           </section>
         ))}
       </>
@@ -612,7 +617,7 @@ function PortalContent({
             {clientSelect}
             <label>
               Category
-              <select name="category">
+              <select name="category" defaultValue={requestedDomain ? "Domain / DNS" : "Website update"}>
                 {[
                   "Website update",
                   "Bug fix",
@@ -625,10 +630,10 @@ function PortalContent({
                 ))}
               </select>
             </label>
-            <Field name="subject" title="Subject" />
+            <label>Subject<input name="subject" required maxLength={200} defaultValue={requestedDomain ? `Domain quote: ${requestedDomain}` : ""} /></label>
             <label>
               Description
-              <textarea name="description" required maxLength={5000} rows={5} />
+              <textarea name="description" required maxLength={5000} rows={5} defaultValue={requestedDomain ? `Please provide a verified registration quote for ${requestedDomain}.` : ""} />
             </label>
           </Form>
         </section>
@@ -671,7 +676,7 @@ function PortalContent({
                   <textarea name="body" required maxLength={5000} />
                 </label>
               </Form>
-              {data.account.role === "super_admin" && (
+              {adminMode && data.account.role === "super_admin" && (
                 <Form
                   button="Update status"
                   onSubmit={async (f) => {
@@ -758,10 +763,10 @@ function PortalContent({
             />
           </Form>
         </section>
-        {data.account.role === "super_admin" && <Mfa factors={data.factors} />}
+        <Mfa factors={data.factors} />
       </>
     );
-  if (section === "admin")
+  if (section === "admin" && adminMode)
     return <Admin data={data} reload={reload} clientSelect={clientSelect} />;
   return null;
 }
@@ -784,14 +789,14 @@ function DomainList({ domains }: { domains: Row[] }) {
   const [search, setSearch] = useState("");
   return (
     <section className="portal-panel">
-      <label className="portal-search">
-        Search domains
+      {domains.length > 10 && <label className="portal-search">
+        Filter your domains
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by domain name"
         />
-      </label>
+      </label>}
       {domains.length ? (
         <div className="portal-table-wrap">
           <table>
@@ -800,7 +805,7 @@ function DomainList({ domains }: { domains: Row[] }) {
                 <th>Domain</th>
                 <th>Status</th>
                 <th>Expires</th>
-                <th>Registrar auto-renew</th>
+                <th>Renewal method</th>
                 <th />
               </tr>
             </thead>
@@ -810,7 +815,7 @@ function DomainList({ domains }: { domains: Row[] }) {
                 .map((d) => (
                   <tr key={str(d.id)}>
                     <td>
-                      <Globe2 size={16} /> {str(d.name)}
+                      <Link href={`/client-portal/domains/${d.name}`}>{str(d.name)}</Link>
                       {d.protected === true && (
                         <small>Protected company asset</small>
                       )}
@@ -823,7 +828,7 @@ function DomainList({ domains }: { domains: Row[] }) {
                       {d.auto_renew === true
                         ? "Enabled, review required"
                         : d.auto_renew === false
-                          ? "Off"
+                          ? "Manual"
                           : "Unverified"}
                     </td>
                     <td>
@@ -838,8 +843,7 @@ function DomainList({ domains }: { domains: Row[] }) {
         </div>
       ) : (
         <Empty>
-          No domains assigned yet. Your domains will appear here after
-          StackEndBox assigns them.
+          You haven&apos;t purchased a domain yet. Your domains will appear here once registered or assigned. <Link href="/client-portal/domains/buy">Buy a domain</Link>
         </Empty>
       )}
     </section>
@@ -988,6 +992,7 @@ function DocumentUpload({
 }
 function QuoteCheckout({ quote }: { quote: Row }) {
   const router = useRouter();
+  const { save } = usePortalCache();
   return (
     <section className="portal-panel">
       <h2>{str(quote.domain)}</h2>
@@ -1009,6 +1014,7 @@ function QuoteCheckout({ quote }: { quote: Row }) {
             quote_id: quote.id,
             accept_terms: true,
           });
+          save(null);
           router.push(`/client-portal/billing?order=${order.id}`);
           router.refresh();
         }}
@@ -1022,45 +1028,63 @@ function QuoteCheckout({ quote }: { quote: Row }) {
   );
 }
 function BuyDomain({ clientSelect }: { clientSelect: ReactNode }) {
-  const [result, setResult] = useState<Row | null>(null),
-    [quote, setQuote] = useState<Row | null>(null);
+  const [result, setResult] = useState<{ primary: Row; alternatives: Row[] } | null>(null),
+    [quote, setQuote] = useState<Row | null>(null),
+    [selected, setSelected] = useState<Row | null>(null),
+    [query, setQuery] = useState(""),
+    [searching, setSearching] = useState(false),
+    [failure, setFailure] = useState("");
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => request.current?.abort(), []);
+  async function search(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
+    setSearching(true); setFailure(""); setQuote(null); setSelected(null); setResult(null);
+    try { const next = await api("domain-search", { query }, controller.signal); if (!controller.signal.aborted) setResult(next); }
+    catch (e) { if (!controller.signal.aborted) setFailure(e instanceof Error ? e.message : "Availability could not be checked."); }
+    finally { if (request.current === controller) setSearching(false); }
+  }
+  const resultRow = (item: Row, primary = false) => <article className={`portal-domain-result ${primary ? "is-primary" : ""}`} key={str(item.name)}>
+    <div><h2>{str(item.name)}</h2><p>{item.result === "available" ? "Available" : item.result === "unavailable" ? "This domain is already registered." : "Availability could not be verified."}</p></div>
+    {item.result === "available" && <div><p>{typeof item.retail_minor === "number" ? `${money(item.retail_minor)} for the first year` : item.premium ? "Premium domain. Verified quote required." : "Verified price required"}</p>
+      {typeof item.retail_minor === "number" ? <button className="portal-button" onClick={() => { setSelected(item); setQuote(null); }}>Continue</button> : <Link href={`/client-portal/requests?domain=${encodeURIComponent(str(item.name))}`}>Request a quote</Link>}
+    </div>}
+  </article>;
   return (
     <>
       <Heading
-        title="Find your next domain"
-        description="Eligible standard domains start at $45 for the first year. Availability and verified pricing are checked separately."
+        title="Find your domain"
+        description="Search for a name for your business or project."
       />
-      <section className="portal-panel">
-        <Form
-          button="Check availability"
-          onSubmit={async (f) => {
-            setQuote(null);
-            const r = await api("availability", f);
-            setResult(r);
-            return { message: `${r.name}: ${r.result}` };
-          }}
-        >
-          <Field
-            name="domain"
-            title="Domain name"
-            placeholder="yourbusiness.com"
-          />
-        </Form>
-      </section>
-      {result && (
+      <form className="portal-domain-search" onSubmit={search}>
+        <label htmlFor="domain-search">Enter a name or domain</label>
+        <div><input id="domain-search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Enter a name or domain" required maxLength={253} /><button className="portal-button">Search domains</button></div>
+      </form>
+      {searching && <p role="status">Checking availability…</p>}
+      {failure && <p role="alert" className="portal-error">{failure} Try your search again.</p>}
+      {result && <>
+        {resultRow(result.primary, true)}
+        {result.alternatives.length > 0 ? <section><h2>Available alternatives</h2>{result.alternatives.map(item => resultRow(item))}</section> : result.primary.result !== "available" && <p>We couldn&apos;t find an available match. Try a different name.</p>}
+        <p className="portal-small">Availability checked {new Date(str(result.primary.checked_at)).toLocaleTimeString()}. Availability and pricing are checked again before payment.</p>
+      </>}
+      {selected && (
         <section className="portal-panel">
-          <h2>{str(result.name)}</h2>
-          <Status value={result.result} />
-          {result.premium === true ? (
-            <p>This domain requires a custom quote.</p>
-          ) : (
-            result.result === "available" && (
+          <h2>{str(selected.name)}</h2>
+          <p>Registration period: 1 year. First-year price: {money(selected.retail_minor)}.</p>
+          <h3>Renewal pricing</h3>
+          <p>Your renewal price will be confirmed before renewal. Annual pricing uses the verified supplier renewal cost plus 30%. Renewals require your approval and a one-time payment.</p>
+          <h3>What&apos;s included</h3>
+          <p>In this Preview, payment and registrar fulfillment are sandbox tests. No real domain registration is included in a test payment.</p>
+          <p>A domain does not include a website, hosting, database, mailboxes, or paid third-party services.</p>
+          <p>Ownership and registration contact details must be confirmed before any live registration.</p>
               <Form
-                button="Request verified quote"
+                button="Review final quote"
                 onSubmit={async (f) => {
                   const q = await api("quotes", {
                     ...f,
-                    domain: result.name,
+                    domain: selected.name,
                     kind: "registration",
                   });
                   setQuote(q);
@@ -1069,9 +1093,6 @@ function BuyDomain({ clientSelect }: { clientSelect: ReactNode }) {
               >
                 {clientSelect}
               </Form>
-            )
-          )}
-          <Link href="/client-portal/requests">Ask StackEndBox for help</Link>
         </section>
       )}
       {quote && <QuoteCheckout quote={quote} />}
@@ -1079,8 +1100,12 @@ function BuyDomain({ clientSelect }: { clientSelect: ReactNode }) {
   );
 }
 function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
+  const [now] = useState(() => Date.now());
+  const security = d.security as { eppStatuses?: string[]; privacy?: { level?: string } } | undefined;
+  const nameservers = d.nameservers as { hosts?: string[] } | undefined;
+  const latestRenewal = rows(data, "quotes").filter(q => q.domain_id === d.id && q.kind === "renewal" && Date.parse(str(q.valid_until)) > now).sort((a, b) => str(b.created_at).localeCompare(str(a.created_at)))[0];
+  const linkedWebsites = rows(data, "websites").filter(w => w.domain_id === d.id);
   const [tab, setTab] = useState("Overview"),
-    [dns, setDns] = useState<Row | null>(null),
     [quote, setQuote] = useState<Row | null>(null);
   const assignment = rows(data, "domain_assignments").find(
     (a) => a.domain_id === d.id,
@@ -1089,7 +1114,7 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
     <>
       <Heading
         title={str(d.name)}
-        description={`Last synchronized ${date(d.last_synced_at)}. Provider: Spaceship.`}
+        description={`Expires on ${date(d.expiration_date)}. Last synchronized ${date(d.last_synced_at)}.`}
       />
       <div role="tablist" className="portal-tabs">
         {[
@@ -1124,6 +1149,16 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
               <dd>{date(d.expiration_date)}</dd>
               <dt>Verification</dt>
               <dd>{label(d.verification_status)}</dd>
+              <dt>Time remaining</dt>
+              <dd>{d.expiration_date && Number.isFinite(Date.parse(str(d.expiration_date))) ? `${Math.max(0, Math.ceil((Date.parse(str(d.expiration_date)) - now) / 86400000))} days` : "Not verified"}</dd>
+              <dt>Nameservers</dt>
+              <dd>{nameservers?.hosts?.join(", ") || "Not reported"}</dd>
+              <dt>Privacy</dt>
+              <dd>{security?.privacy?.level || "Not reported"}</dd>
+              <dt>Renewal quote</dt>
+              <dd>{latestRenewal ? `${money(latestRenewal.retail_minor)} for one year, valid until ${new Date(str(latestRenewal.valid_until)).toLocaleString()}` : "Request a current verified quote under Renewal & Billing"}</dd>
+              <dt>Associated website</dt>
+              <dd>{linkedWebsites.length ? linkedWebsites.map(w => str(w.name)).join(", ") : "No website linked"}</dd>
               <dt>Registrar auto-renew</dt>
               <dd>
                 {d.auto_renew === false
@@ -1143,27 +1178,24 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
         {tab === "DNS Records" && (
           <>
             <h2>DNS records</h2>
-            <p>Read-only view. Request changes through support.</p>
-            <Action
-              title="Load DNS records"
-              run={async () => {
-                setDns(await api(`domains/${d.name}/dns`));
-              }}
-            />
-            {dns && <pre>{JSON.stringify(dns, null, 2)}</pre>}
+            <DomainControls name={str(d.name)} panel="dns" />
           </>
         )}
         {tab === "Nameservers" && (
           <>
             <h2>Nameservers</h2>
-            <pre>{JSON.stringify(d.nameservers, null, 2)}</pre>
+            <DomainControls name={str(d.name)} panel="nameservers" />
           </>
         )}
         {tab === "Security" && (
           <>
             <h2>Provider-reported security</h2>
-            <pre>{JSON.stringify(d.security, null, 2)}</pre>
-            <p>Unsupported checks are not shown as verified.</p>
+            <p>Verification: {label(d.verification_status)}</p>
+            <h3>Transfer status</h3>
+            <p>{security?.eppStatuses?.length ? security.eppStatuses.join(", ") : "No transfer-lock status was reported by the registrar."}</p>
+            <p>Transfer and ownership handover require identity and ownership checks. Authorization codes are never shown in ordinary account data.</p>
+            <Link href="/client-portal/requests">Contact support about this domain</Link>
+            <DomainControls name={str(d.name)} panel="privacy" />
           </>
         )}
         {tab === "Ownership" && (
@@ -1240,8 +1272,8 @@ function Mfa({ factors }: { factors: { id: string; status: string }[] }) {
   } | null>(null);
   return (
     <section className="portal-panel">
-      <h2>Administrator authenticator</h2>
-      <p>Administrator actions require a verified authenticator session.</p>
+      <h2>Two-step verification</h2>
+      <p>Use your authenticator to protect sensitive account and domain changes.</p>
       {!factors.length && (
         <Action
           title="Set up authenticator"

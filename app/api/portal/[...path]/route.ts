@@ -29,6 +29,10 @@ import {
 } from "@/lib/portal/services";
 import { checkout } from "@/lib/portal/whop";
 import { spaceship } from "@/lib/portal/spaceship";
+import { searchDomains } from "@/lib/portal/search-service";
+import { authorizedDomain, changeDomain, readDomainState } from "@/lib/portal/domain-operations";
+import { sendAuthEmail } from "@/lib/portal/auth-email";
+import { receiptHtml } from "@/lib/portal/receipt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,16 +81,14 @@ async function handle(req: NextRequest, context: Context) {
           .eq("active", true)
           .maybeSingle();
         if (a) {
-          const { error } = await db.auth.resetPasswordForEmail(email, {
-            redirectTo: `${portalOrigin()}/client-portal/auth/callback`,
-          });
-          await audit(
-            null,
-            error
-              ? "password_recovery_send_failed"
-              : "password_recovery_requested",
-            a.user_id,
-          );
+          try {
+            const { data: link, error } = await adminDb().auth.admin.generateLink({ type: "recovery", email });
+            if (error || !link.properties?.hashed_token) throw new PortalError("recovery_link_failed", 502);
+            const messageId = await sendAuthEmail(email, link.properties.hashed_token, "recovery");
+            await audit(null, "password_recovery_requested", a.user_id, { messageId });
+          } catch {
+            await audit(null, "password_recovery_send_failed", a.user_id);
+          }
         }
         return reply({
           message:
@@ -134,6 +136,17 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ redirect: "/client-portal/reset-password" });
     }
     const auth = await identity();
+    if (path[0] === "invoices" && path[2] === "download" && path.length === 3 && req.method === "GET") {
+      const id = uuid.parse(path[1]);
+      const { data: invoice, error } = await auth.db.from("portal_invoices").select("*").eq("id", id).maybeSingle();
+      checkDb(error);
+      if (!invoice) throw new PortalError("receipt_not_found", 404);
+      await clientAccess(invoice.client_id);
+      return new Response(receiptHtml(invoice), { headers: {
+        "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `attachment; filename="stackendbox-sandbox-receipt-${id}.html"`,
+        "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox",
+      } });
+    }
     if (req.method === "POST")
       await rateLimit(`actions:${auth.user.id}`, 60, 60);
     if (req.method === "POST" && route === "auth/password") {
@@ -154,7 +167,7 @@ async function handle(req: NextRequest, context: Context) {
       if (body.action === "enroll") {
         const { data, error } = await auth.db.auth.mfa.enroll({
           factorType: "totp",
-          friendlyName: "StackEndBox admin",
+          friendlyName: "StackEndBox portal",
         });
         if (error) throw new PortalError("mfa_enrollment_failed");
         return reply(data);
@@ -170,7 +183,18 @@ async function handle(req: NextRequest, context: Context) {
       if (error) throw new PortalError("mfa_verification_failed");
       return reply({ message: "Authenticator verified." });
     }
-    if (route === "data" && req.method === "GET") {
+    if (["data", "admin/workspace"].includes(route) && req.method === "GET") {
+      const adminMode = route === "admin/workspace";
+      if (adminMode) await superAdmin(auth);
+      const [{ data: memberships, error: membershipError }, { data: factors, error: factorsError }] = await Promise.all([
+        auth.db.from("portal_memberships").select("client_id").eq("user_id", auth.user.id),
+        auth.db.auth.mfa.listFactors(),
+      ]);
+      checkDb(membershipError);
+      checkDb(factorsError);
+      const clientIds = (memberships || []).map((m) => m.client_id);
+      const { data: assigned, error: assignmentError } = adminMode || !clientIds.length ? { data: [], error: null } : await auth.db.from("portal_domain_assignments").select("domain_id").in("client_id", clientIds);
+      checkDb(assignmentError);
       const tables = [
         "clients",
         "memberships",
@@ -187,16 +211,31 @@ async function handle(req: NextRequest, context: Context) {
         "notifications",
       ] as const;
       const results = await Promise.all(
-        tables.map((t) => auth.db.from(`portal_${t}`).select("*").limit(500)),
+        tables.map((t) => {
+          if (!adminMode && !clientIds.length) return { data: [], error: null };
+          let query = auth.db.from(`portal_${t}`).select("*").limit(500);
+          if (!adminMode) {
+            if (t === "domains") query = query.in("id", (assigned || []).map((a) => a.domain_id));
+            else if (t === "clients") query = query.in("id", clientIds);
+            else if (t === "memberships") query = query.eq("user_id", auth.user.id);
+            else query = query.in("client_id", clientIds);
+          }
+          return query;
+        }),
       );
       results.forEach((r) => checkDb(r.error));
-      const { data: factors } = await auth.db.auth.mfa.listFactors();
       return reply({
         account: auth.account,
         factors:
           factors?.totp.map((f) => ({ id: f.id, status: f.status })) || [],
         ...Object.fromEntries(tables.map((t, i) => [t, results[i].data])),
       });
+    }
+    if (path[0] === "domains" && path[1] && path[2] === "manage") {
+      const name = domainName(path[1]);
+      await authorizedDomain(name, auth);
+      if (req.method === "GET") return reply(await readDomainState(name));
+      if (req.method === "POST") return reply(await changeDomain(name, body, auth));
     }
     if (path[0] === "domains" && path[1] && req.method === "GET") {
       const name = domainName(path[1]);
@@ -212,6 +251,10 @@ async function handle(req: NextRequest, context: Context) {
     }
     if (route === "availability" && req.method === "POST")
       return reply(await availability(text.parse(body.domain)));
+    if (route === "domain-search" && req.method === "POST") {
+      await rateLimit(`domain-search:${auth.user.id}`, 10, 60);
+      return reply(await searchDomains(text.parse(body.query)));
+    }
     if (route === "quotes" && req.method === "POST") {
       const input = z
         .object({
@@ -403,7 +446,7 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ url: data?.signedUrl });
     }
     if (path[0] === "admin") {
-      const admin = await superAdmin(),
+      const admin = await superAdmin(auth),
         db = adminDb();
       if (route === "admin/data" && req.method === "GET") {
         const names = [
@@ -441,18 +484,16 @@ async function handle(req: NextRequest, context: Context) {
             email: z.email(),
           })
           .parse(body);
+        const { data: existingAccount, error: existingError } = await db.from("portal_accounts").select("user_id").eq("approved_email", input.email.toLowerCase()).maybeSingle();
+        checkDb(existingError);
+        if (existingAccount) throw new PortalError("client_email_already_exists", 409);
         const { data: c, error } = await db
           .from("portal_clients")
           .insert({ name: input.name, business_name: input.business_name })
           .select("*")
           .single();
         checkDb(error);
-        const { data: u, error: ue } = await db.auth.admin.inviteUserByEmail(
-          input.email.toLowerCase(),
-          {
-            redirectTo: `${portalOrigin()}/client-portal/auth/callback`,
-          },
-        );
+        const { data: u, error: ue } = await db.auth.admin.generateLink({ type: "invite", email: input.email.toLowerCase() });
         if (ue || !u.user) {
           await audit(admin.user.id, "client_invitation_failed", c.id);
           throw new PortalError(
@@ -477,7 +518,14 @@ async function handle(req: NextRequest, context: Context) {
               .insert({ user_id: u.user.id, client_id: c.id })
           ).error,
         );
-        await audit(admin.user.id, "client_invited", c.id);
+        if (!u.properties?.hashed_token) throw new PortalError("invitation_link_failed", 502);
+        try {
+          const messageId = await sendAuthEmail(input.email.toLowerCase(), u.properties.hashed_token, "invite");
+          await audit(admin.user.id, "client_invited", c.id, { messageId });
+        } catch {
+          await audit(admin.user.id, "client_invitation_delivery_unconfirmed", c.id);
+          throw new PortalError("client_created_invitation_delivery_unconfirmed", 502);
+        }
         return reply({
           message: "Client created and invitation requested.",
           client: c,
@@ -582,8 +630,8 @@ async function handle(req: NextRequest, context: Context) {
             allowed_tlds: z.array(z.string().regex(/^[a-z.]{2,30}$/)).max(50),
             max_supplier_minor: z.number().int().nonnegative().max(1000000),
             tolerance_minor: z.number().int().nonnegative(),
-            registration_minor: z.number().int().positive(),
-            markup_basis_points: z.number().int().min(0).max(10000),
+            registration_minor: z.literal(4500),
+            markup_basis_points: z.literal(3000),
           })
           .parse(body);
         checkDb(

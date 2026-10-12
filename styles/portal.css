@@ -331,6 +331,7 @@
 .portal-root input,
 .portal-root textarea,
 .portal-root select {
+  min-width: 0;
   width: 100%;
   padding: 12px 13px;
   border-radius: 7px;
@@ -451,10 +452,35 @@
 }
 .portal-auth-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 100px;
   align-items: center;
   padding-top: 100px;
+}
+.portal-domain-search { margin: 24px 0 36px; max-width: 800px; }
+.portal-domain-search label { display: block; margin-bottom: 8px; color: var(--text-secondary); }
+.portal-domain-search > div { display: flex; gap: 12px; align-items: center; }
+.portal-domain-search input { flex: 1; min-width: 0; }
+.portal-domain-search button { flex-shrink: 0; }
+.portal-domain-result { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--border); }
+.portal-domain-result h2 { font-size: 20px; margin: 0; overflow-wrap: anywhere; }
+.portal-domain-result p { margin: 5px 0; }
+.portal-domain-result.is-primary { border: 1px solid var(--border-strong); padding: 24px; margin-bottom: 36px; border-radius: 10px; }
+.portal-domain-result a { color: var(--accent-text); }
+.portal-stats strong { font-size: 23px; margin-top: 4px; }
+.portal-stats > div { padding: 14px 20px; }
+.portal-empty { text-align: left; border: 0; padding: 24px 0; }
+.portal-empty a { display: block; color: var(--accent-text); margin-top: 12px; }
+@media (max-width: 850px) {
+  .portal-auth-grid { grid-template-columns: minmax(0,1fr); gap: 28px; padding-top: 35px; }
+  .portal-auth-grid > section:first-child h1 { font-size: 32px; }
+  .portal-auth-note { margin-top: 20px; }
+  .portal-auth-grid .portal-panel { padding: 20px; }
+  .portal-auth { padding: 28px 20px; }
+}
+@media (max-width: 500px) {
+  .portal-domain-search > div, .portal-domain-result { align-items: stretch; flex-direction: column; }
+  .portal-domain-result.is-primary { padding: 18px; }
 }
 .portal-auth-grid h1 {
   font-size: clamp(36px, 4vw, 62px);

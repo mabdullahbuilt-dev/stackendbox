@@ -11,6 +11,7 @@ export default async function PortalPage({
 }) {
   const { path = [] } = await params;
   if (!path.length) redirect("/client-portal/dashboard");
+  if (path[0] === "admin") redirect("/admin");
   const allowed = [
     "login",
     "forgot-password",
@@ -23,13 +24,14 @@ export default async function PortalPage({
     "requests",
     "documents",
     "settings",
-    "admin",
   ];
   if (!allowed.includes(path[0])) notFound();
   if (["login", "forgot-password"].includes(path[0]))
     return <Portal path={path} />;
+  let userId = "";
   try {
-    await identity();
+    const auth = await identity();
+    userId = auth.user.id;
   } catch (e) {
     if (e instanceof PortalError && e.status === 401)
       redirect("/client-portal/login");
@@ -46,5 +48,5 @@ export default async function PortalPage({
       </main>
     );
   }
-  return <Portal path={path} />;
+  return <Portal key={userId} path={path} userId={userId} />;
 }

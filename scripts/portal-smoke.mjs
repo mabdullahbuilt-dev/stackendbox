@@ -7,6 +7,8 @@ const {token}=JSON.parse(await readFile(`${config}/auth.json`,'utf8'));
 const url=process.env.PORTAL_PREVIEW_DEPLOYMENT||'https://stackendbox-portal-preview.vercel.app';
 for(const test of [
   {path:'/api/portal/data',method:'GET',expected:401},
+  {path:'/api/portal/admin/workspace',method:'GET',expected:401},
+  {path:'/api/portal/invoices/51b9d78b-042a-4c54-9427-7a00c7b8b272/download',method:'GET',expected:401},
   {path:'/api/portal/orders',method:'POST',expected:403},
   {path:'/api/portal/upload',method:'POST',expected:403},
   {path:'/api/webhooks/whop',method:'POST',expected:401},
