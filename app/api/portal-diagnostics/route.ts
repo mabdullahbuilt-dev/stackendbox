@@ -1,0 +1,83 @@
+import { timingSafeEqual } from "node:crypto";
+import { NextResponse } from "next/server";
+import { WhopError } from "@whop/sdk";
+import { adminDb, env } from "@/lib/portal/server";
+import { spaceship } from "@/lib/portal/spaceship";
+import { whop } from "@/lib/portal/whop";
+import { PortalError, sandboxOnly } from "@/lib/portal/rules";
+
+// Preview-only, read-only verification. A fresh token is injected into just the
+// diagnostic deployment, never into production or the client-side bundle.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export async function GET(req: Request) {
+  const token = process.env.PORTAL_DIAGNOSTICS_TOKEN;
+  const actual = Buffer.from(req.headers.get("authorization") || "");
+  const expected = Buffer.from(`Bearer ${token || ""}`);
+  if (
+    process.env.VERCEL_ENV !== "preview" ||
+    !token ||
+    actual.length !== expected.length ||
+    !timingSafeEqual(actual, expected)
+  )
+    return new Response(null, { status: 404 });
+  sandboxOnly();
+  async function check(run: () => Promise<unknown>) {
+    try {
+      return { ok: true, result: await run() };
+    } catch (e) {
+      return {
+        ok: false,
+        code:
+          e instanceof PortalError
+            ? e.code
+            : e instanceof WhopError
+              ? `whop_${e.statusCode || "transport"}`
+              : "provider_check_failed",
+      };
+    }
+  }
+  const [database, registrar, payments, email] = await Promise.all([
+    check(async () => {
+      const db = adminDb();
+      const { count, error } = await db
+        .from("portal_accounts")
+        .select("user_id", { count: "exact", head: true });
+      if (error) return { ready: false, databaseCode: error.code };
+      return { ready: true, approvedAccounts: count };
+    }),
+    check(async () => ({ domainsRead: (await spaceship.inventory()).length })),
+    check(async () => {
+      const payments = await whop().payments.list({
+        account_id: env("WHOP_SANDBOX_COMPANY_ID"),
+        first: 1,
+      });
+      return {
+        paymentReadAccess: true,
+        recordsChecked: payments.data.length,
+        sandbox: true,
+      };
+    }),
+    check(async () => {
+      const result = await fetch("https://api.brevo.com/v3/senders", {
+        headers: { "api-key": env("BREVO_CLIENT_API_KEY") },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!result.ok) throw new PortalError(`brevo_${result.status}`);
+      const data = await result.json();
+      return {
+        senderVerified:
+          Array.isArray(data.senders) &&
+          data.senders.some(
+            (s: { email?: string; active?: boolean }) =>
+              s.email === env("BREVO_CLIENT_SENDER_EMAIL") && s.active === true,
+          ),
+        mailSent: false,
+      };
+    }),
+  ]);
+  return NextResponse.json(
+    { database, registrar, payments, email, liveMutationsEnabled: false },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}

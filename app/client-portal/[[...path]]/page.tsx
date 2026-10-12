@@ -1,0 +1,50 @@
+import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
+import { identity } from "@/lib/portal/server";
+import { PortalError } from "@/lib/portal/rules";
+import { Portal } from "@/components/portal/Portal";
+export const dynamic = "force-dynamic";
+export default async function PortalPage({
+  params,
+}: {
+  params: Promise<{ path?: string[] }>;
+}) {
+  const { path = [] } = await params;
+  if (!path.length) redirect("/client-portal/dashboard");
+  const allowed = [
+    "login",
+    "forgot-password",
+    "reset-password",
+    "dashboard",
+    "domains",
+    "websites",
+    "billing",
+    "renewals",
+    "requests",
+    "documents",
+    "settings",
+    "admin",
+  ];
+  if (!allowed.includes(path[0])) notFound();
+  if (["login", "forgot-password"].includes(path[0]))
+    return <Portal path={path} />;
+  try {
+    await identity();
+  } catch (e) {
+    if (e instanceof PortalError && e.status === 401)
+      redirect("/client-portal/login");
+    return (
+      <main id="main" className="portal-auth">
+        <Link href="/">StackEndBox</Link>
+        <h1>Portal access unavailable</h1>
+        <p>
+          {e instanceof PortalError && e.status === 403
+            ? "This account has not been approved or its access has been revoked. Contact StackEndBox."
+            : "The portal is being configured. Please try again shortly."}
+        </p>
+        <Link href="/client-portal/login">Return to sign in</Link>
+      </main>
+    );
+  }
+  return <Portal path={path} />;
+}
