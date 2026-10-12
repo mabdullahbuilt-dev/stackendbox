@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage({ params }: { params: Promise<{ path?: string[] }> }) {
   const { path = [] } = await params;
   const section = path[0] || "operations";
-  if (path.length > 1 || !["operations", "support", "billing", "security"].includes(section)) notFound();
+  if ((path.length > 1 && !(path.length === 2 && section === "clients" && path[1] === "new")) || !["operations", "clients", "health", "support", "billing", "security"].includes(section)) notFound();
   try { await superAdmin(); }
   catch (error) {
     if (error instanceof PortalError && error.status === 401) redirect("/client-portal/login");
@@ -17,5 +17,5 @@ export default async function AdminPage({ params }: { params: Promise<{ path?: s
     if (error instanceof PortalError && error.status === 403) notFound();
     throw error;
   }
-  return <AdminPortal section={section} />;
+  return <AdminPortal section={section} createClient={path[1] === "new"} />;
 }

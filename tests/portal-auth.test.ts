@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/portal/server", () => ({
   adminDb: vi.fn(), audit: vi.fn(), checkDb: vi.fn(), clientAccess: vi.fn(),

@@ -11,3 +11,7 @@ playwright-report
 test-results
 .qa
 .qa-server.log
+supabase/.temp/
+supabase/.branches/
+backups/
+.local-db/

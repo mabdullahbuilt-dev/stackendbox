@@ -33,6 +33,8 @@ import { searchDomains } from "@/lib/portal/search-service";
 import { authorizedDomain, changeDomain, readDomainState } from "@/lib/portal/domain-operations";
 import { sendAuthEmail } from "@/lib/portal/auth-email";
 import { receiptHtml } from "@/lib/portal/receipt";
+import { provisionClient } from "@/lib/portal/provisioning";
+import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -448,6 +450,9 @@ async function handle(req: NextRequest, context: Context) {
     if (path[0] === "admin") {
       const admin = await superAdmin(auth),
         db = adminDb();
+      if (route === "admin/clients" && req.method === "GET")
+        return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined));
+      if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/data" && req.method === "GET") {
         const names = [
           "accounts",
@@ -477,59 +482,7 @@ async function handle(req: NextRequest, context: Context) {
         });
       }
       if (route === "admin/clients" && req.method === "POST") {
-        const input = z
-          .object({
-            name: text.max(100),
-            business_name: text.max(150),
-            email: z.email(),
-          })
-          .parse(body);
-        const { data: existingAccount, error: existingError } = await db.from("portal_accounts").select("user_id").eq("approved_email", input.email.toLowerCase()).maybeSingle();
-        checkDb(existingError);
-        if (existingAccount) throw new PortalError("client_email_already_exists", 409);
-        const { data: c, error } = await db
-          .from("portal_clients")
-          .insert({ name: input.name, business_name: input.business_name })
-          .select("*")
-          .single();
-        checkDb(error);
-        const { data: u, error: ue } = await db.auth.admin.generateLink({ type: "invite", email: input.email.toLowerCase() });
-        if (ue || !u.user) {
-          await audit(admin.user.id, "client_invitation_failed", c.id);
-          throw new PortalError(
-            "invitation_failed_client_record_retained",
-            502,
-          );
-        }
-        checkDb(
-          (
-            await db.from("portal_accounts").insert({
-              user_id: u.user.id,
-              approved_email: input.email.toLowerCase(),
-              name: input.name,
-              role: "client",
-            })
-          ).error,
-        );
-        checkDb(
-          (
-            await db
-              .from("portal_memberships")
-              .insert({ user_id: u.user.id, client_id: c.id })
-          ).error,
-        );
-        if (!u.properties?.hashed_token) throw new PortalError("invitation_link_failed", 502);
-        try {
-          const messageId = await sendAuthEmail(input.email.toLowerCase(), u.properties.hashed_token, "invite");
-          await audit(admin.user.id, "client_invited", c.id, { messageId });
-        } catch {
-          await audit(admin.user.id, "client_invitation_delivery_unconfirmed", c.id);
-          throw new PortalError("client_created_invitation_delivery_unconfirmed", 502);
-        }
-        return reply({
-          message: "Client created and invitation requested.",
-          client: c,
-        });
+        return reply(await provisionClient(admin.user.id,body));
       }
       if (route === "admin/account-status" && req.method === "POST") {
         const input = z
@@ -567,7 +520,7 @@ async function handle(req: NextRequest, context: Context) {
         checkDb(error);
         assertCustomerDomain(d.name, d.protected);
         checkDb(
-          (await db.from("portal_domain_assignments").insert(input)).error,
+          (await db.from("portal_domain_assignments").insert({...input,assigned_by:admin.user.id,audit_reason:"Assigned by administrator"})).error,
         );
         await audit(admin.user.id, "domain_assigned", input.domain_id, {
           client_id: input.client_id,

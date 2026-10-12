@@ -1361,18 +1361,8 @@ function Admin({
       <div className="portal-columns">
         <section className="portal-panel">
           <h2>Invite a client</h2>
-          <Form
-            button="Create client & send invitation"
-            onSubmit={async (f) => {
-              const r = await api("admin/clients", f);
-              await reload();
-              return r;
-            }}
-          >
-            <Field name="name" title="Client name" />
-            <Field name="business_name" title="Business name" />
-            <Field name="email" title="Approved email" type="email" />
-          </Form>
+          <p>Create a saved client and membership before sending an invitation.</p>
+          <Link className="portal-button" href="/admin/clients/new">Create client</Link>
         </section>
         <section className="portal-panel">
           <h2>Assign a domain</h2>
