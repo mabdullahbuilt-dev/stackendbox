@@ -17,13 +17,15 @@ import {
   assertCustomerDomain,
   domainName,
   PortalError,
-  sandboxOnly,
+  sandboxCheckoutEnabled,
+  requireSandboxCheckout,
 } from "@/lib/portal/rules";
 import {
   availability,
   createQuote,
   notifyClient,
   syncDomains,
+  importDomain,
   validateQuote,
   runJobs,
 } from "@/lib/portal/services";
@@ -35,6 +37,7 @@ import { sendAuthEmail } from "@/lib/portal/auth-email";
 import { receiptHtml } from "@/lib/portal/receipt";
 import { provisionClient } from "@/lib/portal/provisioning";
 import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
+import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -211,11 +214,13 @@ async function handle(req: NextRequest, context: Context) {
         "messages",
         "documents",
         "notifications",
+        "service_entitlements",
+        "external_payments",
       ] as const;
       const results = await Promise.all(
         tables.map((t) => {
           if (!adminMode && !clientIds.length) return { data: [], error: null };
-          let query = auth.db.from(`portal_${t}`).select("*").limit(500);
+          let query = auth.db.from(`portal_${t}`).select(t === "external_payments" ? "id,client_id,acquisition_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at" : "*").limit(500);
           if (!adminMode) {
             if (t === "domains") query = query.in("id", (assigned || []).map((a) => a.domain_id));
             else if (t === "clients") query = query.in("id", clientIds);
@@ -228,6 +233,7 @@ async function handle(req: NextRequest, context: Context) {
       results.forEach((r) => checkDb(r.error));
       return reply({
         account: auth.account,
+        sandbox_checkout_enabled: sandboxCheckoutEnabled(),
         factors:
           factors?.totp.map((f) => ({ id: f.id, status: f.status })) || [],
         ...Object.fromEntries(tables.map((t, i) => [t, results[i].data])),
@@ -251,9 +257,12 @@ async function handle(req: NextRequest, context: Context) {
       if (path[2] === "dns") return reply(await spaceship.dns(name));
       return reply(d);
     }
-    if (route === "availability" && req.method === "POST")
+    if (route === "availability" && req.method === "POST") {
+      await superAdmin(auth);
       return reply(await availability(text.parse(body.domain)));
+    }
     if (route === "domain-search" && req.method === "POST") {
+      await superAdmin(auth);
       await rateLimit(`domain-search:${auth.user.id}`, 10, 60);
       return reply(await searchDomains(text.parse(body.query)));
     }
@@ -266,12 +275,13 @@ async function handle(req: NextRequest, context: Context) {
         })
         .parse(body);
       await clientAccess(input.client_id);
+      if (input.kind === "registration") await superAdmin(auth);
       return reply(
         await createQuote(input.client_id, input.domain, input.kind),
       );
     }
     if (route === "orders" && req.method === "POST") {
-      sandboxOnly();
+      requireSandboxCheckout();
       const input = z
         .object({ quote_id: uuid, accept_terms: z.literal(true) })
         .parse(body);
@@ -283,6 +293,7 @@ async function handle(req: NextRequest, context: Context) {
       checkDb(error);
       if (!q || Date.parse(q.valid_until) <= Date.now())
         throw new PortalError("quote_expired", 409);
+      if (q.kind === "registration") await superAdmin(auth);
       await clientAccess(q.client_id);
       await validateQuote(q.id);
       assertCustomerDomain(q.domain);
@@ -315,6 +326,7 @@ async function handle(req: NextRequest, context: Context) {
       path[2] === "checkout" &&
       req.method === "POST"
     ) {
+      requireSandboxCheckout();
       const { data: o, error } = await auth.db
         .from("portal_orders")
         .select("*")
@@ -322,6 +334,7 @@ async function handle(req: NextRequest, context: Context) {
         .single();
       checkDb(error);
       if (!o) throw new PortalError("order_not_found", 404);
+      if (o.kind === "registration") await superAdmin(auth);
       await clientAccess(o.client_id);
       await validateQuote(o.quote_id);
       if (o.checkout_url && o.status === "checkout_ready")
@@ -453,6 +466,15 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined));
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
+      if (route === "admin/acquisitions" && req.method === "GET") {
+        const result = await db.from("portal_acquisition_requests").select("*,portal_external_payments(*)").order("created_at",{ascending:false}).limit(100);
+        checkDb(result.error);
+        return reply({requests:result.data});
+      }
+      if (route === "admin/acquisitions" && req.method === "POST") return reply(await saveAcquisition(admin.user.id,body));
+      if (route === "admin/external-payments" && req.method === "POST") return reply(await saveExternalPayment(admin.user.id,body));
+      if (path[1] === "domains" && path[2] && path[3] === "manage" && path.length === 4 && req.method === "GET")
+        return reply(await readDomainState(domainName(path[2])));
       if (route === "admin/data" && req.method === "GET") {
         const names = [
           "accounts",
@@ -474,6 +496,16 @@ async function handle(req: NextRequest, context: Context) {
       }
       if (route === "admin/sync" && req.method === "POST")
         return reply(await syncDomains(admin.user.id));
+      if (route === "admin/import-domain" && req.method === "POST")
+        return reply(await importDomain(admin.user.id, text.parse(body.domain)));
+      if (route === "admin/domain-search" && req.method === "POST") {
+        await rateLimit(`domain-search:${admin.user.id}`, 10, 60);
+        return reply(await searchDomains(text.parse(body.query)));
+      }
+      if (route === "admin/quotes" && req.method === "POST") {
+        const input = z.object({ client_id: uuid, domain: text, kind: z.enum(["registration", "renewal"]) }).parse(body);
+        return reply(await createQuote(input.client_id, input.domain, input.kind));
+      }
       if (route === "admin/jobs" && req.method === "POST") {
         const result = await runJobs();
         await audit(admin.user.id, "queued_jobs_processed");
@@ -510,6 +542,7 @@ async function handle(req: NextRequest, context: Context) {
             client_id: uuid,
             legal_holder: text.max(160),
             holder_arrangement: z.enum(["client_owned", "licensed"]),
+            rights_confirmed: z.literal(true),
           })
           .parse(body);
         const { data: d, error } = await db
@@ -519,12 +552,12 @@ async function handle(req: NextRequest, context: Context) {
           .single();
         checkDb(error);
         assertCustomerDomain(d.name, d.protected);
+        const verified = await importDomain(admin.user.id, d.name);
+        if (verified.domain.lifecycle_status !== "registered" || !verified.domain.expiration_date)
+          throw new PortalError("domain_registration_unverified", 409);
         checkDb(
-          (await db.from("portal_domain_assignments").insert({...input,assigned_by:admin.user.id,audit_reason:"Assigned by administrator"})).error,
+          (await db.rpc("portal_assign_verified_domain", { p_domain: input.domain_id, p_client: input.client_id, p_holder: input.legal_holder, p_arrangement: input.holder_arrangement, p_actor: admin.user.id })).error,
         );
-        await audit(admin.user.id, "domain_assigned", input.domain_id, {
-          client_id: input.client_id,
-        });
         return reply({
           message: "Domain assigned. Registrar settings were not changed.",
         });
@@ -540,6 +573,12 @@ async function handle(req: NextRequest, context: Context) {
         checkDb((await db.from("portal_websites").insert(input)).error);
         await audit(admin.user.id, "website_added", input.client_id);
         return reply({ message: "Website added." });
+      }
+      if (route === "admin/services" && req.method === "POST") {
+        const input = z.object({client_id:uuid,website_id:uuid.optional(),service:z.enum(["Website development","Website hosting","Managed database","Website performance optimization","Integrations","Maintenance","Technical support"]),description:text.max(1000),status:z.enum(["included","provisioned","suspended"])}).strict().parse(body);
+        checkDb((await db.from("portal_service_entitlements").insert({...input,created_by:admin.user.id})).error);
+        await audit(admin.user.id,"service_entitlement_added",input.client_id);
+        return reply({message:"Agreed service saved."});
       }
       if (route === "admin/pricing" && req.method === "POST") {
         const input = z

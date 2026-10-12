@@ -18,7 +18,8 @@ vi.mock("@/lib/portal/domain-operations", () => ({ authorizedDomain: vi.fn(), ch
 vi.mock("@/lib/portal/auth-email", () => ({ sendAuthEmail: vi.fn() }));
 
 import { GET, POST } from "@/app/api/portal/[...path]/route";
-import { identity, sessionDb, turnstile } from "@/lib/portal/server";
+import { identity, sessionDb, superAdmin, turnstile } from "@/lib/portal/server";
+import { PortalError } from "@/lib/portal/rules";
 
 describe("authentication verification errors", () => {
   for (const action of ["login", "recover"]) {
@@ -55,4 +56,14 @@ it("returns empty client data for an unassigned administrator without querying t
   expect(data.clients).toEqual([]);
   expect(data.invoices).toEqual([]);
   expect(from.mock.calls).toEqual([["portal_memberships"]]);
+});
+
+describe("client acquisition restrictions",()=>{
+  it.each(["availability","domain-search","admin/domain-search","admin/acquisitions","admin/import-domain"])("denies a client posting to %s",async route=>{
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture"},account:{role:"client"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>);
+    vi.mocked(superAdmin).mockRejectedValue(new PortalError("administrator_required",403));
+    const response=await POST(new NextRequest(`https://portal.example/api/portal/${route}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:"example",domain:"example.com"})}),{params:Promise.resolve({path:route.split("/")})});
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({error:"administrator_required"});
+  });
 });

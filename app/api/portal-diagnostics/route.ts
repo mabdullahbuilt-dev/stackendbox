@@ -51,7 +51,15 @@ export async function GET(req: Request) {
     check(async () => {
       const domains = await spaceship.inventory();
       const availability = await spaceship.availabilityBatch(["example.com", "example.net"]);
-      return { domainsRead: domains.length, availability };
+      const headers = {"X-API-Key":env("SPACESHIP_API_KEY"),"X-API-Secret":env("SPACESHIP_API_SECRET")};
+      // Bounded read-only probes distinguish an empty provider inventory from
+      // application filtering or a pagination mismatch. Never return keys.
+      const probes = await Promise.all(["/domains?take=1&skip=0","/domains?take=100&skip=0","/domains/stackendbox.com"].map(async path => {
+        const response = await fetch(`https://spaceship.dev/api/v1${path}`,{headers,cache:"no-store",signal:AbortSignal.timeout(15000)});
+        const body = await response.json().catch(()=>null);
+        return {path,status:response.status,total:typeof body?.total === "number"?body.total:undefined,items:Array.isArray(body?.items)?body.items.length:undefined,name:typeof body?.name === "string"?body.name:undefined,lifecycleStatus:body?.lifecycleStatus};
+      }));
+      return { domainsRead: domains.length, availability, probes };
     }),
     check(async () => {
       const payments = await whop().payments.list({

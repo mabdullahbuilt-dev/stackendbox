@@ -7,43 +7,42 @@ import {
   PortalError,
   renewalPrice,
   verifiedPrice,
+  sandboxCheckoutEnabled,
 } from "./rules";
-import { spaceship } from "./spaceship";
+import { domainSchema, spaceship } from "./spaceship";
+
+async function saveVerifiedDomain(d: z.infer<typeof domainSchema>) {
+  const name = domainName(d.name);
+  const db = adminDb();
+  const existing = await db.from("portal_domains").select("protected").eq("name", name).eq("provider", "spaceship").eq("provider_account", "primary").maybeSingle();
+  checkDb(existing.error);
+  const saved = await db.from("portal_domains").upsert({
+    name, provider: "spaceship", provider_account: "primary",
+    protected: name === "stackendbox.com" || existing.data?.protected === true,
+    lifecycle_status: d.lifecycleStatus, registration_date: d.registrationDate || null,
+    expiration_date: d.expirationDate || null, auto_renew: d.autoRenew,
+    verification_status: d.verificationStatus || null, nameservers: d.nameservers || {},
+    security: { eppStatuses: d.eppStatuses || [], privacy: d.privacyProtection || null },
+    last_synced_at: new Date().toISOString(), reconciliation_required: false,
+  }, { onConflict: "provider,provider_account,name" }).select("*").single();
+  checkDb(saved.error);
+  return saved.data;
+}
+
+export async function importDomain(actor: string, input: string) {
+  const name = domainName(input);
+  const detail = await spaceship.detail(name);
+  if (domainName(detail.name) !== name) throw new PortalError("registrar_domain_mismatch", 502);
+  const saved = await saveVerifiedDomain(detail);
+  await audit(actor, "domain_import_verified", saved.id, { name });
+  return { domain: saved, message: "Domain verified with Spaceship and saved. Existing assignments are preserved." };
+}
 
 export async function syncDomains(actor: string) {
   const domains = await spaceship.inventory();
   const db = adminDb();
   for (const d of domains) {
-    const name = domainName(d.name);
-    const { data: existing, error: readError } = await db
-      .from("portal_domains")
-      .select("protected")
-      .eq("name", name)
-      .eq("provider_account", "primary")
-      .maybeSingle();
-    checkDb(readError);
-    const { error } = await db.from("portal_domains").upsert(
-      {
-        name,
-        provider: "spaceship",
-        provider_account: "primary",
-        protected: name === "stackendbox.com" || existing?.protected === true,
-        lifecycle_status: d.lifecycleStatus,
-        registration_date: d.registrationDate,
-        expiration_date: d.expirationDate,
-        auto_renew: d.autoRenew,
-        verification_status: d.verificationStatus,
-        nameservers: d.nameservers || {},
-        security: {
-          eppStatuses: d.eppStatuses || [],
-          privacy: d.privacyProtection || null,
-        },
-        last_synced_at: new Date().toISOString(),
-        reconciliation_required: false,
-      },
-      { onConflict: "provider,provider_account,name" },
-    );
-    checkDb(error);
+    await saveVerifiedDomain(d);
   }
   const { data: stored, error } = await db
     .from("portal_domains")
@@ -311,7 +310,7 @@ export async function notifyClient(
 }
 export async function runJobs() {
   const db = adminDb();
-  checkDb((await db.rpc("portal_run_simulations")).error);
+  if (sandboxCheckoutEnabled()) checkDb((await db.rpc("portal_run_simulations")).error);
   const { data: assignments, error } = await db
     .from("portal_domain_assignments")
     .select("client_id,portal_domains(name,expiration_date)");

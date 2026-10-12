@@ -41,12 +41,23 @@ async function request(path: string, body?: unknown, method = body ? "POST" : "G
 export const spaceship = {
   async inventory() {
     const all: z.infer<typeof domainSchema>[] = [];
+    const seen = new Set<string>();
+    let expectedTotal: number | undefined;
     for (let skip = 0; skip < 10000; skip += 100) {
       const result = z
-        .object({ items: z.array(domainSchema), total: z.number().int() })
+        .object({ items: z.array(domainSchema).max(100), total: z.number().int().nonnegative() })
         .parse(await request(`/domains?take=100&skip=${skip}`));
+      if (expectedTotal !== undefined && result.total !== expectedTotal)
+        throw new PortalError("spaceship_inventory_changed_retry", 409);
+      expectedTotal = result.total;
+      for (const item of result.items) {
+        const name = domainName(item.name);
+        if (seen.has(name)) throw new PortalError("spaceship_duplicate_inventory", 502);
+        seen.add(name);
+      }
       all.push(...result.items);
-      if (all.length >= result.total) return all;
+      if (all.length > result.total) throw new PortalError("spaceship_incomplete_inventory", 502);
+      if (all.length === result.total) return all;
       if (!result.items.length)
         throw new PortalError("spaceship_incomplete_inventory", 502);
     }

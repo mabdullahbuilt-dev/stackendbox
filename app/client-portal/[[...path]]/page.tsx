@@ -12,6 +12,7 @@ export default async function PortalPage({
   const { path = [] } = await params;
   if (!path.length) redirect("/client-portal/dashboard");
   if (path[0] === "admin") redirect("/admin");
+  if (path[0] === "domains" && path[1] === "buy") notFound();
   const allowed = [
     "login",
     "forgot-password",

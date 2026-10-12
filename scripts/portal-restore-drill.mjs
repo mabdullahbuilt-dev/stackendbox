@@ -26,8 +26,8 @@ try{
   await run('psql',['-v','ON_ERROR_STOP=1','-c',"create role anon; create role authenticated; create role service_role bypassrls; create role supabase_auth_admin; create role supabase_storage_admin; create role authenticator; create role supabase_admin superuser; create role dashboard_user; create role pgbouncer; create schema extensions; create extension pgcrypto with schema extensions;"]);
   await run('pg_restore',['--exit-on-error','--no-owner','-d','postgres'],archive);
   const before=await run('psql',['-t','-A','-c',"select json_build_object('accounts',(select count(*) from portal_accounts),'auth_users',(select count(*) from auth.users),'clients',(select count(*) from portal_clients));"]);
-  for(const migration of ['202610120002_domain_operations.sql','202610120003_integrity_provisioning.sql']){
-    const relation=migration.startsWith('202610120002')?'portal_domain_operations':'portal_provisioning';
+  for(const migration of ['202610120002_domain_operations.sql','202610120003_integrity_provisioning.sql','202610120004_agency_workflow.sql']){
+    const relation=migration.startsWith('202610120002')?'portal_domain_operations':migration.startsWith('202610120003')?'portal_provisioning':'portal_acquisition_requests';
     const existing=await run('psql',['-t','-A','-c',`select to_regclass('public.${relation}') is not null;`]);
     if(existing.stdout.toString().trim()==='t')continue;
     const sql=await readFile(join('supabase','migrations',migration),'utf8');
@@ -35,6 +35,7 @@ try{
   }
   await run('psql',['-v','ON_ERROR_STOP=1'],await readFile('supabase/tests/portal_security.sql'));
   await run('psql',['-v','ON_ERROR_STOP=1'],await readFile('supabase/tests/portal_integrity.sql'));
+  await run('psql',['-v','ON_ERROR_STOP=1'],await readFile('supabase/tests/portal_agency.sql'));
   await run('psql',['-v','ON_ERROR_STOP=1','-c',"insert into portal_clients(id,name,business_name,status) values('dddddddd-0000-4000-8000-000000000001','Persistence fixture','Local restore only','suspended');"]);
   await run('pg_ctl',['-D',join(directory,'data'),'-m','fast','-w','stop']);started=false;
   await run('pg_ctl',['-D',join(directory,'data'),'-l',join(directory,'postgres.log'),'-o','-h 127.0.0.1 -p 55439','-w','start']);started=true;

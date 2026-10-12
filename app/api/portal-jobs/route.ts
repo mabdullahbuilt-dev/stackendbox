@@ -12,6 +12,8 @@ export async function GET(req: Request) {
   )
     return new Response(null, { status: 401 });
   try {
+    if (process.env.PORTAL_JOBS_ENABLED !== "true")
+      return NextResponse.json({ status: "disabled", message: "Background processing awaits operational acceptance." });
     return NextResponse.json(await runJobs());
   } catch {
     return NextResponse.json(

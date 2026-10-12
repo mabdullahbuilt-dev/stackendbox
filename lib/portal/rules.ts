@@ -81,6 +81,13 @@ export function sandboxOnly() {
   )
     throw new PortalError("live_operations_not_implemented", 503);
 }
+export function sandboxCheckoutEnabled() {
+  return process.env.VERCEL_ENV !== "production" && process.env.PORTAL_SANDBOX_CHECKOUT_ENABLED === "true";
+}
+export function requireSandboxCheckout() {
+  sandboxOnly();
+  if (!sandboxCheckoutEnabled()) throw new PortalError("payment_acceptance_pending", 403);
+}
 export function safeWebUrl(value: string) {
   const url = new URL(value);
   if (url.protocol !== "https:" || url.username || url.password)

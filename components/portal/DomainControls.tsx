@@ -14,10 +14,10 @@ const numeric = new Set(["ttl", "flag", "preference", "priority", "weight", "svc
 function clean(record: RecordRow) {
   return Object.fromEntries(["type", "name", "ttl", ...(fields[record.type] || [])].filter(k => record[k] !== undefined).map(k => [k, record[k]]));
 }
-export function DomainControls({ name, panel }: { name: string; panel: "dns" | "nameservers" | "privacy" }) {
+export function DomainControls({ name, panel, admin = false }: { name: string; panel: "dns" | "nameservers" | "privacy"; admin?:boolean }) {
   const [state, setState] = useState<State | null>(null), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
   const [type, setType] = useState("A"), [editing, setEditing] = useState<RecordRow | null>(null);
-  async function load() { setBusy(true); setMessage(""); try { setState(await api(`domains/${name}/manage`)); } catch(e) { setMessage((e as Error).message); } finally { setBusy(false); } }
+  async function load() { setBusy(true); setMessage(""); try { const next = await api(`${admin ? "admin/" : ""}domains/${name}/manage`); setState(admin ? {...next,changesEnabled:false} : next); } catch(e) { setMessage((e as Error).message); } finally { setBusy(false); } }
   async function change(value: unknown) {
     if (!state) return;
     if (!window.confirm(`Confirm this change to ${name}. It may interrupt your website, email, or expose public registration details. Continue?`)) return;

@@ -40,14 +40,16 @@ export async function searchDomains(input: string) {
     const premium = !!record?.premiumPricing?.length;
     const state = record?.result === "available" ? "available" : ["taken", "unavailable"].includes(record?.result || "") ? "unavailable" : "unverified";
     let retailMinor: number | null = null;
+    let supplierMinor: number | null = null, feesMinor: number | null = null;
     const price = prices.data?.find(p => p.domain === name);
     if (state === "available" && !premium && price) {
       try {
         verifiedPrice(price);
+        supplierMinor = price.supplier_minor; feesMinor = price.fees_minor;
         if (policy.data?.allowed_tlds.includes(name.split(".").slice(1).join(".")) && price.supplier_minor + price.fees_minor <= policy.data.max_supplier_minor && policy.data.registration_minor === 4500) retailMinor = 4500;
       } catch { /* Unverified supplier evidence must never become a retail quote. */ }
     }
-    return { name, result: state, premium, retail_minor: retailMinor, term_years: 1, checked_at: availability.checkedAt };
+    return { name, result: state, premium, retail_minor: retailMinor, supplier_minor: supplierMinor, fees_minor: feesMinor, term_years: 1, checked_at: availability.checkedAt };
   });
   return { primary: results[0], alternatives: results.slice(1).filter(r => r.result === "available").slice(0, 7), checked_at: availability.checkedAt };
 }

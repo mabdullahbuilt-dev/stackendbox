@@ -1,6 +1,6 @@
 # Portal verification and release gates
 
-The portal is under `/client-portal` on a feature branch. Do not merge or promote until the remaining release gates are verified. The public homepage and existing brief-delivery handler were not modified.
+The portal is under `/client-portal` on a feature branch. The October 12 agency-workflow section below records the current production-release status and supersedes earlier product decisions. The public homepage and existing brief-delivery handler were not modified.
 
 ## Verified
 
@@ -78,3 +78,40 @@ Existing authentication email delivery still uses Supabase-generated one-time li
 ### Deployment evidence
 
 Code commit `cb2001c` is deployed as Ready Preview `stackendbox-l1ufyqnnv-portfolio-ab4e.vercel.app`, with the stable portal Preview alias verified against that deployment. Ten deployed unauthenticated/unsigned endpoint checks passed, including the new client directory and health APIs. Browser navigation to `/admin/clients` returned the expected authenticator gate for the existing AAL1 session. No production deployment was requested. Supabase's migration history now lists all three applied versions.
+
+## October 12 agency workflow and production preparation
+
+The owner now authorizes production release to `https://www.stackendbox.com/client-portal` and `/admin`, while keeping Preview protected. Initial domain acquisition is staff-only. The old client purchase page returns 404, client navigation has no shopping or administration link, and registration/search APIs require administrator role and MFA. Client renewal quotes still require actual supplier evidence. Production checkout is denied even if a sandbox-enable variable is mistakenly set.
+
+### Implementation and database evidence
+
+- `/admin/domains` contains actual Spaceship search, bounded inventory sync, provider-verified single-domain import, contractual-holder assignment, approved acquisition requests, and accurately categorized external payment evidence. Registration remains disabled. No provider operation is fabricated from an entered domain name or a saved payment.
+- Assignment re-fetches provider state and commits through a service-only transaction that checks an active client, a recent registered domain, protection status, and duplicate/changed assignment. The audit and assignment save together.
+- Migration `202610120004` adds acquisition requests, external payments and actual service entitlements without deleting existing business records. All three tables have RLS. External payment ownership and website service ownership use composite foreign keys. Clients cannot select internal payment evidence.
+- The migration was exercised in an isolated restore before applying it to the existing project. Assignment retries, silent reassignment denial, cross-client payments, internal-evidence privacy, service isolation and automatic assigned-domain visibility passed. Existing security/integrity suites and persistence after restart also passed.
+- Supabase migration history includes all four versions. Anonymous requests to the new tables and client records returned 401.
+- A real MFA-verified browser session created the earlier clearly labeled temporary client, Auth identity and membership, then the admin directory and independent SQL queries confirmed persistence. Brevo accepted the invitation, and Supabase recorded email confirmation and sign-in. Password setup and complete client sign-in were not verified because the external recipient hit Preview deployment protection and then reopened the consumed link.
+- The callback now waits for an explicit confirmation click before consuming email credentials, which protects against ordinary link-scanner GETs. Cross-origin confirmation is rejected. The cause of the earlier consumption was not proven.
+- Only the approved temporary fixture was cleaned up after checking its exact identities and verifying zero domain, website, order, payment, support, document or service history. Its test Auth user was removed through Auth Admin. The existing administrator and audit evidence remain. No synthetic customer is retained in the shared database.
+
+### Production configuration and release status
+
+- Existing project `stackendbox` uses production branch `main`, verified `www.stackendbox.com`, and the existing root-to-www redirect. Rollback deployment: `dpl_HwiyiEkB6DXUfGv1gZqfvsckomrE`, `stackendbox-24odlemo9-portfolio-ab4e.vercel.app`.
+- Required Production secrets are present. Production Supabase URL and Turnstile public site key match the existing backend and widget. `PORTAL_APP_URL=https://www.stackendbox.com` is separately scoped to Production. Purchase, renewal, DNS mutation, checkout and background-automation flags are explicitly disabled.
+- Public Supabase signup is disabled and verified through the Auth settings API. Email and enrolled TOTP remain enabled. The exact production callback was added alongside the exact Preview callback. The default Site URL remains Preview until the production app is published, preventing live email from pointing to an unavailable route.
+- The existing Turnstile widget was inspected in Cloudflare. Both production hostnames and Preview are authorized, Managed mode remains selected, and no widget change was needed.
+- Preview remains protected. An anonymous request redirects to Vercel SSO. No protection exception was added. The existing public homepage returns 200 without a Vercel gate. Production portal and admin currently return 404 because this candidate has not been published.
+- Release blocker: the existing Vercel team is on **Hobby**. Vercel's official [fair-use guidelines](https://vercel.com/docs/limits/fair-use-guidelines) require Pro or Enterprise for commercial use. No plan was purchased automatically. Upgrade the existing team or establish a provider-approved exception before production publication. `scripts/portal-release-check.mjs` reports this gate while checking the project, domains, rollback and disabled financial flags.
+- The source of the public homepage, its components/assets, root layout, site config and contact handler matches the current production branch. Its actual contact endpoint still returns 422 for an invalid body without sending mail.
+
+### Acceptance and remaining work
+
+- Final local checks: 131 tests in 17 files passed, ESLint clean, TypeScript clean, and optimized build passed.
+- Protected deployed checks: 15 expected responses passed, covering private data/admin APIs, new acquisition/domain-management APIs, removed purchase route, login/callback pages, invoice authorization, disabled payment/webhook routes, upload origin checks, cron authorization and diagnostics secrecy.
+- Actual administrator browser checks reached the new domain workspace, synchronized zero real domains, received real availability for a requested name plus seven alternatives, withheld unverified pricing, and rejected import of `stackendbox.com` with an honest account-scope error. No registrar settings or charges were changed.
+- Actual browser checks confirmed all seven final customer navigation items, no Buy Domain or staff navigation, and the assigned-domain empty state. This used the administrator's client-view session, not a completed test-client password journey.
+- Three authenticated-tool HTTP probes of the protected Preview login returned 200, with first-byte times 0.675, 0.536 and 0.514 seconds. These are request measurements, not a browser-render or load-test claim.
+- Registrar API inventory returned 200 with total zero for both `take=1` and `take=100`; direct `stackendbox.com` lookup returned 404. The current account inventory discrepancy remains unresolved. Import/assignment of a real purchased client domain cannot be accepted until the provider returns that domain.
+- Whop remains Sandbox. No completed real sandbox checkout, signed payment webhook, receipt or renewal journey has been observed. Live payment/registrar approval remains outstanding.
+- Fresh production invitation, password setup/recovery, client sign-in, assigned-domain/website/support browser journeys require the actual production release and the user's personal password/MFA input. They are not claimed complete.
+- Fresh encrypted backup completed before the additive migration. Offsite storage, independent recovery-key escrow, scheduling and a full hosted Auth/MFA recovery exercise remain incomplete. Backup data stays outside this public repository.

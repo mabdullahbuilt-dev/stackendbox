@@ -35,4 +35,27 @@ describe("registrar adapter mutation boundaries", () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({items:[],total:1})));
     await expect(spaceship.dns("example.com")).rejects.toThrow("spaceship_incomplete_dns");
   });
+  const inventoryDomain = (name:string) => ({name,autoRenew:false,isPremium:false,lifecycleStatus:"registered"});
+  it("reads all domain pages with the documented take and skip parameters", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:Array.from({length:100},(_,i)=>inventoryDomain(`fixture${i}.invalid`)),total:101})))
+      .mockResolvedValueOnce(new Response(JSON.stringify({items:[inventoryDomain("last.invalid")],total:101})));
+    expect(await spaceship.inventory()).toHaveLength(101);
+    expect(fetchMock.mock.calls.map(c=>c[0])).toEqual(["https://spaceship.dev/api/v1/domains?take=100&skip=0","https://spaceship.dev/api/v1/domains?take=100&skip=100"]);
+  });
+  it("accepts a provider-confirmed empty inventory without fabricating a domain", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({items:[],total:0})));
+    expect(await spaceship.inventory()).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("rejects duplicate domains and inconsistent totals", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[inventoryDomain("same.invalid"),inventoryDomain("same.invalid")],total:2})));
+    await expect(spaceship.inventory()).rejects.toThrow("spaceship_duplicate_inventory");
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[inventoryDomain("one.invalid")],total:0})));
+    await expect(spaceship.inventory()).rejects.toThrow("spaceship_incomplete_inventory");
+  });
+  it("fails closed when the inventory changes between pages", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[inventoryDomain("one.invalid")],total:2})))
+      .mockResolvedValueOnce(new Response(JSON.stringify({items:[inventoryDomain("two.invalid")],total:3})));
+    await expect(spaceship.inventory()).rejects.toThrow("spaceship_inventory_changed_retry");
+  });
 });
