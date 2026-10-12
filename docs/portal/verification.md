@@ -101,7 +101,7 @@ The owner now authorizes production release to `https://www.stackendbox.com/clie
 - Public Supabase signup is disabled and verified through the Auth settings API. Email and enrolled TOTP remain enabled. The exact production callback was added alongside the exact Preview callback. The default Site URL remains Preview until the production app is published, preventing live email from pointing to an unavailable route.
 - The existing Turnstile widget was inspected in Cloudflare. Both production hostnames and Preview are authorized, Managed mode remains selected, and no widget change was needed.
 - Preview remains protected. An anonymous request redirects to Vercel SSO. No protection exception was added. The existing public homepage returns 200 without a Vercel gate. Production portal and admin currently return 404 because this candidate has not been published.
-- Release blocker: the existing Vercel team is on **Hobby**. Vercel's official [fair-use guidelines](https://vercel.com/docs/limits/fair-use-guidelines) require Pro or Enterprise for commercial use. No plan was purchased automatically. Upgrade the existing team or establish a provider-approved exception before production publication. `scripts/portal-release-check.mjs` reports this gate while checking the project, domains, rollback and disabled financial flags.
+- Commercial publication blocker: the existing Vercel team is on Hobby. Vercel's official [fair-use guidelines](https://vercel.com/docs/limits/fair-use-guidelines) limit Hobby to noncommercial personal use. This is a usage-policy restriction, not a technical routing limitation. No upgrade, exception claim, hosting migration or spending has been authorized or performed. Development and verification continue in the existing project.
 - The source of the public homepage, its components/assets, root layout, site config and contact handler matches the current production branch. Its actual contact endpoint still returns 422 for an invalid body without sending mail.
 
 ### Acceptance and remaining work
@@ -115,3 +115,39 @@ The owner now authorizes production release to `https://www.stackendbox.com/clie
 - Whop remains Sandbox. No completed real sandbox checkout, signed payment webhook, receipt or renewal journey has been observed. Live payment/registrar approval remains outstanding.
 - Fresh production invitation, password setup/recovery, client sign-in, assigned-domain/website/support browser journeys require the actual production release and the user's personal password/MFA input. They are not claimed complete.
 - Fresh encrypted backup completed before the additive migration. Offsite storage, independent recovery-key escrow, scheduling and a full hosted Auth/MFA recovery exercise remain incomplete. Backup data stays outside this public repository.
+
+## October 12 deployment correction and scoped-query verification
+
+This section supersedes the intervening alternative-hosting investigation. The application remains one Next.js App Router deployment in the existing Vercel project. The local alternative-adapter experiment was stopped before deployment. No alternative cloud resources, new hosting accounts, domain proxies or DNS changes were created.
+
+### Exact cause of the current access difference
+
+- Production branch is `main`, commit `3595d8046851ff180e7577855b599589722e3928`. The portal implementation is on `feature/stackendbox-client-portal` and has not been merged or promoted to Production.
+- The existing public Production homepage returns 200. `/client-portal` and `/admin` currently return 404 because their code is absent from that deployment, not because Vercel cannot support those routes.
+- Standard Protection is already correct. The project's API reports the legacy value `all_except_custom_domains`. Protected Preview sends unauthenticated external visitors to Vercel SSO, while the Production custom domain is public. Protection was not disabled.
+- Supabase authentication, authoritative account approval, tenant RLS and staff-only MFA remain separate application controls. Vercel Authentication is not the intended customer login mechanism.
+
+### Completed technical work
+
+- Production environment scope, verified company-domain mapping, main branch, rollback availability, background-job disablement and all financial/registrar safety flags passed the read-only preflight. Its report now separates `technicalConfigurationReady` from `commercialPlanPermitsUse`.
+- Client page requests are scoped to the relevant records. Domain listing requests three tenant tables instead of all fifteen. Support requests three tables. MFA factor listing is requested only for Account Settings or private administrator workspace. The membership and assignment checks still use the signed-in user's session and RLS.
+- The short-lived in-memory cache is keyed by both account and page. Switching sections no longer treats another section's partial response as a complete cache hit. Permanent records remain in PostgreSQL.
+- 137 tests passed, including populated-tenant query-filter tests. ESLint, TypeScript and the optimized Next.js build passed. Build output confirms `/`, `/admin/[[...path]]`, `/client-portal/[[...path]]` and existing `/api/...` routes coexist in the same application.
+- Public homepage, layout, site assets and contact-handler source remain unchanged relative to `main`.
+
+### Deployed and isolated measurements
+
+- Application candidate `c3d8d7475adacda0e469373ce9ef71531de08d49` is deployed in the existing project as `dpl_CpoTSWCuGExV5Lkvct5EmoPRWLiQ`. The stable protected Preview alias points to `stackendbox-cqkjamaz0-portfolio-ab4e.vercel.app`.
+- All 15 deployed response checks passed again. Browser navigation on the latest deployment loaded Overview, My Domains, Billing, Support and Account Settings without stale-section data or errors. The existing MFA-authorized administrator session also loaded `/admin/domains` after redeployment. These browser checks used the administrator's client view, not an independent customer login.
+- The latest diagnostics verified the database, one approved live account, the existing Brevo sender and Whop Sandbox read access. They sent no email and performed no registrar changes. Spaceship again returned zero inventory for both pagination probes and 404 for the company-domain lookup.
+- Anonymous HTTP checks returned public homepage 200, production portal 404, production admin 404, and protected Preview login 302 to Vercel SSO. The production rollback deployment remained unchanged.
+- An encrypted backup was restored to an isolated local PostgreSQL cluster. The existing security, integrity and agency-workflow SQL tests passed. Four hundred synthetic clients were inserted only in that isolated database, with fixture memberships, domains, websites and support records.
+- Every synthetic tenant could read its own indexed records and could not read the neighboring tenant's client/domain records. Separate unfiltered visibility checks also returned only the authorized tenant. No synthetic customers were inserted into the shared Supabase project.
+- `pgbench` ran 20 concurrent database sessions, 50 transactions per session, 1,000 total transactions and zero failures. A transaction set tenant claims, read membership, client, assignment, domain, website and support records under the real authenticated role and RLS. Average transaction latency was 85.522 ms and throughput was 233.858 transactions/second on this development computer.
+- All 400 fixture clients survived a local database restart. The successful test cluster was then stopped and its disposable copy removed. Encrypted backups and sanitized test summaries remain outside the repository. The result is recorded in `capacity-drill.json` alongside backup `2026-10-12T15-02-11-498Z`.
+- The first capacity attempt was stopped because it repeated broad full-table scans for every fixture. The successful test uses the same indexed tenant filters as the application, with separate broad-query security checks. This result does not establish acceptable performance for arbitrary unfiltered scans.
+- These are local SQL transaction measurements, not Supabase Auth HTTP password tests, browser concurrent-login measurements, hosted capacity guarantees, Vercel/Supabase quota measurements or a complete Auth/MFA service restore. Those acceptance boundaries remain open.
+
+### Remaining acceptance boundaries
+
+No commercial Production publication was performed. Therefore a fresh browser login on the company-domain portal cannot yet pass. Production invitation/recovery and client-assigned real-domain journeys are still unverified. Protected Preview remains intentional and cannot serve external customers without Vercel access. Registrar inventory reconciliation, real signed Whop Sandbox payment evidence, offsite backup/key escrow, hosted concurrent authenticated navigation and measured free-tier usage remain open. Local database stress results must not be presented as hosted login or billing-consumption measurements.

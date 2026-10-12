@@ -22,12 +22,18 @@ set role authenticated;
 do $$ declare n integer; begin
  for n in 1..400 loop
   perform set_config('request.jwt.claims',json_build_object('sub',md5('capacity-user-'||n)::uuid,'email','capacity-'||n||'@example.invalid','aal','aal1')::text,true);
-  if (select count(*) from portal_clients)<>1 or
-     (select count(*) from portal_domains)<>1 or
-     (select count(*) from portal_websites)<>1 or
-     (select count(*) from portal_requests)<>1 or
-     not exists(select 1 from portal_domains where name='capacity-'||n||'.invalid') then
+  -- Exercise the indexed tenant filters used by the real page handlers.
+  if not exists(select 1 from portal_clients where id=md5('capacity-client-'||n)::uuid) or
+     not exists(select 1 from portal_domains where id=md5('capacity-domain-'||n)::uuid) or
+     not exists(select 1 from portal_websites where client_id=md5('capacity-client-'||n)::uuid) or
+     not exists(select 1 from portal_requests where client_id=md5('capacity-client-'||n)::uuid) or
+     exists(select 1 from portal_clients where id=md5('capacity-client-'||(n%400+1))::uuid) or
+     exists(select 1 from portal_domains where id=md5('capacity-domain-'||(n%400+1))::uuid) then
    raise exception 'Tenant isolation failed for fixture %',n;
+  end if;
+  -- Broad queries still enforce RLS, independently of application filters.
+  if n in (1,400) and ((select count(*) from portal_clients)<>1 or (select count(*) from portal_domains)<>1) then
+   raise exception 'Unfiltered tenant visibility failed for fixture %',n;
   end if;
  end loop;
 end $$;
