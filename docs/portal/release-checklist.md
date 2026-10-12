@@ -19,4 +19,6 @@ Updated October 12, 2026. One existing Next.js application, GitHub repository an
 
 Preview: https://stackendbox-portal-preview.vercel.app
 
+Final deployed check: application commit `3b345a6` is deployed at `https://stackendbox-g1nmy92ew-portfolio-ab4e.vercel.app`, and the existing protected Preview alias points there. All 15 hosted security smoke checks passed on this deployment. The real client support request and conversation remained visible after a full browser refresh. Anonymous Preview login still redirects to Vercel SSO, and the unchanged public `www.stackendbox.com` homepage returns 200. The Production configuration preflight passed with every financial and registrar safety flag still disabled.
+
 Rollback remains the existing Production deployment `dpl_HwiyiEkB6DXUfGv1gZqfvsckomrE`. No merge to `main` or commercial publication has occurred.
