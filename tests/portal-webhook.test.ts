@@ -130,4 +130,12 @@ describe("verified Whop payment processing", () => {
     ).rejects.toThrow();
     expect(mock.rpc).not.toHaveBeenCalled();
   });
+  it("rejects a provider response for a different payment", async () => {
+    const payment = await mock.retrieve({ id: "pay_fixture" });
+    mock.retrieve.mockResolvedValue({ ...payment, id: "pay_other" });
+    await expect(processWebhook(raw, signed())).rejects.toThrow(
+      "payment_mismatch",
+    );
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
 });

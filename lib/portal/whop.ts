@@ -152,6 +152,7 @@ export async function processWebhook(
   checkDb(error);
   if (
     !order ||
+    payment.id !== paymentId ||
     !payment.total ||
     payment.metadata?.environment !== "sandbox" ||
     payment.account_id !== env("WHOP_SANDBOX_COMPANY_ID") ||

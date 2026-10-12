@@ -76,7 +76,7 @@ async function handle(req: NextRequest, context: Context) {
           .maybeSingle();
         if (a) {
           const { error } = await db.auth.resetPasswordForEmail(email, {
-            redirectTo: `${portalOrigin()}/client-portal/auth/callback?next=reset-password`,
+            redirectTo: `${portalOrigin()}/client-portal/auth/callback`,
           });
           await audit(
             null,
@@ -160,6 +160,7 @@ async function handle(req: NextRequest, context: Context) {
       const input = z
         .object({ factorId: uuid, code: z.string().regex(/^\d{6}$/) })
         .parse(body);
+      await rateLimit(`mfa:${auth.user.id}`, 5, 300);
       const { error } = await auth.db.auth.mfa.challengeAndVerify({
         factorId: input.factorId,
         code: input.code,
@@ -447,7 +448,7 @@ async function handle(req: NextRequest, context: Context) {
         const { data: u, error: ue } = await db.auth.admin.inviteUserByEmail(
           input.email.toLowerCase(),
           {
-            redirectTo: `${portalOrigin()}/client-portal/auth/callback?next=reset-password`,
+            redirectTo: `${portalOrigin()}/client-portal/auth/callback`,
           },
         );
         if (ue || !u.user) {
