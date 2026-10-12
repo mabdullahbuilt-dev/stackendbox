@@ -30,8 +30,10 @@ export default async function PortalPage({
   if (["login", "forgot-password"].includes(path[0]))
     return <Portal path={path} />;
   let userId = "";
+  let passwordChangeRequired = false;
   try {
     const auth = await identity();
+    passwordChangeRequired = auth.user.app_metadata?.portal_password_change_required === true;
     userId = auth.user.id;
   } catch (e) {
     if (e instanceof PortalError && e.status === 401)
@@ -49,5 +51,6 @@ export default async function PortalPage({
       </main>
     );
   }
+  if (passwordChangeRequired && path[0] !== "reset-password") redirect("/client-portal/reset-password");
   return <Portal key={userId} path={path} userId={userId} />;
 }

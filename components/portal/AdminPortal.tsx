@@ -43,7 +43,7 @@ export function AdminPortal({
   return (
     <div className="portal-shell">
       <aside className={`portal-sidebar ${open ? "is-open" : ""}`}>
-        <Link className="portal-brand" href="/admin">
+        <Link prefetch={false} className="portal-brand" href="/admin">
           StackEndBox<span>ADMINISTRATION</span>
         </Link>
         <nav aria-label="Administration">
@@ -57,6 +57,7 @@ export function AdminPortal({
             ["security", "Account security"],
           ].map(([key, title]) => (
             <Link
+              prefetch={false}
               key={key}
               href={`/admin/${key}`}
               aria-current={section === key ? "page" : undefined}

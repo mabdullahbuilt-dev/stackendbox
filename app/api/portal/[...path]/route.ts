@@ -40,6 +40,7 @@ import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
 import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
+import { checkPassword } from "@/lib/portal/password-check";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -107,13 +108,15 @@ async function handle(req: NextRequest, context: Context) {
         password: input.password || "",
       });
       if (error) throw new PortalError("invalid_credentials", 401);
+      let passwordChangeRequired = false;
       try {
-        await identity();
+        const auth = await identity();
+        passwordChangeRequired = auth.user.app_metadata?.portal_password_change_required === true;
       } catch {
         await db.auth.signOut();
         throw new PortalError("invalid_credentials", 401);
       }
-      return reply({ redirect: "/client-portal/dashboard" });
+      return reply({ redirect: passwordChangeRequired ? "/client-portal/reset-password" : "/client-portal/dashboard" });
     }
     if (req.method === "POST" && route === "auth/logout") {
       const db = await sessionDb();
@@ -143,6 +146,11 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ redirect: "/client-portal/reset-password" });
     }
     const auth = await identity();
+    if (auth.user.app_metadata?.portal_password_change_required === true && route !== "auth/password") {
+      if (route === "data" && req.method === "GET" && req.nextUrl.searchParams.get("section") === "reset-password")
+        return reply({ account: auth.account, factors: [], clients: [], password_change_required: true });
+      throw new PortalError("password_change_required", 403);
+    }
     if (path[0] === "invoices" && path[2] === "download" && path.length === 3 && req.method === "GET") {
       const id = uuid.parse(path[1]);
       const { data: invoice, error } = await auth.db.from("portal_invoices").select("*").eq("id", id).maybeSingle();
@@ -158,12 +166,19 @@ async function handle(req: NextRequest, context: Context) {
       await rateLimit(`actions:${auth.user.id}`, 60, 60);
     if (req.method === "POST" && route === "auth/password") {
       const input = z
-        .object({ password: z.string().min(12).max(128) })
+        .object({ password: z.string().max(128) })
         .parse(body);
+      await checkPassword(input.password);
       const { error } = await auth.db.auth.updateUser({
         password: input.password,
       });
       if (error) throw new PortalError("password_change_failed", 400);
+      if (auth.user.app_metadata?.portal_password_change_required === true) {
+        const cleared = await adminDb().auth.admin.updateUserById(auth.user.id, {
+          app_metadata: { ...auth.user.app_metadata, portal_password_change_required: false },
+        });
+        if (cleared.error) throw new PortalError("password_access_update_failed", 503);
+      }
       await auth.db.auth.signOut({ scope: "others" });
       await audit(auth.user.id, "password_changed");
       return reply({

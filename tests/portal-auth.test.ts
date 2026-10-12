@@ -22,6 +22,21 @@ import { identity, sessionDb, superAdmin, turnstile } from "@/lib/portal/server"
 import { PortalError } from "@/lib/portal/rules";
 import { clientTables } from "@/lib/portal/data-scope";
 
+describe("mandatory temporary password replacement", () => {
+  it("denies tenant data before querying client tables", async () => {
+    const from=vi.fn();
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture",app_metadata:{portal_password_change_required:true}},account:{role:"client"},db:{from}} as unknown as Awaited<ReturnType<typeof identity>>);
+    const response=await GET(new NextRequest("https://portal.example/api/portal/data?section=domains"),{params:Promise.resolve({path:["data"]})});
+    expect(response.status).toBe(403); expect(await response.json()).toEqual({error:"password_change_required"}); expect(from).not.toHaveBeenCalled();
+  });
+  it("returns only identity for the password setup form", async () => {
+    const from=vi.fn();
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture",app_metadata:{portal_password_change_required:true}},account:{role:"client"},db:{from}} as unknown as Awaited<ReturnType<typeof identity>>);
+    const response=await GET(new NextRequest("https://portal.example/api/portal/data?section=reset-password"),{params:Promise.resolve({path:["data"]})});
+    expect(response.status).toBe(200); expect((await response.json()).password_change_required).toBe(true); expect(from).not.toHaveBeenCalled();
+  });
+});
+
 describe("authentication verification errors", () => {
   for (const action of ["login", "recover"]) {
     it.each([undefined, "", "   ", null])(

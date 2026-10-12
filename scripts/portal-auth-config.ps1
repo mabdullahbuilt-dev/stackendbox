@@ -1,4 +1,4 @@
-param([ValidateSet('Inspect','Prepare','Activate','Acceptance')][string]$Action='Inspect')
+param([ValidateSet('Inspect','Prepare','Activate','Acceptance','PasswordPolicy')][string]$Action='Inspect')
 $ErrorActionPreference='Stop'
 # Use the existing supported CLI credential. Never emit secrets or full config.
 Add-Type @'
@@ -20,6 +20,9 @@ try {
   $portalEndpoint='https://api.supabase.com/v1/projects/irzjkdxxfvobtabwkqmz/config/auth'
   $portalConfig=Invoke-RestMethod -Uri $portalEndpoint -Headers $portalHeaders -TimeoutSec 30
   if ($Action -ne 'Inspect') {
+    if ($Action -eq 'PasswordPolicy') {
+      $portalChanges=@{password_min_length=8}
+    } else {
     $portalRedirects=@($portalConfig.uri_allow_list -split ',' | Where-Object {$_})
     if ($Action -eq 'Acceptance') {
       $portalRedirects+='https://stackendbox-cf-acceptance.stackendbox.workers.dev/client-portal/auth/callback'
@@ -29,10 +32,11 @@ try {
       $portalChanges=@{uri_allow_list=($portalRedirects|Select-Object -Unique)-join ',';disable_signup=$true}
     }
     if ($Action -eq 'Activate') {$portalChanges.site_url='https://www.stackendbox.com/client-portal/auth/callback'}
+    }
     $null=Invoke-RestMethod -Method Patch -Uri $portalEndpoint -Headers $portalHeaders -ContentType 'application/json' -Body ($portalChanges|ConvertTo-Json -Compress) -TimeoutSec 30
     $portalConfig=Invoke-RestMethod -Uri $portalEndpoint -Headers $portalHeaders -TimeoutSec 30
   }
-  @{site_url=$portalConfig.site_url;redirects=$portalConfig.uri_allow_list;public_signup_disabled=$portalConfig.disable_signup;email_enabled=$portalConfig.external_email_enabled;mfa_totp_enabled=$portalConfig.mfa_totp_enroll_enabled}|ConvertTo-Json -Compress
+  @{site_url=$portalConfig.site_url;redirects=$portalConfig.uri_allow_list;public_signup_disabled=$portalConfig.disable_signup;email_enabled=$portalConfig.external_email_enabled;mfa_totp_enabled=$portalConfig.mfa_totp_enroll_enabled;email_otp_expiry_seconds=$portalConfig.mailer_otp_exp;password_min_length=$portalConfig.password_min_length;password_required_characters=$portalConfig.password_required_characters}|ConvertTo-Json -Compress
 } catch {
   [Console]::Error.WriteLine('Auth configuration request failed. Sensitive response withheld.')
   exit 1

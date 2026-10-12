@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, type Data } from "./Portal";
+import { generateTemporaryPassword, validatePassword } from "@/lib/portal/password-policy";
 type Client = {
   id: string;
   name: string;
@@ -42,6 +43,8 @@ export function AdminClients({ create = false }: { create?: boolean }) {
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const [requestId, setRequestId] = useState("");
+  const [credentialMode, setCredentialMode] = useState("invitation");
+  const [temporaryPassword, setTemporaryPassword] = useState("");
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
   const [assets,setAssets] = useState<Data|null>(null),[domainId,setDomainId]=useState("");
   useEffect(() => {
@@ -75,7 +78,11 @@ export function AdminClients({ create = false }: { create?: boolean }) {
     setError("");
     setMessage("");
     try {
-      const result = await api("admin/clients", input);
+      const result = await api("admin/clients", {
+        ...input,
+        ...(input.credential_mode === "temporary_password" && temporaryPassword ? { temporary_password: temporaryPassword } : {}),
+      });
+      setTemporaryPassword("");
       setMessage(`${result.message} Reference: ${result.id}`);
       if (!create) await load();
     } catch (e) {
@@ -90,19 +97,24 @@ export function AdminClients({ create = false }: { create?: boolean }) {
         <h1>Create a client</h1>
         <p>
           The approved email is the sign-in identity. Passwords are set through
-          Supabase Auth, never entered here. Retrying this submission reuses the
-          same request.
+          Supabase Auth. Invitations let the client verify their email and choose
+          a private password. Optional temporary passwords must be replaced before
+          accessing client records and are never saved in provisioning records.
         </p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
             const fields = Object.fromEntries(new FormData(e.currentTarget));
+            if (credentialMode === "temporary_password" && !attempt) {
+              try { validatePassword(temporaryPassword); } catch (error) { setError((error as Error).message); return; }
+            }
             const payload = attempt || {
               idempotency_key: requestId,
               name: fields.name,
               business_name: fields.business_name,
               email: fields.email,
               status: fields.status,
+              ...(credentialMode === "temporary_password" ? { credential_mode: credentialMode } : {}),
               ...(fields.domain_id ? {domain_id:fields.domain_id,holder_arrangement:fields.holder_arrangement,legal_holder:fields.legal_holder,rights_confirmed:fields.rights_confirmed==="on"} : {}),
               ...(fields.website_url
                 ? {
@@ -131,6 +143,13 @@ export function AdminClients({ create = false }: { create?: boolean }) {
               <input name="email" type="email" required maxLength={254} />
             </label>
             <label>
+              Client access setup
+              <select value={credentialMode} onChange={e => { setCredentialMode(e.target.value); setTemporaryPassword(""); }}>
+                <option value="invitation">Invitation, client chooses password</option>
+                <option value="temporary_password">Administrator sets temporary password</option>
+              </select>
+            </label>
+            <label>
               Account status
               <select name="status">
                 <option value="active">Active, send invitation</option>
@@ -150,6 +169,13 @@ export function AdminClients({ create = false }: { create?: boolean }) {
               <input name="website_url" type="url" placeholder="https://" />
             </label>
           </fieldset>
+          {credentialMode === "temporary_password" && <fieldset disabled={busy}>
+            <label>Initial temporary portal password
+              <input type="password" autoComplete="new-password" value={temporaryPassword} onChange={e => setTemporaryPassword(e.target.value)} minLength={8} maxLength={128} required={!attempt} />
+            </label>
+            <button type="button" onClick={() => setTemporaryPassword(generateTemporaryPassword())}>Generate strong password</button>
+            <p>Use 8-128 characters. Letters, numbers, spaces and symbols are accepted. Longer generated passwords are recommended. Only a hash prefix is sent to the free Pwned Passwords safety check. The full password goes only to Supabase Auth. Access email contains an invitation, never the password. Email verification is still required. Retries never overwrite an existing identity&apos;s password.</p>
+          </fieldset>}
           <button className="portal-button" disabled={busy || !requestId}>
             {busy
               ? "Saving…"

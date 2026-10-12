@@ -27,6 +27,7 @@ import {
 import { Turnstile } from "@/components/builder/Turnstile";
 import { usePortalCache } from "./PortalCache";
 import { DomainControls } from "./DomainControls";
+import { validatePassword } from "@/lib/portal/password-policy";
 
 type Row = Record<string, unknown>;
 export type Data = {
@@ -70,6 +71,11 @@ const errors: Record<string, string> = {
     "Verify your authenticator in Account Settings before opening administration.",
   invalid_credentials:
     "The email or password is incorrect, or this account is not approved.",
+  strong_password_required: "Use 8-128 characters and avoid repetitive passwords. Letters, numbers, spaces and symbols are accepted.",
+  compromised_password: "This password appears in known breaches. Choose another password.",
+  password_safety_check_unavailable: "Password safety checking is temporarily unavailable. Your password hasn't been changed. Try again shortly.",
+  password_change_required: "Replace your temporary password before accessing client records.",
+  password_access_update_failed: "Your password changed, but access verification needs a retry. Contact StackEndBox.",
   verification_failed: "Please complete the security check again.",
   verification_required:
     "Security verification hasn't completed. Wait for the check to succeed, or use Retry verification if it fails.",
@@ -150,6 +156,8 @@ function Field({
   required?: boolean;
   min?: number;
   max?: number;
+  minLength?: number;
+  maxLength?: number;
   defaultValue?: string | number;
   placeholder?: string;
 }) {
@@ -308,6 +316,7 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
         <nav aria-label="Client portal">
           {nav.map(([url, title, Icon]) => (
             <Link
+              prefetch={false}
               key={url}
               href={`/client-portal/${url}`}
               onClick={() => setOpen(false)}
@@ -747,16 +756,18 @@ export function PortalContent({
           <p>Email changes require administrator verification.</p>
           <Form
             button="Change password"
-            onSubmit={(f) => api("auth/password", f)}
+            onSubmit={(f) => { validatePassword(String(f.password || "")); return api("auth/password", f); }}
           >
             <Field
               name="password"
-              title="New password, at least 12 characters"
+              title="New password, at least 8 characters"
               type="password"
+              minLength={8}
+              maxLength={128}
             />
           </Form>
         </section>
-        <Mfa factors={data.factors} />
+        {section === "settings" && <Mfa factors={data.factors} />}
       </>
     );
   if (section === "admin" && adminMode)

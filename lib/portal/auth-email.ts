@@ -5,8 +5,8 @@ import { PortalError } from "./rules";
 /** Authentication links stay in memory and the recipient's email, never the outbox or logs. */
 export async function sendAuthEmail(email: string, hash: string, type: "invite" | "recovery") {
   const callback = new URL("/client-portal/auth/callback", portalOrigin());
-  callback.searchParams.set("token_hash", hash);
-  callback.searchParams.set("type", type);
+  // Fragments survive a refresh but aren't sent in HTTP request URLs or referrers.
+  callback.hash = new URLSearchParams({ token_hash: hash, type }).toString();
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST", headers: { "api-key": env("BREVO_CLIENT_API_KEY"), "Content-Type": "application/json" },
     body: JSON.stringify({

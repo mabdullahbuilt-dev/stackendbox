@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { runInNewContext } from "node:vm";
 
 const auth = vi.hoisted(() => ({ verifyOtp: vi.fn(), exchangeCodeForSession: vi.fn() }));
 vi.mock("@/lib/portal/server", () => ({
@@ -21,6 +22,24 @@ beforeEach(() => {
   auth.exchangeCodeForSession.mockResolvedValue({ error: null });
 });
 describe("email link confirmation", () => {
+  it("preserves an unused token across refresh in the URL fragment, then clears it after confirmation", async () => {
+    const html=await (await GET()).text();
+    const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+    expect(script).toBeTruthy();
+    const location={pathname:"/client-portal/auth/callback",search:"?token_hash=fixture-token-hash&type=invite",hash:"",replace:vi.fn()};
+    let click:()=>Promise<void> = async()=>{};
+    const button={disabled:false,addEventListener:(_event:string,fn:()=>Promise<void>)=>{click=fn;}};
+    const status={textContent:"",appendChild:vi.fn()};
+    const history={replaceState:(_state:unknown,_title:string,url:string)=>{const parsed=new URL(url,"https://portal.example");location.search=parsed.search;location.hash=parsed.hash;}};
+    const fetcher=vi.fn(async()=>({ok:true}));
+    const context={location,history,URLSearchParams,document:{getElementById:(id:string)=>id==="confirm"?button:status,createElement:()=>({})},fetch:fetcher};
+    runInNewContext(script!,context);
+    expect(location.search).toBe("");expect(location.hash).toContain("token_hash=fixture-token-hash");expect(fetcher).not.toHaveBeenCalled();
+    runInNewContext(script!,context); // A fresh JS context reads the preserved fragment.
+    await click();
+    expect(JSON.parse((fetcher.mock.calls[0] as unknown as [string,{body:string}])[1].body)).toEqual({token_hash:"fixture-token-hash",type:"invite"});
+    expect(location.hash).toBe("");expect(location.replace).toHaveBeenCalledWith("/client-portal/reset-password");
+  });
   it("does not consume credentials on a scanner GET", async () => {
     const response = await GET();
     expect(response.status).toBe(200);

@@ -4,6 +4,7 @@ import { adminDb, audit, checkDb, portalOrigin } from "./server";
 import { PortalError, safeWebUrl } from "./rules";
 import { sendAuthEmail } from "./auth-email";
 import { importDomain } from "./services";
+import { checkPassword } from "./password-check";
 export const provisioningSchema = z
   .object({
     idempotency_key: z.uuid(),
@@ -15,6 +16,8 @@ export const provisioningSchema = z
       .transform((s) => s.toLowerCase()),
     status: z.enum(["active", "suspended"]).default("active"),
     existing_client_id: z.uuid().optional(),
+    credential_mode: z.enum(["invitation", "temporary_password"]).optional(),
+    temporary_password: z.string().min(8).max(128).optional(),
     domain_id: z.uuid().optional(),
     holder_arrangement: z.enum(["client_owned", "licensed"]).optional(),
     legal_holder: z.string().trim().min(1).max(160).optional(),
@@ -29,6 +32,8 @@ export const provisioningSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
+    if (value.temporary_password && value.credential_mode !== "temporary_password")
+      ctx.addIssue({ code: "custom", message: "Temporary password mode required" });
     if (
       value.domain_id &&
       (!value.holder_arrangement ||
@@ -50,7 +55,9 @@ type Provision = {
   input: { status: string };
 };
 export async function provisionClient(actor: string, raw: unknown) {
-  const { idempotency_key, ...input } = provisioningSchema.parse(raw);
+  // Never pass credentials into persisted input, audit details or retry state.
+  const { idempotency_key, temporary_password, ...input } = provisioningSchema.parse(raw);
+  if (temporary_password) await checkPassword(temporary_password);
   const db = adminDb();
   if (input.domain_id) {
     const domain = await db
@@ -84,10 +91,13 @@ export async function provisionClient(actor: string, raw: unknown) {
       checkDb(found.error);
       let userId = found.data as string | null;
       if (!userId) {
+        if (input.credential_mode === "temporary_password" && !temporary_password)
+          throw new PortalError("temporary_password_required", 422);
         const created = await db.auth.admin.createUser({
           email: input.email,
           email_confirm: false,
-          app_metadata: { portal_provisioning_id: record.id },
+          ...(input.credential_mode === "temporary_password" ? { password: temporary_password } : {}),
+          app_metadata: { portal_provisioning_id: record.id, portal_password_change_required: input.credential_mode === "temporary_password" },
         });
         userId = created.data?.user?.id || null;
         if (!userId) {
