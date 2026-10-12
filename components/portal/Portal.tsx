@@ -210,7 +210,7 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
     if (publicPage) return;
     if (cache?.userId === userId && Date.now() - cache.loadedAt < 30000) return;
     void reload();
-  }, [publicPage, reload, cache, userId]);
+  }, [publicPage, page, reload, cache, userId]);
   if (publicPage)
     return (
       <main id="main" className="portal-auth">
