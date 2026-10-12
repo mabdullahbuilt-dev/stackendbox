@@ -63,9 +63,7 @@ const date = (value: unknown) =>
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 const errors: Record<string, string> = {
-  registered_holder_mismatch: "The entered legal holder doesn't match the official Spaceship registrant contact. Verify the holder before assigning portal access.",
   registrant_contact_unavailable: "Spaceship didn't return a registrant contact ID. Assignment needs verified holder details.",
-  registrant_verification_pending: "Registrar verification is pending or wasn't reported. Complete the required registrar verification before assignment.",
   spaceship_404: "This domain wasn't found in the configured Spaceship account. Check the registrar account and API key scope.",
   payment_acceptance_pending: "Online payments aren't available yet. Contact StackEndBox to arrange payment.",
   price_confirmation_required:
@@ -310,6 +308,16 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
         </div>
       </main>
     );
+  if (section === "reset-password") return <main id="main" className="portal-auth">
+    <Link href="/" className="portal-brand">StackEndBox<span>CLIENT PORTAL</span></Link>
+    <div className="portal-auth-grid">
+      <section><span className="portal-eyebrow">PRIVATE CLIENT ACCESS</span><h1>Set your StackEndBox password</h1><p>Your domains, website and service records stay securely linked to your approved account.</p></section>
+      <section className="portal-panel">
+        {error ? <p role="alert" className="portal-error">{error}<button onClick={() => void reload()}>Retry</button></p> : busy || !data || dataPage !== page ? <p role="status">Loading your account</p> : <PasswordSetup email={data.account.approved_email} onComplete={() => { save(null); router.replace("/client-portal/dashboard"); router.refresh(); }} />}
+        <p className="portal-small">Need help? <Link href="/#contact">Contact StackEndBox</Link>.</p>
+      </section>
+    </div>
+  </main>;
   return (
     <div className="portal-shell">
       <aside className={open ? "portal-sidebar is-open" : "portal-sidebar"}>
@@ -1211,15 +1219,16 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
             <h2>Ownership & service arrangement</h2>
             <p>
               {assignment
-                ? label(assignment.holder_arrangement)
+                ? assignment.holder_arrangement === "client_owned" ? "Client ownership agreement, registrar handoff is separate" : "Authorized management or licensed access"
                 : "Internal or unassigned asset"}
             </p>
             <p>
-              Legal holder:{" "}
+              Recorded registrar holder at assignment:{" "}
               {assignment
                 ? str(assignment.legal_holder)
                 : "Contact StackEndBox for confirmation"}
             </p>
+            <p>Portal access: this client account. Registrar custody: StackEndBox&apos;s dedicated Spaceship account. Assigning management access doesn&apos;t perform a legal-holder change or an account transfer.</p>
             <p>
               Contact corrections and transfer or handover requests are reviewed
               by StackEndBox under the applicable registrar process.
@@ -1261,6 +1270,25 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
       </section>
     </>
   );
+}
+function PasswordSetup({ email, onComplete }: { email: string; onComplete: () => void }) {
+  const [visible, setVisible] = useState(false);
+  return <>
+    <h2>Create your password</h2><p>{email}</p>
+    <Form button="Save password and open portal" onSubmit={async (fields) => {
+      const password = String(fields.password || "");
+      if (password !== fields.confirm_password) throw new Error("The passwords don't match. Enter the same password in both fields.");
+      validatePassword(password);
+      const result = await api("auth/password", {password});
+      onComplete();
+      return result;
+    }}>
+      <Field name="password" title="New password, at least 8 characters" type={visible ? "text" : "password"} minLength={8} maxLength={128} />
+      <Field name="confirm_password" title="Confirm password" type={visible ? "text" : "password"} minLength={8} maxLength={128} />
+      <label className="portal-check"><input type="checkbox" checked={visible} onChange={e => setVisible(e.target.checked)} />Show passwords</label>
+      <p>Letters, numbers, spaces and symbols are accepted. Use a unique password, preferably 12 or more characters. Known compromised passwords are rejected.</p>
+    </Form>
+  </>;
 }
 function Mfa({ factors }: { factors: { id: string; status: string }[] }) {
   const [enrollment, setEnrollment] = useState<{
@@ -1391,7 +1419,7 @@ function Admin({
                   ))}
               </select>
             </label>
-            <Field name="legal_holder" title="Actual legal holder" />
+            <p>The actual registrar holder is read from Spaceship. This action grants portal management access only.</p>
             <label>
               Arrangement
               <select name="holder_arrangement">

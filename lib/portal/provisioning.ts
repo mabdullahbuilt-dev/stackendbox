@@ -5,7 +5,7 @@ import { PortalError, safeWebUrl } from "./rules";
 import { sendAuthEmail } from "./auth-email";
 import { importDomain } from "./services";
 import { checkPassword } from "./password-check";
-import { verifyAssignmentHolder } from "./registrant";
+import { verifyPortalAssignment } from "./registrant";
 export const provisioningSchema = z
   .object({
     idempotency_key: z.uuid(),
@@ -38,7 +38,6 @@ export const provisioningSchema = z
     if (
       value.domain_id &&
       (!value.holder_arrangement ||
-        !value.legal_holder ||
         !value.rights_confirmed)
     )
       ctx.addIssue({
@@ -68,7 +67,8 @@ export async function provisionClient(actor: string, raw: unknown) {
       .single();
     checkDb(domain.error);
     if (!domain.data) throw new PortalError("domain_not_found",404);
-    const holderEvidence = await verifyAssignmentHolder(domain.data.name, input.legal_holder!);
+    const holderEvidence = await verifyPortalAssignment(domain.data.name);
+    input.legal_holder = holderEvidence.holder;
     const verified = await importDomain(actor, domain.data.name);
     if (
       verified.domain.protected ||
@@ -81,6 +81,7 @@ export async function provisionClient(actor: string, raw: unknown) {
       verification_status: holderEvidence.verification_status,
       checked_at: holderEvidence.checked_at,
       registrar_custody_unchanged: true,
+      ownership_transfer_performed: false,
     });
   }
   const started = await db.rpc("portal_begin_provisioning", {

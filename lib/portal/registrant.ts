@@ -3,8 +3,6 @@ import { domainName, PortalError } from "./rules";
 import { spaceship } from "./spaceship";
 import { rateLimit } from "./server";
 
-const normalizeHolder = (value: string) => value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
-
 // Called only after super-admin authorization. Contact PII is never returned in client data.
 export async function readRegistrant(name: string) {
   name = domainName(name);
@@ -29,13 +27,11 @@ export async function readRegistrant(name: string) {
   };
 }
 
-export async function verifyAssignmentHolder(name: string, holder: string) {
+export async function verifyPortalAssignment(name: string) {
   const evidence = await readRegistrant(name);
   if (evidence.lifecycle_status !== "registered" || !evidence.expiration_date || evidence.suspensions.length)
     throw new PortalError("domain_registration_unverified", 409);
-  if (!evidence.verification_reported || ![null, "success"].includes(evidence.verification_status))
-    throw new PortalError("registrant_verification_pending", 409);
-  if (normalizeHolder(holder) !== normalizeHolder(evidence.holder))
-    throw new PortalError("registered_holder_mismatch", 409);
+  // Management authorization is supplied by the admin's contractual consent.
+  // Pending holder verification is reported separately and never claims a transfer.
   return evidence;
 }

@@ -266,18 +266,15 @@ export function AdminDomains({
                 ))}
             </select>
           </label>
-          <label>
-            Actual legal holder
-            <input name="legal_holder" required maxLength={160} />
-          </label>
+          <p>The actual registered holder is fetched from Spaceship and recorded separately. You don&apos;t need to change it to grant client management access.</p>
           <label>
             Contractual arrangement
             <select name="holder_arrangement">
               <option value="client_owned">
-                Client-owned, managed by StackEndBox
+                Client ownership agreement, separate registrar handoff
               </option>
               <option value="licensed">
-                StackEndBox-owned, licensed to client
+                Managed or licensed access, holder unchanged
               </option>
             </select>
           </label>

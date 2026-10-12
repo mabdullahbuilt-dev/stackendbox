@@ -41,7 +41,7 @@ import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 import { checkPassword } from "@/lib/portal/password-check";
-import { readRegistrant, verifyAssignmentHolder } from "@/lib/portal/registrant";
+import { readRegistrant, verifyPortalAssignment } from "@/lib/portal/registrant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -548,7 +548,7 @@ async function handle(req: NextRequest, context: Context) {
           .object({
             domain_id: uuid,
             client_id: uuid,
-            legal_holder: text.max(160),
+            legal_holder: text.max(160).optional(),
             holder_arrangement: z.enum(["client_owned", "licensed"]),
             rights_confirmed: z.literal(true),
           })
@@ -560,21 +560,22 @@ async function handle(req: NextRequest, context: Context) {
           .single();
         checkDb(error);
         assertCustomerDomain(d.name, d.protected);
-        const holderEvidence = await verifyAssignmentHolder(d.name, input.legal_holder);
+        const holderEvidence = await verifyPortalAssignment(d.name);
         const verified = await importDomain(admin.user.id, d.name);
         if (verified.domain.lifecycle_status !== "registered" || !verified.domain.expiration_date)
           throw new PortalError("domain_registration_unverified", 409);
         checkDb(
-          (await db.rpc("portal_assign_verified_domain", { p_domain: input.domain_id, p_client: input.client_id, p_holder: input.legal_holder, p_arrangement: input.holder_arrangement, p_actor: admin.user.id })).error,
+          (await db.rpc("portal_assign_verified_domain", { p_domain: input.domain_id, p_client: input.client_id, p_holder: holderEvidence.holder, p_arrangement: input.holder_arrangement, p_actor: admin.user.id })).error,
         );
         await audit(admin.user.id, "assignment_registrant_verified", input.domain_id, {
           contact_id: holderEvidence.contact_id,
           verification_status: holderEvidence.verification_status,
           checked_at: holderEvidence.checked_at,
           registrar_custody_unchanged: true,
+          ownership_transfer_performed: false,
         });
         return reply({
-          message: "Domain assigned. Registrar settings were not changed.",
+          message: "Management access assigned. The official holder was recorded separately. No ownership transfer or registrar change was performed.",
         });
       }
       if (route === "admin/websites" && req.method === "POST") {
