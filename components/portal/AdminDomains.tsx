@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { AdminDomainSearch, api, type Data } from "./Portal";
 import { DomainControls } from "./DomainControls";
+import { RegistrantCheck } from "./RegistrantCheck";
 
 type Row = Record<string, unknown>;
 const rows = (data: Data, key: string) => (data[key] || []) as Row[];
@@ -110,6 +111,7 @@ export function AdminDomains({
                 />
               </section>
             ))}
+            <RegistrantCheck name={text(selected.name)} />
           </>
         ) : (
           <p>This domain isn&apos;t in the verified inventory.</p>

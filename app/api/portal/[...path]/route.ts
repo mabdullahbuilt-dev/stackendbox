@@ -41,6 +41,7 @@ import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 import { checkPassword } from "@/lib/portal/password-check";
+import { readRegistrant, verifyAssignmentHolder } from "@/lib/portal/registrant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -480,6 +481,8 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/external-payments" && req.method === "POST") return reply(await saveExternalPayment(admin.user.id,body));
       if (path[1] === "domains" && path[2] && path[3] === "manage" && path.length === 4 && req.method === "GET")
         return reply(await readDomainState(domainName(path[2])));
+      if (path[1] === "domains" && path[2] && path[3] === "registrant" && path.length === 4 && req.method === "GET")
+        return reply(await readRegistrant(domainName(path[2])));
       if (route === "admin/data" && req.method === "GET") {
         const names = [
           "accounts",
@@ -557,12 +560,19 @@ async function handle(req: NextRequest, context: Context) {
           .single();
         checkDb(error);
         assertCustomerDomain(d.name, d.protected);
+        const holderEvidence = await verifyAssignmentHolder(d.name, input.legal_holder);
         const verified = await importDomain(admin.user.id, d.name);
         if (verified.domain.lifecycle_status !== "registered" || !verified.domain.expiration_date)
           throw new PortalError("domain_registration_unverified", 409);
         checkDb(
           (await db.rpc("portal_assign_verified_domain", { p_domain: input.domain_id, p_client: input.client_id, p_holder: input.legal_holder, p_arrangement: input.holder_arrangement, p_actor: admin.user.id })).error,
         );
+        await audit(admin.user.id, "assignment_registrant_verified", input.domain_id, {
+          contact_id: holderEvidence.contact_id,
+          verification_status: holderEvidence.verification_status,
+          checked_at: holderEvidence.checked_at,
+          registrar_custody_unchanged: true,
+        });
         return reply({
           message: "Domain assigned. Registrar settings were not changed.",
         });

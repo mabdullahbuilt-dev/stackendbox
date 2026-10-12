@@ -22,7 +22,7 @@ async function saveVerifiedDomain(d: z.infer<typeof domainSchema>) {
     lifecycle_status: d.lifecycleStatus, registration_date: d.registrationDate || null,
     expiration_date: d.expirationDate || null, auto_renew: d.autoRenew,
     verification_status: d.verificationStatus || null, nameservers: d.nameservers || {},
-    security: { eppStatuses: d.eppStatuses || [], privacy: d.privacyProtection || null },
+    security: { eppStatuses: d.eppStatuses || [], privacy: d.privacyProtection || null, suspensions: d.suspensions || [] },
     last_synced_at: new Date().toISOString(), reconciliation_required: false,
   }, { onConflict: "provider,provider_account,name" }).select("*").single();
   checkDb(saved.error);

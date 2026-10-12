@@ -63,6 +63,9 @@ const date = (value: unknown) =>
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 const errors: Record<string, string> = {
+  registered_holder_mismatch: "The entered legal holder doesn't match the official Spaceship registrant contact. Verify the holder before assigning portal access.",
+  registrant_contact_unavailable: "Spaceship didn't return a registrant contact ID. Assignment needs verified holder details.",
+  registrant_verification_pending: "Registrar verification is pending or wasn't reported. Complete the required registrar verification before assignment.",
   spaceship_404: "This domain wasn't found in the configured Spaceship account. Check the registrar account and API key scope.",
   payment_acceptance_pending: "Online payments aren't available yet. Contact StackEndBox to arrange payment.",
   price_confirmation_required:

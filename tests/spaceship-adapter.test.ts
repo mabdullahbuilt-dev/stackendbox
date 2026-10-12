@@ -6,6 +6,20 @@ const fetchMock = vi.fn();
 beforeEach(() => { vi.stubGlobal("fetch", fetchMock); fetchMock.mockReset(); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe("registrar adapter mutation boundaries", () => {
+  it("reads only a valid official contact ID", async () => {
+    await expect(spaceship.contact("../domains")).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("blocks holder writes by default and preserves pending verification when enabled in a fixture", async () => {
+    await expect(spaceship.setContacts("example.com", {registrant:"a".repeat(27)})).rejects.toThrow("live_domain_changes_disabled");
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.stubEnv("DOMAIN_LIVE_MUTATIONS_ENABLED", "true"); vi.stubEnv("DOMAIN_MUTATION_ALLOWLIST", "example.com");
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({verificationStatus:"verification"})));
+    expect(await spaceship.setContacts("example.com",{registrant:"a".repeat(27)})).toEqual({verificationStatus:"verification"});
+    expect(fetchMock.mock.calls[0][0]).toBe("https://spaceship.dev/api/v1/domains/example.com/contacts");
+    expect(fetchMock.mock.calls[0][1].method).toBe("PUT");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({registrant:"a".repeat(27)});
+  });
   it("blocks all writes before any provider call by default", async () => {
     vi.stubEnv("DOMAIN_LIVE_MUTATIONS_ENABLED", "false");
     for (const run of [() => spaceship.saveDns("example.com", []), () => spaceship.deleteDns("example.com", []), () => spaceship.setNameservers("example.com", []), () => spaceship.setPrivacy("example.com", "high")]) await expect(run()).rejects.toThrow("live_domain_changes_disabled");

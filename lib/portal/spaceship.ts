@@ -3,6 +3,31 @@ import { z } from "zod";
 import { env } from "./server";
 import { domainName, PortalError } from "./rules";
 
+export const contactIdSchema = z.string().regex(/^[a-zA-Z0-9]{27,32}$/);
+export const domainContactsSchema = z.object({
+  registrant: contactIdSchema,
+  admin: contactIdSchema.optional(),
+  tech: contactIdSchema.optional(),
+  billing: contactIdSchema.optional(),
+  attributes: z.array(contactIdSchema).max(5).optional(),
+}).strict();
+export const contactSchema = z.object({
+  firstName: z.string().min(1).max(125),
+  lastName: z.string().min(1).max(125),
+  organization: z.string().max(255).optional(),
+  email: z.email().max(255),
+  address1: z.string().min(1).max(255),
+  address2: z.string().max(255).optional(),
+  city: z.string().min(1).max(255),
+  country: z.string().regex(/^[A-Z]{2}$/),
+  stateProvince: z.string().max(255).optional(),
+  postalCode: z.string().max(16).optional(),
+  phone: z.string().min(7).max(17).regex(/^\+\d{1,3}\.\d{4,}$/),
+  phoneExt: z.string().regex(/^\d{0,7}$/).optional(),
+  fax: z.string().min(7).max(17).regex(/^\+\d{1,3}\.\d{4,}$/).optional(),
+  faxExt: z.string().regex(/^\d{0,7}$/).optional(),
+  taxNumber: z.string().max(255).optional(),
+});
 export const domainSchema = z.object({
   name: z.string(),
   autoRenew: z.boolean(),
@@ -10,7 +35,9 @@ export const domainSchema = z.object({
   registrationDate: z.string().nullable().optional(),
   expirationDate: z.string().nullable().optional(),
   lifecycleStatus: z.string(),
-  verificationStatus: z.string().optional(),
+  verificationStatus: z.string().nullable().optional(),
+  contacts: domainContactsSchema.optional(),
+  suspensions: z.array(z.object({ reasonCode: z.string() })).optional(),
   nameservers: z
     .object({ provider: z.string(), hosts: z.array(z.string()) })
     .optional(),
@@ -39,6 +66,16 @@ async function request(path: string, body?: unknown, method = body ? "POST" : "G
   return response.status === 204 ? null : response.json();
 }
 export const spaceship = {
+  async contact(id: string) {
+    return contactSchema.parse(await request(`/contacts/${contactIdSchema.parse(id)}`));
+  },
+  async setContacts(name: string, input: unknown) {
+    mutationAllowed(name);
+    const contacts = domainContactsSchema.parse(input);
+    return z.object({ verificationStatus: z.string().nullable() }).parse(
+      await request(`/domains/${encodeURIComponent(domainName(name))}/contacts`, contacts, "PUT"),
+    );
+  },
   async inventory() {
     const all: z.infer<typeof domainSchema>[] = [];
     const seen = new Set<string>();
