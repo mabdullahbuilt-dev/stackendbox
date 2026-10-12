@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState,type ReactNode} from "react";
 import {api} from "./Portal";
-export function AdminInvoices({clientSelect,reload,invoices}:{clientSelect:ReactNode;reload:()=>Promise<void>;invoices:Record<string,unknown>[]}) {
+export function AdminInvoices({clientSelect,reload,invoices,clients}:{clientSelect:ReactNode;reload:()=>Promise<void>;invoices:Record<string,unknown>[];clients:Record<string,unknown>[]}) {
  const [id,setId]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
  useEffect(()=>setId(crypto.randomUUID()),[]);
  async function run(route:string,input:unknown){setBusy(true);setMessage("");try{const r=await api(route,input);setMessage(r.message);await reload();return true;}catch(e){setMessage((e as Error).message);return false;}finally{setBusy(false);}}
@@ -9,6 +9,6 @@ export function AdminInvoices({clientSelect,reload,invoices}:{clientSelect:React
  <form className="portal-form" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget,fields=Object.fromEntries(new FormData(form));if(await run("admin/invoices",{idempotency_key:id,client_id:fields.client_id,description:fields.description,amount_minor:Number(fields.amount_minor)})){setId(crypto.randomUUID());form.reset();}}}>
  {clientSelect}<label>Agreed description<input name="description" required maxLength={500}/></label><label>Agreed total, USD cents<input name="amount_minor" type="number" min={1} max={100000000} step={1} required/></label><button className="portal-button" disabled={busy||!id}>Create draft invoice</button></form>
  {message&&<p role="status" className="portal-notice">{message}</p>}
- {invoices.filter(i=>i.order_id===null).map(i=><article key={String(i.id)}><h3>{String(i.description)}</h3><p>{String(i.status)}. No provider payment confirmed.</p>{["draft","issued"].includes(String(i.status))&&<>{i.status === "draft"&&<button disabled={busy} onClick={()=>{if(window.confirm("Issue this invoice to the selected client and queue their notification? No charge will be made."))void run("admin/invoice-status",{id:i.id,status:"issued",confirmed:true});}}>Issue invoice</button>}<button disabled={busy} onClick={()=>{if(window.confirm("Void this invoice? This won't refund or reverse any payment."))void run("admin/invoice-status",{id:i.id,status:"void",confirmed:true});}}>Void invoice</button></>}</article>)}
+ {invoices.filter(i=>i.order_id===null).map(i=>{const client=String(clients.find(c=>c.id===i.client_id)?.business_name || i.client_id),amount=`$${(Number(i.amount_minor)/100).toFixed(2)}`;return <article key={String(i.id)}><h3>{String(i.description)}</h3><p>Client: {client}. Amount: {amount} USD.</p><p>{String(i.status)}. No provider payment confirmed.</p>{["draft","issued"].includes(String(i.status))&&<>{i.status === "draft"&&<button disabled={busy} onClick={()=>{if(window.confirm(`Issue ${amount} USD for ${String(i.description)} to ${client} and queue their notification? No charge will be made.`))void run("admin/invoice-status",{id:i.id,status:"issued",confirmed:true});}}>Issue invoice</button>}<button disabled={busy} onClick={()=>{if(window.confirm("Void this invoice? This won't refund or reverse any payment."))void run("admin/invoice-status",{id:i.id,status:"void",confirmed:true});}}>Void invoice</button></>}</article>;})}
  </section>;
 }

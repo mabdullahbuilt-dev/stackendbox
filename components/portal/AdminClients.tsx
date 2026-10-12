@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api, type Data } from "./Portal";
 import { generateTemporaryPassword, validatePassword } from "@/lib/portal/password-policy";
 type Client = {
@@ -17,6 +17,8 @@ type Client = {
   }[];
 };
 type Identity = {
+  active:boolean;
+  role:string;
   user_id: string;
   approved_email: string;
   invitation_status: string;
@@ -46,6 +48,8 @@ export function AdminClients({ create = false }: { create?: boolean }) {
   const [credentialMode, setCredentialMode] = useState("initial_password");
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [showPassword,setShowPassword]=useState(false);
+  const [finished,setFinished]=useState(false);
+  const createForm=useRef<HTMLFormElement>(null);
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
   const [assets,setAssets] = useState<Data|null>(null),[domainId,setDomainId]=useState("");
   useEffect(() => {
@@ -84,6 +88,7 @@ export function AdminClients({ create = false }: { create?: boolean }) {
         ...(["initial_password", "temporary_password"].includes(String(input.credential_mode)) && temporaryPassword ? { temporary_password: temporaryPassword } : {}),
       });
       setTemporaryPassword("");
+      setFinished(Boolean(result.auth_user_id));
       setMessage(`${result.message} Reference: ${result.id}`);
       if (!create) await load();
     } catch (e) {
@@ -107,7 +112,7 @@ export function AdminClients({ create = false }: { create?: boolean }) {
           a private password. An administrator-approved initial password remains
           usable after email verification and is never saved in provisioning records.
         </p>
-        <form
+        <form ref={createForm}
           onSubmit={async (e) => {
             e.preventDefault();
             const fields = Object.fromEntries(new FormData(e.currentTarget));
@@ -175,7 +180,7 @@ export function AdminClients({ create = false }: { create?: boolean }) {
               <input name="website_url" type="url" placeholder="https://" />
             </label>
           </fieldset>
-          {credentialMode === "initial_password" && <fieldset disabled={busy}>
+          {credentialMode === "initial_password" && <fieldset disabled={busy || !!attempt}>
             <label>Initial portal password
               <input type={showPassword?"text":"password"} autoComplete="new-password" value={temporaryPassword} onChange={e => setTemporaryPassword(e.target.value)} minLength={8} maxLength={128} required={!attempt} />
             </label>
@@ -183,12 +188,12 @@ export function AdminClients({ create = false }: { create?: boolean }) {
             <button type="button" onClick={() => setTemporaryPassword(generateTemporaryPassword())}>Generate strong password</button>
             <p>Use 8-128 characters. Deliver this password personally through an agreed secure channel, never plaintext email. The account-ready message verifies the email without forcing a password reset. Retries never overwrite an existing identity&apos;s password.</p>
           </fieldset>}
-          <button className="portal-button" disabled={busy || !requestId}>
+          <button className="portal-button" disabled={busy || !requestId || finished}>
             {busy
               ? "Saving…"
               : attempt
                 ? "Retry same request"
-                : "Save client and send invitation"}
+                : credentialMode === "initial_password" ? "Create client and send account-ready email" : "Create client and send invitation"}
           </button>
         </form>
         {error && (
@@ -197,9 +202,10 @@ export function AdminClients({ create = false }: { create?: boolean }) {
           </p>
         )}
         {message && <p role="status">{message}</p>}
+        {finished&&<button className="portal-button" onClick={()=>{createForm.current?.reset();setAttempt(null);setFinished(false);setTemporaryPassword("");setShowPassword(false);setDomainId("");setRequestId(crypto.randomUUID());setMessage("");}}>Create another client</button>}
         <p>
           <Link href="/admin/clients">
-            View saved clients and invitation status
+            View saved clients and setup-email status
           </Link>
         </p>
       </section>
@@ -254,7 +260,7 @@ export function AdminClients({ create = false }: { create?: boolean }) {
                         "Identity needs reconciliation"}
                     </p>
                     <p>
-                      Invitation: {identity?.invitation_status || "Unknown"}.
+                      Setup email: {identity?.invitation_status || "Unknown"}.
                       Email:{" "}
                       {identity?.email_confirmed_at
                         ? "Confirmed"
@@ -271,7 +277,8 @@ export function AdminClients({ create = false }: { create?: boolean }) {
                         : "No sign-in recorded"}
                     </p>
                     <small>Auth identity: {m.user_id}</small>
-                    <p><button disabled={busy || !identity?.email_consistent} onClick={()=>void operate("admin/client-access-email",{user_id:m.user_id,action:identity?.email_confirmed_at?"recovery":"resend_invitation"})}>{identity?.email_confirmed_at?"Send secure recovery email":"Resend setup email"}</button></p>
+                    {identity?.role === "client"&&<p>Sign-in access: {identity.active?"Enabled":"Disabled"}. <button disabled={busy} onClick={()=>void operate("admin/account-status",{user_id:m.user_id,active:!identity.active})}>{identity.active?"Disable sign-in":"Enable sign-in"}</button></p>}
+                    <p><button disabled={busy || !identity?.email_consistent || !identity.active} onClick={()=>void operate("admin/client-access-email",{user_id:m.user_id,action:identity?.email_confirmed_at?"recovery":"resend_invitation"})}>{identity?.email_confirmed_at?"Send secure recovery email":"Resend setup email"}</button></p>
                   </div>
                 );
               })}

@@ -598,7 +598,7 @@ export function PortalContent({
           title="Billing & Invoices"
           description="Your service payments, renewal history, and receipts."
         />
-        {adminMode&&<AdminInvoices clientSelect={clientSelect} reload={reload} invoices={rows(data,"invoices")}/>}
+        {adminMode&&<AdminInvoices clientSelect={clientSelect} reload={reload} invoices={rows(data,"invoices")} clients={rows(data,"clients")}/>}
         <OrderList orders={rows(data, "orders")} reload={reload} checkoutEnabled={data.sandbox_checkout_enabled === true} />
         {!!rows(data,"external_payments").length&&<section className="portal-panel"><h2>Payments made to StackEndBox</h2>{rows(data,"external_payments").map(p=><article key={str(p.id)}><p>{money(p.amount_minor)} · {date(p.paid_at)} · {label(p.source)}</p><p>{p.reconciliation_status==="verified"?"Payment evidence verified":"Payment record awaiting reconciliation"}. Reference: {str(p.transaction_reference)}</p></article>)}</section>}
         <h2>Invoices and receipts</h2>
