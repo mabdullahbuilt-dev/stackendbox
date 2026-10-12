@@ -8,6 +8,16 @@ import {adminDb} from "@/lib/portal/server";
 const input={idempotency_key:"11111111-1111-4111-8111-111111111111",name:"Client",business_name:"Business",email:"CLIENT@example.com",status:"suspended"};
 beforeEach(()=>vi.clearAllMocks());
 describe("client provisioning",()=>{
+ it("keeps an approved initial password usable without marking email verified",async()=>{
+   const row={id:input.idempotency_key,input:{status:"suspended"},client_id:null,auth_user_id:null,state:"reserved"};
+   const committed={...row,client_id:"client-id",auth_user_id:"user-id",state:"committed"};
+   const rpc=vi.fn().mockResolvedValueOnce({data:row,error:null}).mockResolvedValueOnce({data:null,error:null}).mockResolvedValueOnce({data:committed,error:null});
+   const createUser=vi.fn(async()=>({data:{user:{id:"user-id"}},error:null}));
+   vi.mocked(adminDb).mockReturnValue({rpc,from:()=>({select:()=>({eq:()=>({single:async()=>({data:committed,error:null})})})}),auth:{admin:{createUser}}} as unknown as ReturnType<typeof adminDb>);
+   await provisionClient("admin-id",{...input,credential_mode:"initial_password",temporary_password:"Fixture-only-Password!928"});
+   expect(createUser).toHaveBeenCalledWith(expect.objectContaining({email_confirm:false,password:"Fixture-only-Password!928",app_metadata:{portal_provisioning_id:row.id,portal_password_change_required:false,portal_credential_mode:"initial_password"}}));
+   expect(JSON.stringify(rpc.mock.calls)).not.toContain("Fixture-only-Password!928");
+ });
  it("sends a temporary password only to Auth and marks mandatory replacement",async()=>{
    const row={id:input.idempotency_key,input:{status:"suspended"},client_id:null,auth_user_id:null,state:"reserved"};
    const committed={...row,client_id:"client-id",auth_user_id:"user-id",state:"committed"};

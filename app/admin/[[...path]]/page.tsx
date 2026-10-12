@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { superAdmin } from "@/lib/portal/server";
 import { PortalError } from "@/lib/portal/rules";
-import { AdminPortal } from "@/components/portal/AdminPortal";
+import {PrivateAdminPortal} from "@/components/portal/PrivatePortal";
 export const dynamic = "force-dynamic";
 export default async function AdminPage({
   params,
@@ -51,7 +51,7 @@ export default async function AdminPage({
     throw error;
   }
   return (
-    <AdminPortal
+    <PrivateAdminPortal
       section={section}
       createClient={section === "clients" && path[1] === "new"}
       domain={section === "domains" ? path[1] : undefined}

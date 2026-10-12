@@ -29,12 +29,11 @@ import {
   validateQuote,
   runJobs,
 } from "@/lib/portal/services";
-import { checkout } from "@/lib/portal/whop";
 import { spaceship } from "@/lib/portal/spaceship";
 import { searchDomains } from "@/lib/portal/search-service";
 import { authorizedDomain, changeDomain, readDomainState } from "@/lib/portal/domain-operations";
 import { sendAuthEmail } from "@/lib/portal/auth-email";
-import { receiptHtml } from "@/lib/portal/receipt";
+import { receiptHtml,serviceInvoiceHtml } from "@/lib/portal/receipt";
 import { provisionClient } from "@/lib/portal/provisioning";
 import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
 import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
@@ -42,6 +41,10 @@ import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 import { checkPassword } from "@/lib/portal/password-check";
 import { readRegistrant, verifyPortalAssignment } from "@/lib/portal/registrant";
+import { registrarAcceptance } from "@/lib/portal/registrar-acceptance";
+import {editClient,sendClientAccess} from "@/lib/portal/client-operations";
+import {createServiceInvoice,transitionServiceInvoice} from "@/lib/portal/invoices";
+import {boundedText} from "@/lib/portal/request-body";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,7 +60,7 @@ async function handle(req: NextRequest, context: Context) {
     let body: Record<string, unknown> = {};
     if (req.method === "POST") {
       originCheck(req);
-      const raw = await req.text();
+      const raw = await boundedText(req,24000);
       if (raw.length > 24000) throw new PortalError("request_too_large", 413);
       body = z.record(z.string(), z.unknown()).parse(JSON.parse(raw || "{}"));
     }
@@ -158,8 +161,9 @@ async function handle(req: NextRequest, context: Context) {
       checkDb(error);
       if (!invoice) throw new PortalError("receipt_not_found", 404);
       await clientAccess(invoice.client_id);
-      return new Response(receiptHtml(invoice), { headers: {
-        "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `attachment; filename="stackendbox-sandbox-receipt-${id}.html"`,
+      if (invoice.order_id === null && invoice.status === "draft" && auth.account.role !== "super_admin") throw new PortalError("invoice_not_issued",403);
+      return new Response(invoice.order_id === null ? serviceInvoiceHtml(invoice) : receiptHtml(invoice), { headers: {
+        "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `attachment; filename="stackendbox-${invoice.order_id === null ? "invoice" : "sandbox-receipt"}-${id}.html"`,
         "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox",
       } });
     }
@@ -352,7 +356,7 @@ async function handle(req: NextRequest, context: Context) {
         .single();
       if (!q || Date.parse(q.valid_until) <= Date.now())
         throw new PortalError("quote_expired", 409);
-      return reply(await checkout(o));
+      return reply(await (await import("@/lib/portal/whop")).checkout(o));
     }
     if (
       path[0] === "orders" &&
@@ -472,6 +476,14 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined));
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
+      if (route === "admin/client-update" && req.method === "POST") return reply(await editClient(admin.user.id,body));
+      if (route === "admin/invoices" && req.method === "POST") return reply(await createServiceInvoice(admin.user.id,body));
+      if (route === "admin/invoice-status" && req.method === "POST") return reply(await transitionServiceInvoice(admin.user.id,body));
+      if (route === "admin/client-access-email" && req.method === "POST") return reply(await sendClientAccess(admin.user.id,body));
+      if (route === "admin/registrar-acceptance" && req.method === "POST") {
+        const input=z.object({domain:text,authorized_readonly:z.literal(true)}).strict().parse(body);
+        return reply(await registrarAcceptance(input.domain));
+      }
       if (route === "admin/acquisitions" && req.method === "GET") {
         const result = await db.from("portal_acquisition_requests").select("*,portal_external_payments(*)").order("created_at",{ascending:false}).limit(100);
         checkDb(result.error);

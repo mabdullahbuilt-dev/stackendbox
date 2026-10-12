@@ -8,6 +8,7 @@ const mock = vi.hoisted(() => ({
   retrieve: vi.fn(),
   rpc: vi.fn(),
   order: {} as Record<string, unknown>,
+  update:vi.fn(),
 }));
 vi.mock("@whop/sdk", () => ({
   WhopEnvironment: {Sandbox:{api:"https://sandbox-api.whop.com/api/v1",vault:"https://sandbox-vault-api.whop.com/api/v1"}},
@@ -24,6 +25,8 @@ vi.mock("@/lib/portal/server", () => ({
   adminDb: () => ({
     rpc: mock.rpc,
     from: () => ({
+      update:mock.update,
+      upsert:vi.fn(async()=>({error:null})),
       select: () => ({
         eq: () => ({ single: async () => ({ data: mock.order, error: null }) }),
       }),
@@ -82,9 +85,16 @@ beforeEach(() => {
     refunded_at: null,
   });
   mock.rpc.mockResolvedValue({ data: "verified", error: null });
+  mock.update.mockReturnValue({eq:()=>({in:async()=>({error:null})})});
 });
 afterEach(() => vi.unstubAllEnvs());
 describe("verified Whop payment processing", () => {
+  it("records failed payments for review without invoking paid confirmation",async()=>{
+    const payment=await mock.retrieve();mock.retrieve.mockResolvedValue({...payment,status:"failed",substatus:"failed",paid_at:null});
+    const body=JSON.stringify({type:"payment.failed",data:{id:"pay_fixture"}});
+    expect(await processWebhook(body,signed(body))).toEqual({status:"review_required"});
+    expect(mock.update).toHaveBeenCalledWith({status:"action_required"});expect(mock.rpc).not.toHaveBeenCalled();
+  });
   it("rejects missing signatures without contacting Whop", async () => {
     await expect(processWebhook(raw, {})).rejects.toThrow(
       "invalid_webhook_signature",

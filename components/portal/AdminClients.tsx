@@ -43,8 +43,9 @@ export function AdminClients({ create = false }: { create?: boolean }) {
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const [requestId, setRequestId] = useState("");
-  const [credentialMode, setCredentialMode] = useState("invitation");
+  const [credentialMode, setCredentialMode] = useState("initial_password");
   const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [showPassword,setShowPassword]=useState(false);
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
   const [assets,setAssets] = useState<Data|null>(null),[domainId,setDomainId]=useState("");
   useEffect(() => {
@@ -80,7 +81,7 @@ export function AdminClients({ create = false }: { create?: boolean }) {
     try {
       const result = await api("admin/clients", {
         ...input,
-        ...(input.credential_mode === "temporary_password" && temporaryPassword ? { temporary_password: temporaryPassword } : {}),
+        ...(["initial_password", "temporary_password"].includes(String(input.credential_mode)) && temporaryPassword ? { temporary_password: temporaryPassword } : {}),
       });
       setTemporaryPassword("");
       setMessage(`${result.message} Reference: ${result.id}`);
@@ -91,6 +92,11 @@ export function AdminClients({ create = false }: { create?: boolean }) {
       setBusy(false);
     }
   }
+  async function operate(route:string,input:Record<string,unknown>) {
+    setBusy(true);setError("");setMessage("");
+    try {const result=await api(route,input);setMessage(result.message);await load();}
+    catch(e){setError((e as Error).message);}finally{setBusy(false);}
+  }
   if (create)
     return (
       <section className="portal-panel">
@@ -98,23 +104,23 @@ export function AdminClients({ create = false }: { create?: boolean }) {
         <p>
           The approved email is the sign-in identity. Passwords are set through
           Supabase Auth. Invitations let the client verify their email and choose
-          a private password. Optional temporary passwords must be replaced before
-          accessing client records and are never saved in provisioning records.
+          a private password. An administrator-approved initial password remains
+          usable after email verification and is never saved in provisioning records.
         </p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
             const fields = Object.fromEntries(new FormData(e.currentTarget));
-            if (credentialMode === "temporary_password" && !attempt) {
+            if (credentialMode === "initial_password" && !attempt) {
               try { validatePassword(temporaryPassword); } catch (error) { setError((error as Error).message); return; }
             }
             const payload = attempt || {
               idempotency_key: requestId,
               name: fields.name,
-              business_name: fields.business_name,
+              business_name: fields.business_name || fields.name,
               email: fields.email,
               status: fields.status,
-              ...(credentialMode === "temporary_password" ? { credential_mode: credentialMode } : {}),
+              credential_mode: credentialMode,
               ...(fields.domain_id ? {domain_id:fields.domain_id,holder_arrangement:fields.holder_arrangement,legal_holder:fields.legal_holder,rights_confirmed:fields.rights_confirmed==="on"} : {}),
               ...(fields.website_url
                 ? {
@@ -135,8 +141,8 @@ export function AdminClients({ create = false }: { create?: boolean }) {
               <input name="name" required maxLength={100} />
             </label>
             <label>
-              Business name
-              <input name="business_name" required maxLength={150} />
+              Business name, optional
+              <input name="business_name" maxLength={150} />
             </label>
             <label>
               Approved email
@@ -146,13 +152,13 @@ export function AdminClients({ create = false }: { create?: boolean }) {
               Client access setup
               <select value={credentialMode} onChange={e => { setCredentialMode(e.target.value); setTemporaryPassword(""); }}>
                 <option value="invitation">Invitation, client chooses password</option>
-                <option value="temporary_password">Administrator sets temporary password</option>
+                <option value="initial_password">Administrator sets initial password, no forced reset</option>
               </select>
             </label>
             <label>
               Account status
               <select name="status">
-                <option value="active">Active, send invitation</option>
+                <option value="active">Active, send setup notification</option>
                 <option value="suspended">
                   Suspended, do not send invitation
                 </option>
@@ -169,12 +175,13 @@ export function AdminClients({ create = false }: { create?: boolean }) {
               <input name="website_url" type="url" placeholder="https://" />
             </label>
           </fieldset>
-          {credentialMode === "temporary_password" && <fieldset disabled={busy}>
-            <label>Initial temporary portal password
-              <input type="password" autoComplete="new-password" value={temporaryPassword} onChange={e => setTemporaryPassword(e.target.value)} minLength={8} maxLength={128} required={!attempt} />
+          {credentialMode === "initial_password" && <fieldset disabled={busy}>
+            <label>Initial portal password
+              <input type={showPassword?"text":"password"} autoComplete="new-password" value={temporaryPassword} onChange={e => setTemporaryPassword(e.target.value)} minLength={8} maxLength={128} required={!attempt} />
             </label>
+            <label className="portal-check"><input type="checkbox" checked={showPassword} onChange={e=>setShowPassword(e.target.checked)}/>Show initial password for secure personal delivery</label>
             <button type="button" onClick={() => setTemporaryPassword(generateTemporaryPassword())}>Generate strong password</button>
-            <p>Use 8-128 characters. Letters, numbers, spaces and symbols are accepted. Longer generated passwords are recommended. Only a hash prefix is sent to the free Pwned Passwords safety check. The full password goes only to Supabase Auth. Access email contains an invitation, never the password. Email verification is still required. Retries never overwrite an existing identity&apos;s password.</p>
+            <p>Use 8-128 characters. Deliver this password personally through an agreed secure channel, never plaintext email. The account-ready message verifies the email without forcing a password reset. Retries never overwrite an existing identity&apos;s password.</p>
           </fieldset>}
           <button className="portal-button" disabled={busy || !requestId}>
             {busy
@@ -229,6 +236,13 @@ export function AdminClients({ create = false }: { create?: boolean }) {
                 {c.name} · {c.status}
               </p>
               <p>Client ID: {c.id}</p>
+              <details><summary>Edit client details and access</summary><form className="portal-form" onSubmit={e=>{e.preventDefault();const fields=Object.fromEntries(new FormData(e.currentTarget));void operate("admin/client-update",{...fields,client_id:c.id});}}>
+                <label>Client name<input name="name" defaultValue={c.name} required maxLength={100}/></label>
+                <label>Business name<input name="business_name" defaultValue={c.business_name} required maxLength={150}/></label>
+                <label>Access status<select name="status" defaultValue={c.status}><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
+                <p>Suspension denies access through tenant policies. Email and domain assignments remain unchanged.</p>
+                <button className="portal-button" disabled={busy}>Save client details</button>
+              </form></details>
               {c.portal_memberships.map((m) => {
                 const identity = data.identities.find(
                   (i) => i.user_id === m.user_id,
@@ -257,6 +271,7 @@ export function AdminClients({ create = false }: { create?: boolean }) {
                         : "No sign-in recorded"}
                     </p>
                     <small>Auth identity: {m.user_id}</small>
+                    <p><button disabled={busy || !identity?.email_consistent} onClick={()=>void operate("admin/client-access-email",{user_id:m.user_id,action:identity?.email_confirmed_at?"recovery":"resend_invitation"})}>{identity?.email_confirmed_at?"Send secure recovery email":"Resend setup email"}</button></p>
                   </div>
                 );
               })}

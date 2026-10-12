@@ -17,7 +17,7 @@ export const provisioningSchema = z
       .transform((s) => s.toLowerCase()),
     status: z.enum(["active", "suspended"]).default("active"),
     existing_client_id: z.uuid().optional(),
-    credential_mode: z.enum(["invitation", "temporary_password"]).optional(),
+    credential_mode: z.enum(["invitation", "initial_password", "temporary_password"]).optional(),
     temporary_password: z.string().min(8).max(128).optional(),
     domain_id: z.uuid().optional(),
     holder_arrangement: z.enum(["client_owned", "licensed"]).optional(),
@@ -33,8 +33,8 @@ export const provisioningSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
-    if (value.temporary_password && value.credential_mode !== "temporary_password")
-      ctx.addIssue({ code: "custom", message: "Temporary password mode required" });
+    if (value.temporary_password && !["initial_password", "temporary_password"].includes(value.credential_mode || ""))
+      ctx.addIssue({ code: "custom", message: "Administrator password mode required" });
     if (
       value.domain_id &&
       (!value.holder_arrangement ||
@@ -100,13 +100,13 @@ export async function provisionClient(actor: string, raw: unknown) {
       checkDb(found.error);
       let userId = found.data as string | null;
       if (!userId) {
-        if (input.credential_mode === "temporary_password" && !temporary_password)
+        if (["initial_password", "temporary_password"].includes(input.credential_mode || "") && !temporary_password)
           throw new PortalError("temporary_password_required", 422);
         const created = await db.auth.admin.createUser({
           email: input.email,
           email_confirm: false,
-          ...(input.credential_mode === "temporary_password" ? { password: temporary_password } : {}),
-          app_metadata: { portal_provisioning_id: record.id, portal_password_change_required: input.credential_mode === "temporary_password" },
+          ...(temporary_password ? { password: temporary_password } : {}),
+          app_metadata: { portal_provisioning_id: record.id, portal_password_change_required: input.credential_mode !== "initial_password", ...(input.credential_mode === "initial_password" ? {portal_credential_mode:"initial_password"} : {}) },
         });
         userId = created.data?.user?.id || null;
         if (!userId) {
@@ -141,7 +141,7 @@ export async function provisionClient(actor: string, raw: unknown) {
       checkDb(claimed.error);
       if (claimed.data) {
         try {
-          if (process.env.PORTAL_AUTH_EMAIL_TRANSPORT === "supabase_smtp") {
+          if (process.env.PORTAL_AUTH_EMAIL_TRANSPORT === "supabase_smtp" && input.credential_mode !== "initial_password") {
             const sent = await db.auth.admin.inviteUserByEmail(record.email, {
               redirectTo: `${portalOrigin()}/client-portal/auth/callback`,
             });
@@ -154,10 +154,12 @@ export async function provisionClient(actor: string, raw: unknown) {
             });
             if (link.error || !link.data.properties?.hashed_token)
               throw new PortalError("invitation_link_failed", 502);
+            if (link.data.user?.id !== record.auth_user_id) throw new PortalError("invitation_identity_mismatch",409);
             await sendAuthEmail(
               record.email,
               link.data.properties.hashed_token,
               "invite",
+              input.credential_mode === "initial_password" ? "account_ready" : "invitation",
             );
           }
           checkDb(
@@ -205,7 +207,7 @@ export async function provisionClient(actor: string, raw: unknown) {
       ...saved.data,
       message:
         saved.data.state === "invited"
-          ? "Client and membership saved. Invitation accepted for delivery."
+          ? input.credential_mode === "initial_password" ? "Client and membership saved. Account-ready email accepted for delivery. Email verification is required, but no password reset is forced." : "Client and membership saved. Invitation accepted for delivery."
           : "Client saved. Check invitation status before resending.",
     };
   } catch (error) {

@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { identity } from "@/lib/portal/server";
 import { PortalError } from "@/lib/portal/rules";
-import { Portal } from "@/components/portal/Portal";
+import {PrivateClientPortal} from "@/components/portal/PrivatePortal";
 export const dynamic = "force-dynamic";
 export default async function PortalPage({
   params,
@@ -27,8 +27,10 @@ export default async function PortalPage({
     "settings",
   ];
   if (!allowed.includes(path[0])) notFound();
-  if (["login", "forgot-password"].includes(path[0]))
+  if (["login", "forgot-password"].includes(path[0])) {
+    const {Portal}=await import("@/components/portal/Portal");
     return <Portal path={path} />;
+  }
   let userId = "";
   let passwordChangeRequired = false;
   try {
@@ -52,5 +54,5 @@ export default async function PortalPage({
     );
   }
   if (passwordChangeRequired && path[0] !== "reset-password") redirect("/client-portal/reset-password");
-  return <Portal key={userId} path={path} userId={userId} />;
+  return <PrivateClientPortal key={userId} path={path} userId={userId} />;
 }

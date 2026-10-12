@@ -2,11 +2,12 @@ import { after, NextResponse } from "next/server";
 import { runJobs } from "@/lib/portal/services";
 import { processWebhook } from "@/lib/portal/whop";
 import { PortalError, requireSandboxCheckout } from "@/lib/portal/rules";
+import {boundedText} from "@/lib/portal/request-body";
 export const runtime = "nodejs";
 export async function POST(req: Request) {
   try {
     requireSandboxCheckout();
-    const raw = await req.text();
+    const raw = await boundedText(req,256000);
     if (raw.length > 256000) return new Response(null, { status: 413 });
     const result = await processWebhook(
       raw,

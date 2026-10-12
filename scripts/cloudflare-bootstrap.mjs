@@ -23,7 +23,7 @@ const values = {
   SUPABASE_SECRET_KEY: secret,
   PORTAL_APP_URL: origin,
 };
-const diagnosticToken = process.argv.includes('--diagnose') ? randomBytes(32).toString('hex') : null;
+const diagnosticToken = process.argv.includes('--diagnose') || process.argv.includes('--personal-diagnose') ? randomBytes(32).toString('hex') : null;
 if (diagnosticToken) values.PORTAL_DIAGNOSTICS_TOKEN = diagnosticToken;
 const requested = ['SPACESHIP_API_KEY', 'SPACESHIP_API_SECRET', 'WHOP_SANDBOX_API_KEY', 'WHOP_SANDBOX_WEBHOOK_SECRET', 'WHOP_SANDBOX_COMPANY_ID', 'WHOP_SANDBOX_REGISTRATION_PRODUCT_ID', 'WHOP_SANDBOX_RENEWAL_PRODUCT_ID', 'BREVO_CLIENT_API_KEY', 'BREVO_CLIENT_SENDER_EMAIL', 'BREVO_CLIENT_SENDER_NAME', 'BREVO_CLIENT_REPLY_TO', 'BREVO_API_KEY', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'TURNSTILE_SECRET_KEY'];
 const unavailable = [];
@@ -108,7 +108,13 @@ await new Promise((resolve, reject) => {
 console.log(JSON.stringify({ origin, storedVariableNames: Object.keys(values), notExportableFromSource: unavailable, source: 'Existing Supabase CLI and supported Vercel environment API. No credentials displayed. Values already supplied securely in Workers are preserved.' }, null, 2));
 if (diagnosticToken) {
   stage = 'read-only-provider-diagnostics';
-  const response = await fetch(`${origin}/api/portal-diagnostics`, { headers: { Authorization: `Bearer ${diagnosticToken}` }, signal: AbortSignal.timeout(30000) });
+  let response;
+  for(let attempt=0;attempt<6;attempt++) {
+    response = await fetch(`${origin}/api/portal-diagnostics${process.argv.includes('--personal-diagnose')?'?check=personal-connection':''}`, { headers: { Authorization: `Bearer ${diagnosticToken}` }, signal: AbortSignal.timeout(30000) });
+    if(response.status!==404 || attempt===5)break;
+    await response.body?.cancel();
+    await new Promise(resolve=>setTimeout(resolve,2000));
+  }
   if (!response.ok) throw new Error(`Worker diagnostic status ${response.status}`);
   console.log(JSON.stringify(await response.json(), null, 2));
 }

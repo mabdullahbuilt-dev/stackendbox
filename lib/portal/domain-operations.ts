@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { Resolver } from "node:dns/promises";
+import { authoritativeNameservers } from "./authoritative-dns";
 import { z } from "zod";
 import { adminDb, audit, checkDb, identity, rateLimit } from "./server";
 import { assertCustomerDomain, domainName, PortalError } from "./rules";
@@ -32,9 +32,7 @@ export async function authorizedDomain(name: string, auth: Awaited<ReturnType<ty
 export async function readDomainState(name: string) {
   await rateLimit(`provider:detail:${name}`, 4, 300);
   const detail = await spaceship.detail(name);
-  const resolver = new Resolver({ timeout: 1500, tries: 1 });
-  const timer = setTimeout(() => resolver.cancel(), 3000);
-  const authoritativeHosts = await resolver.resolveNs(name).catch(() => [] as string[]).finally(() => clearTimeout(timer));
+  const authoritativeHosts = await authoritativeNameservers(name);
   const expectedHosts = detail.nameservers?.hosts.map(s => s.toLowerCase().replace(/\.$/, "")) || [];
   const managed = detail.nameservers?.provider === "basic" && authoritativeHosts.length > 0 && authoritativeHosts.every(s => expectedHosts.includes(s.toLowerCase().replace(/\.$/, ""))) && authoritativeHosts.length === expectedHosts.length;
   const dns = managed ? dnsPage.parse(await spaceship.dns(name)) : { items: [], total: 0 };

@@ -46,12 +46,12 @@ export const domainSchema = z.object({
     .object({ level: z.string(), contactForm: z.boolean().optional() })
     .optional(),
 });
-async function request(path: string, body?: unknown, method = body ? "POST" : "GET") {
+async function providerRequest(path: string, body?: unknown, method = body ? "POST" : "GET", account: "primary" | "test" = "primary") {
   const response = await fetch(`https://spaceship.dev/api/v1${path}`, {
     method,
     headers: {
-      "X-API-Key": env("SPACESHIP_API_KEY"),
-      "X-API-Secret": env("SPACESHIP_API_SECRET"),
+      "X-API-Key": env(account === "test" ? "SPACESHIP_TEST_API_KEY" : "SPACESHIP_API_KEY"),
+      "X-API-Secret": env(account === "test" ? "SPACESHIP_TEST_API_SECRET" : "SPACESHIP_API_SECRET"),
       "Content-Type": "application/json",
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
@@ -63,14 +63,56 @@ async function request(path: string, body?: unknown, method = body ? "POST" : "G
       `spaceship_${response.status}`,
       response.status === 429 ? 429 : 502,
     );
+  if (response.status === 202) {
+    const operationId = response.headers.get("spaceship-async-operationid");
+    if (!operationId || !/^[a-zA-Z0-9_-]{1,128}$/.test(operationId)) throw new PortalError("spaceship_async_untracked", 502);
+    return {operation_id:operationId,status:"pending"};
+  }
   return response.status === 204 ? null : response.json();
 }
-export const spaceship = {
+export function createSpaceship(account: "primary" | "test") {
+  const request = (path: string, body?: unknown, method = body ? "POST" : "GET") => {
+    if (account === "test" && method !== "GET") throw new PortalError("personal_test_read_only", 403);
+    return providerRequest(path,body,method,account);
+  };
+  const allowWrite = (name: string) => {
+    if (account === "test") throw new PortalError("personal_test_read_only",403);
+    mutationAllowed(name);
+  };
+  return {
+  async connection() {
+    const response=await fetch("https://spaceship.dev/api/v1/domains?take=1&skip=0",{headers:{"X-API-Key":env(account === "test"?"SPACESHIP_TEST_API_KEY":"SPACESHIP_API_KEY"),"X-API-Secret":env(account === "test"?"SPACESHIP_TEST_API_SECRET":"SPACESHIP_API_SECRET")},signal:AbortSignal.timeout(15000),cache:"no-store"});
+    if(!response.ok){await response.body?.cancel();return {connection:"Failed",http_status:response.status};}
+    const body=await response.json();
+    const parsed=z.object({items:z.array(domainSchema),total:z.number().int().nonnegative()}).safeParse(body);
+    return {connection:"Connected",http_status:response.status,inventory_schema_valid:parsed.success,...(!parsed.success?{invalid_fields:parsed.error.issues.slice(0,8).map(i=>({path:i.path.join("."),code:i.code}))}:{})};
+  },
+  async saveContact(name: string, input: unknown) {
+    allowWrite(name);
+    const body=z.object({contact:contactSchema.strict(),consent:z.literal(true)}).strict().parse(input);
+    return z.object({contactId:contactIdSchema}).parse(await request("/contacts",body.contact,"PUT"));
+  },
+  async register(name: string, input: unknown) {
+    allowWrite(name);
+    if (process.env.DOMAIN_LIVE_PURCHASES_ENABLED !== "true") throw new PortalError("live_domain_purchases_disabled",403);
+    const body=z.object({autoRenew:z.literal(false),years:z.number().int().min(1).max(10),privacyProtection:z.object({level:z.enum(["high","public"]),userConsent:z.literal(true)}).strict(),contacts:domainContactsSchema}).strict().parse(input);
+    return request(`/domains/${encodeURIComponent(domainName(name))}`,body);
+  },
+  async renew(name: string, input: unknown) {
+    allowWrite(name);
+    if (process.env.DOMAIN_LIVE_RENEWALS_ENABLED !== "true") throw new PortalError("live_domain_renewals_disabled",403);
+    const body=z.object({years:z.number().int().min(1).max(10),currentExpirationDate:z.iso.datetime().max(27)}).strict().parse(input);
+    return request(`/domains/${encodeURIComponent(domainName(name))}/renew`,body);
+  },
+  async operation(id: string) {
+    if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new PortalError("invalid_operation_id");
+    return z.object({status:z.enum(["pending","success","failed"])}).passthrough().parse(await request(`/async-operations/${id}`));
+  },
   async contact(id: string) {
     return contactSchema.parse(await request(`/contacts/${contactIdSchema.parse(id)}`));
   },
   async setContacts(name: string, input: unknown) {
-    mutationAllowed(name);
+    allowWrite(name);
     const contacts = domainContactsSchema.parse(input);
     return z.object({ verificationStatus: z.string().nullable() }).parse(
       await request(`/domains/${encodeURIComponent(domainName(name))}/contacts`, contacts, "PUT"),
@@ -126,24 +168,27 @@ export const spaceship = {
     throw new PortalError("spaceship_dns_limit", 502);
   },
   async saveDns(name: string, items: unknown[]) {
-    mutationAllowed(name);
+    allowWrite(name);
     return request(`/dns/records/${encodeURIComponent(domainName(name))}`, { force: false, items }, "PUT");
   },
   async deleteDns(name: string, items: Record<string, unknown>[]) {
-    mutationAllowed(name);
+    allowWrite(name);
     return request(`/dns/records/${encodeURIComponent(domainName(name))}`, items.map(({ ttl: _ttl, ...record }) => record), "DELETE");
   },
   async setNameservers(name: string, hosts: string[]) {
-    mutationAllowed(name);
+    allowWrite(name);
     return request(`/domains/${encodeURIComponent(domainName(name))}/nameservers`, { provider: "custom", hosts }, "PUT");
   },
   async setPrivacy(name: string, privacyLevel: "public" | "high") {
-    mutationAllowed(name);
+    allowWrite(name);
     return request(`/domains/${encodeURIComponent(domainName(name))}/privacy/preference`, { privacyLevel, userConsent: true }, "PUT");
   },
 };
+}
+export const spaceship = createSpaceship("primary");
+export const spaceshipTest = createSpaceship("test");
 export function mutationAllowed(name: string) {
   const allowed = (process.env.DOMAIN_MUTATION_ALLOWLIST || "").split(",").map(s => s.trim().toLowerCase());
   if (process.env.DOMAIN_LIVE_MUTATIONS_ENABLED !== "true" || !allowed.includes(domainName(name)) || domainName(name) === "stackendbox.com") throw new PortalError("live_domain_changes_disabled", 403);
 }
-// Paid registration, renewal, auto-renew and transfer remain unimplemented and disabled.
+// Paid operations require a separately approved durable business workflow before exposure.

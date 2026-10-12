@@ -27,6 +27,7 @@ import {
 import { Turnstile } from "@/components/builder/Turnstile";
 import { usePortalCache } from "./PortalCache";
 import { DomainControls } from "./DomainControls";
+import {AdminInvoices} from "./AdminInvoices";
 import { validatePassword } from "@/lib/portal/password-policy";
 
 type Row = Record<string, unknown>;
@@ -216,9 +217,15 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
   }, [save, userId, page, section, domainDetail]);
   useEffect(() => {
     if (publicPage) return;
-    if (cache?.userId === userId && cache.section === page && Date.now() - cache.loadedAt < 30000) return;
     void reload();
-  }, [publicPage, page, reload, cache, userId]);
+  }, [publicPage, page, reload]);
+  useEffect(() => {
+    if (publicPage || section === "reset-password") return;
+    let last=Date.now();
+    const refresh=()=>{if(document.visibilityState === "visible" && Date.now()-last>15000){last=Date.now();void reload();}};
+    window.addEventListener("focus",refresh);document.addEventListener("visibilitychange",refresh);
+    return()=>{window.removeEventListener("focus",refresh);document.removeEventListener("visibilitychange",refresh);};
+  },[publicPage,section,reload]);
   if (publicPage)
     return (
       <main id="main" className="portal-auth">
@@ -591,9 +598,10 @@ export function PortalContent({
           title="Billing & Invoices"
           description="Your service payments, renewal history, and receipts."
         />
+        {adminMode&&<AdminInvoices clientSelect={clientSelect} reload={reload} invoices={rows(data,"invoices")}/>}
         <OrderList orders={rows(data, "orders")} reload={reload} checkoutEnabled={data.sandbox_checkout_enabled === true} />
         {!!rows(data,"external_payments").length&&<section className="portal-panel"><h2>Payments made to StackEndBox</h2>{rows(data,"external_payments").map(p=><article key={str(p.id)}><p>{money(p.amount_minor)} · {date(p.paid_at)} · {label(p.source)}</p><p>{p.reconciliation_status==="verified"?"Payment evidence verified":"Payment record awaiting reconciliation"}. Reference: {str(p.transaction_reference)}</p></article>)}</section>}
-        <h2>Receipts</h2>
+        <h2>Invoices and receipts</h2>
         {!rows(data, "invoices").length && <Empty>No payment receipts yet.</Empty>}
         {rows(data, "invoices").map((i) => (
           <section className="portal-panel" key={str(i.id)}>
@@ -603,9 +611,9 @@ export function PortalContent({
             </p>
             <Status value={i.status} />
             <p className="portal-small">
-              Sandbox receipt {str(i.id)}. This is not a tax invoice.
+              {i.order_id === null ? `Service invoice ${str(i.id)}. This doesn't confirm a payment.` : `Sandbox receipt ${str(i.id)}. This is not a tax invoice.`}
             </p>
-            <a href={`/api/portal/invoices/${str(i.id)}/download`} download>Download receipt</a>
+            <a href={`/api/portal/invoices/${str(i.id)}/download`} download>{i.order_id === null ? "Download invoice" : "Download receipt"}</a>
           </section>
         ))}
       </>

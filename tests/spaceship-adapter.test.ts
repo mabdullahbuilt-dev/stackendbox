@@ -1,11 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/portal/server", () => ({ env: () => "fixture-secret" }));
-import { spaceship } from "@/lib/portal/spaceship";
+import { spaceship, spaceshipTest } from "@/lib/portal/spaceship";
 const fetchMock = vi.fn();
 beforeEach(() => { vi.stubGlobal("fetch", fetchMock); fetchMock.mockReset(); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe("registrar adapter mutation boundaries", () => {
+  it("separates authentication from inventory-schema validity without returning domain or key values",async()=>{
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({items:[{name:"private-fixture.invalid"}],total:1})));
+    const result=await spaceshipTest.connection();
+    expect(result.connection).toBe("Connected");expect(result).toHaveProperty("inventory_schema_valid",false);
+    expect(JSON.stringify(result)).not.toContain("private-fixture.invalid");expect(JSON.stringify(result)).not.toContain("fixture-secret");
+  });
+  it("blocks every personal-account write even when live flags are mistakenly enabled",async()=>{
+    vi.stubEnv("DOMAIN_LIVE_MUTATIONS_ENABLED","true");vi.stubEnv("DOMAIN_MUTATION_ALLOWLIST","example.com");
+    for(const run of [()=>spaceshipTest.setContacts("example.com",{}),()=>spaceshipTest.saveContact("example.com",{}),()=>spaceshipTest.register("example.com",{}),()=>spaceshipTest.renew("example.com",{}),()=>spaceshipTest.saveDns("example.com",[]),()=>spaceshipTest.setNameservers("example.com",[]),()=>spaceshipTest.setPrivacy("example.com","high")]) await expect(run()).rejects.toThrow("personal_test_read_only");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("keeps async acceptance pending and reads documented operation status",async()=>{
+    vi.stubEnv("DOMAIN_LIVE_MUTATIONS_ENABLED","true");vi.stubEnv("DOMAIN_MUTATION_ALLOWLIST","example.com");vi.stubEnv("DOMAIN_LIVE_RENEWALS_ENABLED","true");
+    fetchMock.mockResolvedValueOnce(new Response(null,{status:202,headers:{"spaceship-async-operationid":"operation-fixture"}})).mockResolvedValueOnce(new Response(JSON.stringify({status:"pending"})));
+    expect(await spaceship.renew("example.com",{years:1,currentExpirationDate:"2027-10-13T00:00:00Z"})).toEqual({operation_id:"operation-fixture",status:"pending"});
+    expect(await spaceship.operation("operation-fixture")).toEqual({status:"pending"});
+    expect(fetchMock.mock.calls[1][0]).toBe("https://spaceship.dev/api/v1/async-operations/operation-fixture");
+  });
   it("reads only a valid official contact ID", async () => {
     await expect(spaceship.contact("../domains")).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();

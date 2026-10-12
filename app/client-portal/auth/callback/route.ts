@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { originCheck, sessionDb } from "@/lib/portal/server";
+import {boundedText} from "@/lib/portal/request-body";
 
 const headers = {
   "Cache-Control": "no-store",
@@ -17,7 +18,34 @@ const confirmation = z.union([
 export async function GET() {
   return new NextResponse(
     `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Confirm your StackEndBox access</title><style>body{font-family:system-ui;background:#070907;color:#f5f5f5;max-width:36rem;margin:8vh auto;padding:24px;line-height:1.6}a{color:#ff7b0d}header{font-size:24px;font-weight:700}header span{display:block;color:#ff7b0d;font-size:12px;letter-spacing:3px}main{margin-top:36px;padding:28px;border:1px solid #293027;border-radius:16px;background:#0d120c}button{background:#ff7b0d;color:#090b08;border:0;border-radius:8px;font-size:16px;cursor:pointer}button:disabled{opacity:.55}h1{line-height:1.2;font-size:32px}small{color:#abb2a5}</style><body><header>StackEndBox<span>PRIVATE CLIENT ACCESS</span></header><main><h1>Continue to StackEndBox</h1><p id="status" role="status">Confirm this email link to set your password. Only continue if you requested access or a password reset.</p><button id="confirm" type="button" style="padding:12px 24px">Continue</button><p><a href="/client-portal/forgot-password">Request a new password-reset email</a></p><small>Invitation and recovery links are single-use. Your password is secured by Supabase Auth.</small></main><script>
-  (()=>{const q=new URLSearchParams(location.search),p=new URLSearchParams(location.hash.slice(1));if(q.has('token_hash')||q.has('code')){for(const key of ['token_hash','type','code'])if(q.has(key))p.set(key,q.get(key));history.replaceState(null,'',location.pathname+'#'+p.toString());}const button=document.getElementById('confirm'),status=document.getElementById('status');button.addEventListener('click',async()=>{button.disabled=true;status.textContent='Confirming your access...';try{let url=location.pathname,body;if(p.has('token_hash'))body={token_hash:p.get('token_hash'),type:p.get('type')};else if(p.has('code'))body={code:p.get('code')};else{url='/api/portal/auth/session';body={access_token:p.get('access_token'),refresh_token:p.get('refresh_token')};}const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error();history.replaceState(null,'',location.pathname);location.replace('/client-portal/reset-password');}catch{status.textContent='This link was already used, is invalid, or has expired. If you already clicked Continue in this browser, return to password setup. Otherwise request a new password-reset email.';const a=document.createElement('a');a.href='/client-portal/reset-password';a.textContent='Return to password setup';status.appendChild(document.createElement('br'));status.appendChild(a);}});})();
+  (()=>{
+    const q=new URLSearchParams(location.search),p=new URLSearchParams(location.hash.slice(1));
+    if(q.has('token_hash')||q.has('code')){for(const key of ['token_hash','type','code'])if(q.has(key))p.set(key,q.get(key));history.replaceState(null,'',location.pathname+'#'+p.toString());}
+    const button=document.getElementById('confirm'),status=document.getElementById('status'),heading=document.querySelector('h1'),help=document.querySelector('main p a');
+    const recovery=p.get('type')==='recovery',ready=p.get('flow')==='account-ready';
+    heading.textContent=recovery?'Reset Your StackEndBox Password':ready?'Your Account Is Ready, Sign In':'Activate Your StackEndBox Account';
+    status.textContent=recovery?'Confirm your recovery request to reset your password.':ready?'Verify your email, then sign in with the initial password provided securely by StackEndBox. No password reset is required.':'Confirm your invitation, then choose your own password to activate your account.';
+    help.href=recovery?'/client-portal/forgot-password':'/client-portal/login';
+    help.textContent=recovery?'Request a new password-reset email':'Already activated? Sign in';
+    button.addEventListener('click',async()=>{
+      button.disabled=true;status.textContent='Confirming your access...';
+      try{
+        let url=location.pathname,body;
+        if(p.has('token_hash'))body={token_hash:p.get('token_hash'),type:p.get('type')};
+        else if(p.has('code'))body={code:p.get('code')};
+        else{url='/api/portal/auth/session';body={access_token:p.get('access_token'),refresh_token:p.get('refresh_token')};}
+        const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        if(!r.ok)throw new Error();
+        const result=await r.json();
+        const next=result.next==='/client-portal/login'?result.next:'/client-portal/reset-password';
+        history.replaceState(null,'',location.pathname);location.replace(next);
+      }catch{
+        heading.textContent=recovery?'Recovery Link Invalid or Expired':'Your Invitation Is Invalid, Used or Expired';
+        status.textContent=recovery?'Request a new recovery email. Used links remain single-use.':'Ask your StackEndBox administrator for a new invitation. If you already activated your account, sign in instead.';
+        help.href=recovery?'/client-portal/forgot-password':'/client-portal/login';help.textContent=recovery?'Request a new recovery email':'Sign in to your account';
+      }
+    });
+  })();
   </script></body></html>`,
     {
       headers: {
@@ -34,17 +62,27 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "invalid_origin" }, { status: 403, headers });
   }
-  const parsed = confirmation.safeParse(await req.json().catch(() => null));
+  let input:unknown;
+  try {input=JSON.parse(await boundedText(req,4096));}catch{
+    return NextResponse.json({error:"invalid_confirmation"},{status:400,headers});
+  }
+  const parsed = confirmation.safeParse(input);
   if (!parsed.success)
     return NextResponse.json({ error: "invalid_confirmation" }, { status: 400, headers });
   try {
     const db = await sessionDb();
-    const { error } = "code" in parsed.data
+    const result = "code" in parsed.data
       ? await db.auth.exchangeCodeForSession(parsed.data.code)
       : await db.auth.verifyOtp(parsed.data);
-    if (error)
+    if (result.error)
       return NextResponse.json({ error: "link_invalid_or_expired" }, { status: 400, headers });
-    return NextResponse.json({ ok: true }, { headers });
+    const initial = result.data?.user?.app_metadata?.portal_credential_mode === "initial_password";
+    const recovery = "type" in parsed.data && parsed.data.type === "recovery";
+    if (initial && !recovery) {
+      const signedOut = await db.auth.signOut({scope:"local"});
+      if (signedOut.error) throw new Error("session_cleanup_failed");
+    }
+    return NextResponse.json({ ok: true, next: initial && !recovery ? "/client-portal/login" : "/client-portal/reset-password" }, { headers });
   } catch {
     return NextResponse.json({ error: "confirmation_unavailable" }, { status: 503, headers });
   }

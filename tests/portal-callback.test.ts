@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { runInNewContext } from "node:vm";
 
-const auth = vi.hoisted(() => ({ verifyOtp: vi.fn(), exchangeCodeForSession: vi.fn() }));
+const auth = vi.hoisted(() => ({ verifyOtp: vi.fn(), exchangeCodeForSession: vi.fn(), signOut:vi.fn() }));
 vi.mock("@/lib/portal/server", () => ({
   sessionDb: vi.fn(async () => ({ auth })),
   originCheck: (req: Request) => {
@@ -20,8 +20,21 @@ beforeEach(() => {
   vi.clearAllMocks();
   auth.verifyOtp.mockResolvedValue({ error: null });
   auth.exchangeCodeForSession.mockResolvedValue({ error: null });
+  auth.signOut.mockResolvedValue({error:null});
 });
 describe("email link confirmation", () => {
+  it("verifies initial-password email without forcing a reset",async()=>{
+    auth.verifyOtp.mockResolvedValue({error:null,data:{user:{app_metadata:{portal_credential_mode:"initial_password"}}}});
+    const r=await POST(request({token_hash:"fixture-token-hash",type:"invite"}));
+    expect(await r.json()).toEqual({ok:true,next:"/client-portal/login"});
+    expect(auth.signOut).toHaveBeenCalledWith({scope:"local"});
+  });
+  it("keeps explicit recovery separate for initial-password accounts",async()=>{
+    auth.verifyOtp.mockResolvedValue({error:null,data:{user:{app_metadata:{portal_credential_mode:"initial_password"}}}});
+    const r=await POST(request({token_hash:"fixture-token-hash",type:"recovery"}));
+    expect((await r.json()).next).toBe("/client-portal/reset-password");
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
   it("preserves an unused token across refresh in the URL fragment, then clears it after confirmation", async () => {
     const html=await (await GET()).text();
     const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
@@ -31,8 +44,8 @@ describe("email link confirmation", () => {
     const button={disabled:false,addEventListener:(_event:string,fn:()=>Promise<void>)=>{click=fn;}};
     const status={textContent:"",appendChild:vi.fn()};
     const history={replaceState:(_state:unknown,_title:string,url:string)=>{const parsed=new URL(url,"https://portal.example");location.search=parsed.search;location.hash=parsed.hash;}};
-    const fetcher=vi.fn(async()=>({ok:true}));
-    const context={location,history,URLSearchParams,document:{getElementById:(id:string)=>id==="confirm"?button:status,createElement:()=>({})},fetch:fetcher};
+    const fetcher=vi.fn(async()=>({ok:true,json:async()=>({next:"/client-portal/reset-password"})}));
+    const context={location,history,URLSearchParams,document:{getElementById:(id:string)=>id==="confirm"?button:status,querySelector:()=>({}),createElement:()=>({})},fetch:fetcher};
     runInNewContext(script!,context);
     expect(location.search).toBe("");expect(location.hash).toContain("token_hash=fixture-token-hash");expect(fetcher).not.toHaveBeenCalled();
     runInNewContext(script!,context); // A fresh JS context reads the preserved fragment.

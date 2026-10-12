@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { WhopError } from "@whop/sdk";
 import { adminDb, env } from "@/lib/portal/server";
-import { spaceship } from "@/lib/portal/spaceship";
+import { spaceship,spaceshipTest } from "@/lib/portal/spaceship";
 import { whop } from "@/lib/portal/whop";
 import { PortalError, sandboxOnly } from "@/lib/portal/rules";
 
@@ -22,6 +22,14 @@ export async function GET(req: Request) {
   )
     return new Response(null, { status: 404 });
   sandboxOnly();
+  if(new URL(req.url).searchParams.get("check") === "personal-connection") {
+    try {
+      const connection=await spaceshipTest.connection();
+      return NextResponse.json({personalRegistrar:{...connection,domainAcceptance:"Pending exact domain authorization"},read_only:true,dedicated_credentials_unchanged:true},{headers:{"Cache-Control":"no-store"}});
+    } catch {
+      return NextResponse.json({personalRegistrar:{connection:"Failed",domainAcceptance:"Not performed"},read_only:true,dedicated_credentials_unchanged:true},{headers:{"Cache-Control":"no-store"}});
+    }
+  }
   async function check(run: () => Promise<unknown>) {
     const start = performance.now();
     try {

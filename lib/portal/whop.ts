@@ -24,6 +24,7 @@ export async function checkout(order: {
   amount_minor: number;
   currency: string;
 }) {
+  if (order.currency !== "usd" || !Number.isSafeInteger(order.amount_minor) || order.amount_minor <= 0 || !["registration","renewal"].includes(order.kind)) throw new PortalError("invalid_checkout_order",422);
   const db = adminDb();
   const { data: locked, error } = await db
     .from("portal_orders")
@@ -36,7 +37,16 @@ export async function checkout(order: {
     .select("id")
     .maybeSingle();
   checkDb(error);
-  if (!locked) throw new PortalError("checkout_already_processing", 409);
+  if (!locked) {
+    const existing=await db.from("portal_orders").select("client_id,amount_minor,currency,status,checkout_url").eq("id",order.id).maybeSingle();
+    checkDb(existing.error);
+    const saved=existing.data;
+    if (saved?.client_id === order.client_id && saved.amount_minor === order.amount_minor && saved.currency === order.currency && saved.status === "checkout_ready" && saved.checkout_url) {
+      const url=new URL(saved.checkout_url);
+      if (url.protocol === "https:" && url.hostname === "sandbox.whop.com") return {url:saved.checkout_url};
+    }
+    throw new PortalError("checkout_already_processing", 409);
+  }
   try {
     const result = await whop().checkoutConfigurations.create(
       {
@@ -74,6 +84,7 @@ export async function checkout(order: {
     );
     if (
       !result.purchase_url ||
+      new URL(result.purchase_url).protocol !== "https:" ||
       new URL(result.purchase_url).hostname !== "sandbox.whop.com"
     )
       throw new PortalError("invalid_checkout_url", 502);
@@ -221,6 +232,7 @@ export async function processWebhook(
       payment.refunded_amount.currency === order.currency
     ) {
       const amount = minorUnits(payment.refunded_amount.amount);
+      if (amount < 0 || amount > order.amount_minor) throw new PortalError("refund_amount_mismatch",422);
       checkDb(
         (
           await db
@@ -244,6 +256,9 @@ export async function processWebhook(
       `A billing adjustment for ${order.domain} requires review. No real registrar action was taken. Contact StackEndBox through your portal.`,
       `billing-review:${headers["webhook-id"]}`,
     );
+  }
+  if (["payment.failed","payment.canceled"].includes(event.type) && payment.status !== "paid") {
+    checkDb((await db.from("portal_orders").update({status:"action_required"}).eq("id",orderId).in("status",["checkout_ready","checkout_creating","awaiting_payment"])).error);
   }
   // Preserve event evidence. Refunds/disputes require reconciliation, never domain deletion.
   const saved = await db.from("portal_events").upsert(
