@@ -38,6 +38,7 @@ import { receiptHtml } from "@/lib/portal/receipt";
 import { provisionClient } from "@/lib/portal/provisioning";
 import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
 import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
+import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 
 export const runtime = "nodejs";
@@ -552,22 +553,10 @@ async function handle(req: NextRequest, context: Context) {
         });
       }
       if (route === "admin/websites" && req.method === "POST") {
-        const input = z
-          .object({
-            client_id: uuid,
-            name: text.max(120),
-            url: z.url().startsWith("https://"),
-          })
-          .parse(body);
-        checkDb((await db.from("portal_websites").insert(input)).error);
-        await audit(admin.user.id, "website_added", input.client_id);
-        return reply({ message: "Website added." });
+        return reply(await assignWebsite(admin.user.id, body));
       }
       if (route === "admin/services" && req.method === "POST") {
-        const input = z.object({client_id:uuid,website_id:uuid.optional(),service:z.enum(["Website development","Website hosting","Managed database","Website performance optimization","Integrations","Maintenance","Technical support"]),description:text.max(1000),status:z.enum(["included","provisioned","suspended"])}).strict().parse(body);
-        checkDb((await db.from("portal_service_entitlements").insert({...input,created_by:admin.user.id})).error);
-        await audit(admin.user.id,"service_entitlement_added",input.client_id);
-        return reply({message:"Agreed service saved."});
+        return reply(await assignService(admin.user.id, body));
       }
       if (route === "admin/pricing" && req.method === "POST") {
         const input = z
