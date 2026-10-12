@@ -1,5 +1,5 @@
 import "server-only";
-import { WhopClient } from "@whop/sdk";
+import { WhopClient, WhopEnvironment } from "@whop/sdk";
 import { unwrapWebhook } from "@whop/sdk/helpers";
 import { z } from "zod";
 import { adminDb, checkDb, env, portalOrigin } from "./server";
@@ -8,10 +8,10 @@ import { notifyClient } from "./services";
 
 export function whop() {
   sandboxOnly();
-  // SDK 2.x uses baseUrl/token. Checked against the installed definitions.
+  // Use the SDK's complete sandbox environment, including its vault host.
   return new WhopClient({
     token: env("WHOP_SANDBOX_API_KEY"),
-    baseUrl: "https://sandbox-api.whop.com/api/v1",
+    environment: WhopEnvironment.Sandbox,
     maxRetries: 0,
     timeoutInSeconds: 15,
   });

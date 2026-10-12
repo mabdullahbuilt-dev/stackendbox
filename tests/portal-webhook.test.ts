@@ -10,6 +10,7 @@ const mock = vi.hoisted(() => ({
   order: {} as Record<string, unknown>,
 }));
 vi.mock("@whop/sdk", () => ({
+  WhopEnvironment: {Sandbox:{api:"https://sandbox-api.whop.com/api/v1",vault:"https://sandbox-vault-api.whop.com/api/v1"}},
   WhopClient: class {
     payments = { retrieve: mock.retrieve };
   },
