@@ -38,6 +38,7 @@ import { receiptHtml } from "@/lib/portal/receipt";
 import { provisionClient } from "@/lib/portal/provisioning";
 import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
 import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
+import { clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -191,34 +192,22 @@ async function handle(req: NextRequest, context: Context) {
     if (["data", "admin/workspace"].includes(route) && req.method === "GET") {
       const adminMode = route === "admin/workspace";
       if (adminMode) await superAdmin(auth);
+      const section = z.enum(clientSections).parse(req.nextUrl.searchParams.get("section") || "dashboard");
+      const selected = new Set(adminMode ? portalTables : clientTables(section,req.nextUrl.searchParams.has("domain")));
       const [{ data: memberships, error: membershipError }, { data: factors, error: factorsError }] = await Promise.all([
         auth.db.from("portal_memberships").select("client_id").eq("user_id", auth.user.id),
-        auth.db.auth.mfa.listFactors(),
+        adminMode || section === "settings" ? auth.db.auth.mfa.listFactors() : {data:{totp:[]},error:null},
       ]);
       checkDb(membershipError);
       checkDb(factorsError);
       const clientIds = (memberships || []).map((m) => m.client_id);
-      const { data: assigned, error: assignmentError } = adminMode || !clientIds.length ? { data: [], error: null } : await auth.db.from("portal_domain_assignments").select("domain_id").in("client_id", clientIds);
+      const { data: assigned, error: assignmentError } = adminMode || !clientIds.length || !selected.has("domains") ? { data: [], error: null } : await auth.db.from("portal_domain_assignments").select("domain_id").in("client_id", clientIds);
       checkDb(assignmentError);
-      const tables = [
-        "clients",
-        "memberships",
-        "domains",
-        "domain_assignments",
-        "websites",
-        "quotes",
-        "orders",
-        "payments",
-        "invoices",
-        "requests",
-        "messages",
-        "documents",
-        "notifications",
-        "service_entitlements",
-        "external_payments",
-      ] as const;
+      const tables = portalTables;
       const results = await Promise.all(
         tables.map((t) => {
+          if (!adminMode && t === "memberships") return {data:memberships||[],error:null};
+          if (!selected.has(t)) return {data:[],error:null};
           if (!adminMode && !clientIds.length) return { data: [], error: null };
           let query = auth.db.from(`portal_${t}`).select(t === "external_payments" ? "id,client_id,acquisition_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at" : "*").limit(500);
           if (!adminMode) {

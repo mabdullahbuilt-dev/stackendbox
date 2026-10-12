@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { Data } from "./Portal";
-type Cache = { userId: string; data: Data; loadedAt: number } | null;
+type Cache = { userId: string; section: string; data: Data; loadedAt: number } | null;
 const Context = createContext<{ cache: Cache; save: (value: Cache) => void } | null>(null);
 export function PortalCache({ children }: { children: ReactNode }) {
   const [cache, save] = useState<Cache>(null);

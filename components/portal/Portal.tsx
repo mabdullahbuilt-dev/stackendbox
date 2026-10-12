@@ -180,30 +180,34 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
   const { cache, save } = usePortalCache();
   const router = useRouter();
   const section = path[0],
-    page = path.join("/");
-  const [data, setData] = useState<Data | null>(() => cache?.userId === userId ? cache.data : null),
+    page = path.join("/"),
+    domainDetail = section === "domains" ? path[1] : undefined;
+  const [data, setData] = useState<Data | null>(() => cache?.userId === userId && cache.section === page ? cache.data : null),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(() => cache?.userId !== userId),
+    [busy, setBusy] = useState(() => cache?.userId !== userId || cache.section !== page),
     [open, setOpen] = useState(false);
   const [token, setToken] = useState(""),
     [tokenKey, setTokenKey] = useState(0);
+  const [dataPage,setDataPage] = useState(page);
   const publicPage = section === "login" || section === "forgot-password";
   const reload = useCallback(async () => {
     setBusy(true);
+    setError("");
     try {
-      const next = await api("data");
+      const next = await api(`data?section=${encodeURIComponent(section)}${domainDetail ? `&domain=${encodeURIComponent(domainDetail)}` : ""}`);
       setData(next);
-      save({ userId, data: next, loadedAt: Date.now() });
+      setDataPage(page);
+      save({ userId, section: page, data: next, loadedAt: Date.now() });
       setError("");
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
-  }, [save, userId]);
+  }, [save, userId, page, section, domainDetail]);
   useEffect(() => {
     if (publicPage) return;
-    if (cache?.userId === userId && Date.now() - cache.loadedAt < 30000) return;
+    if (cache?.userId === userId && cache.section === page && Date.now() - cache.loadedAt < 30000) return;
     void reload();
   }, [publicPage, page, reload, cache, userId]);
   if (publicPage)
@@ -353,7 +357,7 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
         </header>
         <main id="main" className="portal-main">
           {data?.sandbox_checkout_enabled === true && <div className="portal-sandbox">Test payments do not purchase or renew real domains.</div>}
-          {busy && !data ? (
+          {!error && ((busy && !data) || dataPage !== page) ? (
             <p role="status">Loading {section === "dashboard" ? "account overview" : section === "renewals" ? "renewal details" : section}…</p>
           ) : error ? (
             <div role="alert" className="portal-error">

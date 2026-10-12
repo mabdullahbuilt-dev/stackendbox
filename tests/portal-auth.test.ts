@@ -20,6 +20,7 @@ vi.mock("@/lib/portal/auth-email", () => ({ sendAuthEmail: vi.fn() }));
 import { GET, POST } from "@/app/api/portal/[...path]/route";
 import { identity, sessionDb, superAdmin, turnstile } from "@/lib/portal/server";
 import { PortalError } from "@/lib/portal/rules";
+import { clientTables } from "@/lib/portal/data-scope";
 
 describe("authentication verification errors", () => {
   for (const action of ["login", "recover"]) {
@@ -65,5 +66,33 @@ describe("client acquisition restrictions",()=>{
     const response=await POST(new NextRequest(`https://portal.example/api/portal/${route}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:"example",domain:"example.com"})}),{params:Promise.resolve({path:route.split("/")})});
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({error:"administrator_required"});
+  });
+});
+
+describe("page-scoped client queries", () => {
+  it.each(["domains", "billing", "requests", "websites", "settings"] as const)("fetches only %s records for the signed-in tenant", async section => {
+    const clientId="aaaaaaaa-0000-4000-8000-000000000011";
+    const queried: string[]=[];
+    const filters: [string,string,unknown][]=[];
+    const factors=vi.fn(async()=>({data:{totp:[]},error:null}));
+    const from=vi.fn((table:string)=>{
+      queried.push(table);
+      const result={data:table==="portal_memberships"?[{client_id:clientId}]:table==="portal_domain_assignments"?[{domain_id:"assigned-domain"}]:[],error:null};
+      const builder={select:vi.fn(()=>builder),limit:vi.fn(()=>builder),eq:vi.fn((column:string,value:unknown)=>{filters.push([table,column,value]);return builder;}),in:vi.fn((column:string,value:unknown)=>{filters.push([table,column,value]);return builder;}),then:(resolve:(value:unknown)=>unknown)=>Promise.resolve(result).then(resolve)};
+      return builder;
+    });
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture"},account:{role:"client"},db:{from,auth:{mfa:{listFactors:factors}}}} as unknown as Awaited<ReturnType<typeof identity>>);
+    const response=await GET(new NextRequest(`https://portal.example/api/portal/data?section=${section}`),{params:Promise.resolve({path:["data"]})});
+    expect(response.status).toBe(200);
+    const expected=["portal_memberships",...(clientTables(section).includes("domains")?["portal_domain_assignments"]:[]),...clientTables(section).map(t=>`portal_${t}`)];
+    expect(queried).toEqual(expected);
+    expect(factors).toHaveBeenCalledTimes(section==="settings"?1:0);
+    for(const table of clientTables(section))expect(filters).toContainEqual([`portal_${table}`,table==="domains"||table==="clients"?"id":"client_id",table==="domains"?["assigned-domain"]:[clientId]]);
+  });
+  it("does not expose admin-only tables in any client section",()=>{
+    for(const section of ["dashboard","domains","websites","renewals","billing","requests","documents","settings","reset-password"] as const){
+      expect(clientTables(section)).not.toContain("memberships");
+      expect(clientTables(section)).not.toContain("acquisition_requests");
+    }
   });
 });

@@ -1,0 +1,11 @@
+\set tenant random(1,400)
+begin;
+set local role authenticated;
+select set_config('request.jwt.claims',json_build_object('sub',md5('capacity-user-'||:tenant)::uuid,'email','capacity-'||:tenant||'@example.invalid','aal','aal1')::text,true);
+select client_id from portal_memberships where user_id=md5('capacity-user-'||:tenant)::uuid;
+select id,name,business_name from portal_clients where id=md5('capacity-client-'||:tenant)::uuid;
+select domain_id from portal_domain_assignments where client_id=md5('capacity-client-'||:tenant)::uuid;
+select id,name,expiration_date,last_synced_at from portal_domains where id=md5('capacity-domain-'||:tenant)::uuid;
+select id,name,url,status from portal_websites where client_id=md5('capacity-client-'||:tenant)::uuid;
+select id,subject,status from portal_requests where client_id=md5('capacity-client-'||:tenant)::uuid;
+commit;
