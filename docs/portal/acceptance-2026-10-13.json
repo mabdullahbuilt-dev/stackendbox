@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-13",
+  "branch": "feature/cloudflare-workers-proof",
+  "application_commit": "bcee391c9c7c5fc0fcc23714f0508729bd3ccd0c",
+  "acceptance_url": "https://stackendbox-cf-acceptance.stackendbox.workers.dev",
+  "worker_version": "6addc033-5701-48e2-8a11-1c505df308f0",
+  "production_published": false,
+  "checks": {
+    "unit_tests_passed": 202,
+    "test_files": 27,
+    "typescript": "passed",
+    "eslint": "passed",
+    "next_production_build": "passed",
+    "cloudflare_build": "passed",
+    "deployed_homepage": 200,
+    "deployed_login": 200,
+    "deployed_callback": 200,
+    "anonymous_private_data": 401,
+    "anonymous_jobs": 401,
+    "closed_diagnostics": 404,
+    "existing_company_homepage": 200
+  },
+  "database": {
+    "applied_migrations": ["202610130002_client_operations", "202610130003_service_invoices"],
+    "client_edit_and_audit": "verified in rolled-back transaction",
+    "invoice_idempotency_and_transitions": "verified in rolled-back transaction",
+    "authenticated_draft_invoice_rls": "draft hidden, issued visible in rolled-back transaction",
+    "committed_test_service_invoices": 0,
+    "new_test_auth_users": 0,
+    "existing_test_records_preserved": true
+  },
+  "registrar": {
+    "dedicated_credentials_preserved": true,
+    "isolated_test_credentials_present": true,
+    "isolated_inventory_connection_http": 200,
+    "isolated_inventory_schema_valid": true,
+    "connection_scope": "authentication and first inventory page only",
+    "exact_domain_acceptance": "pending explicit domain authorization",
+    "live_mutations_executed": false
+  },
+  "activation": {
+    "initial_password_mode": "implemented, fresh end-to-end account acceptance pending",
+    "invitation_and_recovery_copy": "verified in deployed browser using type-only fragments without tokens",
+    "fragment_change_refresh": "verified in deployed browser",
+    "plaintext_password_email_or_storage": false,
+    "new_email_deliveries_verified_this_session": false
+  },
+  "payments": {
+    "genuine_sandbox_transaction_completed_this_session": false,
+    "signature_and_correlation_tests": "SDK-signed fixtures, not real provider transaction evidence",
+    "automatic_checkout_enabled": false,
+    "live_payments_enabled": false,
+    "manual_service_invoice_payment_reconciliation": "not implemented"
+  },
+  "cloudflare": {
+    "final_upload_kib": 7229.41,
+    "final_gzip_kib": 2332.67,
+    "final_startup_ms": 29,
+    "cpu_diagnostic_version": "b5637b5b-f7a4-4ce1-9f20-b638a2ffcc49",
+    "cpu_diagnostic_scope": "SDK-issued existing authorized fixture session, not password-login or concurrency benchmark",
+    "route_cpu_ms": {"session": 45, "dashboard": 71, "domains": 17, "websites": 18, "dashboard_data": 21, "domains_data": 12, "websites_data": 12},
+    "rolling_24h_all_versions_dashboard": {
+      "invocations": 736,
+      "asset_requests_display": "1.71k",
+      "subrequests_display": "1.54k",
+      "asset_cache_hit_percent": 73.15,
+      "cpu_p50_ms": 8.51,
+      "cpu_p90_ms": 27.56,
+      "cpu_p99_ms": 69.65,
+      "observed_cpu_limit_errors": 0
+    },
+    "free_cpu_budget_ms": 10,
+    "free_cpu_readiness": "not proven, several measured routes exceed budget",
+    "usage_scope_warning": "rolling Worker observations across versions, not whole-account UTC daily quota or final-version-only data"
+  },
+  "security_remaining": {
+    "production_dependency_audit": {"high": 6, "moderate": 4, "critical": 0},
+    "automatic_outbox_and_reminder_jobs": "disabled, no cron configured",
+    "diagnostic_token_removed": true,
+    "production_dns_unchanged": true,
+    "main_branch_unchanged": true,
+    "meta_integration": "not implemented this session",
+    "offsite_recovery_acceptance": "not rerun or claimed completed this session"
+  },
+  "rollback": {
+    "existing_vercel_deployment_preserved": "dpl_HwiyiEkB6DXUfGv1gZqfvsckomrE",
+    "existing_main_commit": "3595d8046851ff180e7577855b599589722e3928",
+    "previous_acceptance_worker_version": "1e7c6e06-4cf1-4086-ae46-3813ea56e9a1"
+  }
+}
