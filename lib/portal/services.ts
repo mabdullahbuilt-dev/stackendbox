@@ -10,9 +10,11 @@ import {
   sandboxCheckoutEnabled,
 } from "./rules";
 import { domainSchema, spaceship } from "./spaceship";
+import {requireVerifiedExpiration} from "./domain-snapshot";
 
 async function saveVerifiedDomain(d: z.infer<typeof domainSchema>) {
   const name = domainName(d.name);
+  const expiration=requireVerifiedExpiration(d.lifecycleStatus,d.expirationDate);
   const db = adminDb();
   const existing = await db.from("portal_domains").select("protected").eq("name", name).eq("provider", "spaceship").eq("provider_account", "primary").maybeSingle();
   checkDb(existing.error);
@@ -20,7 +22,7 @@ async function saveVerifiedDomain(d: z.infer<typeof domainSchema>) {
     name, provider: "spaceship", provider_account: "primary",
     protected: name === "stackendbox.com" || existing.data?.protected === true,
     lifecycle_status: d.lifecycleStatus, registration_date: d.registrationDate || null,
-    expiration_date: d.expirationDate || null, auto_renew: d.autoRenew,
+    expiration_date: expiration, auto_renew: d.autoRenew,
     verification_status: d.verificationStatus || null, nameservers: d.nameservers || {},
     security: { eppStatuses: d.eppStatuses || [], privacy: d.privacyProtection || null, suspensions: d.suspensions || [] },
     last_synced_at: new Date().toISOString(), reconciliation_required: false,
@@ -310,7 +312,7 @@ export async function notifyClient(
       ).error,
     );
 }
-export async function runJobs(targetEmailIds?: string[]) {
+export async function runJobs(targetEmailIds?: string[], generateReminders = true) {
   if (process.env.PORTAL_JOBS_ENABLED !== "true")
     return { emailsAccepted: 0, status: "disabled" as const };
   // Validate before claiming durable work. Missing configuration is a known
@@ -322,13 +324,21 @@ export async function runJobs(targetEmailIds?: string[]) {
     name: process.env.BREVO_CLIENT_SENDER_NAME || "StackEndBox",
   };
   const db = adminDb();
+  const scopeRaw = process.env.PORTAL_JOB_CLIENT_ALLOWLIST?.trim();
+  const clientScope = scopeRaw ? z.array(z.uuid()).min(1).max(400).parse(scopeRaw.split(",").map(s=>s.trim())) : undefined;
+  if (!targetEmailIds && process.env.VERCEL_ENV === "preview" && !clientScope)
+    throw new PortalError("acceptance_job_scope_required", 503);
   checkDb((await db.rpc("portal_recover_stale_email_claims")).error);
-  if (!targetEmailIds && sandboxCheckoutEnabled()) checkDb((await db.rpc("portal_run_simulations")).error);
-  const { data: assignments, error } = await db
-    .from("portal_domain_assignments")
-    .select("client_id,portal_domains(name,expiration_date)");
-  checkDb(error);
-  for (const a of targetEmailIds ? [] : assignments || []) {
+  // Email schedules never fulfill orders or mutate domain expiration.
+  let assignments: {client_id:string;portal_domains:unknown}[] = [];
+  if (!targetEmailIds && generateReminders) {
+    let query = db.from("portal_domain_assignments").select("client_id,portal_domains(name,expiration_date)");
+    if (clientScope) query = query.in("client_id",clientScope);
+    const result=await query;
+    checkDb(result.error);
+    assignments=result.data||[];
+  }
+  for (const a of assignments) {
     const d = a.portal_domains as unknown as {
       name: string;
       expiration_date: string;
@@ -347,10 +357,10 @@ export async function runJobs(targetEmailIds?: string[]) {
       );
   }
   let sent = 0;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 4; i++) {
     const { data, error: ce } = targetEmailIds
       ? await db.rpc("portal_claim_selected_email", { target_ids: targetEmailIds })
-      : await db.rpc("portal_claim_email");
+      : await db.rpc("portal_claim_client_email", {client_ids:clientScope||null});
     checkDb(ce);
     const mail = data?.[0];
     if (!mail) break;
@@ -404,5 +414,6 @@ export async function runJobs(targetEmailIds?: string[]) {
       );
     }
   }
+  await audit(null,"email_job_completed",undefined,{emails_accepted:sent,reminders:!targetEmailIds&&generateReminders,client_scope:clientScope?.length??null,selected_batch:!!targetEmailIds,registrar_mutations:false});
   return { emailsAccepted: sent };
 }

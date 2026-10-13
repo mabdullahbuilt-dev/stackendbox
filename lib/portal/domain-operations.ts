@@ -39,7 +39,7 @@ export async function readDomainState(name: string) {
   const version = hash({ nameservers: detail.nameservers, privacy: detail.privacyProtection, records: dns.items.map(r => recordKey(r, true)).sort() });
   let changesEnabled = true;
   try { mutationAllowed(name); } catch { changesEnabled = false; }
-  return { detail, dns, version, managed, changesEnabled };
+  return { detail, dns, version, managed, changesEnabled, checked_at:new Date().toISOString() };
 }
 export async function changeDomain(name: string, raw: unknown, auth: Awaited<ReturnType<typeof identity>>) {
   const input = requestSchema.parse(raw);

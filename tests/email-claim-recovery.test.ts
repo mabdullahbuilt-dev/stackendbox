@@ -26,7 +26,7 @@ beforeEach(() => {
   state.configuration.mockImplementation((name: string) => name.endsWith("API_KEY") ? "fixture" : "fixture@example.com");
   state.assignments.mockResolvedValue({ data: [], error: null });
   state.rpc.mockImplementation(async (name: string) => ({
-    data: name === "portal_claim_email" ? [] : 0,
+    data: name.startsWith("portal_claim_") ? [] : 0,
     error: null,
   }));
 });
@@ -58,8 +58,29 @@ describe("durable email claim recovery", () => {
     expect(await runJobs()).toEqual({ emailsAccepted: 0 });
     expect(state.rpc.mock.calls.map(([name]) => name)).toEqual([
       "portal_recover_stale_email_claims",
-      "portal_claim_email",
+      "portal_claim_client_email",
     ]);
+  });
+
+  it("does not run domain simulations even when sandbox checkout is enabled", async () => {
+    vi.stubEnv("PORTAL_SANDBOX_CHECKOUT_ENABLED", "true");
+    await runJobs(undefined,false);
+    expect(state.assignments).not.toHaveBeenCalled();
+    expect(state.rpc.mock.calls).toEqual([["portal_recover_stale_email_claims"],["portal_claim_client_email",{client_ids:null}]]);
+  });
+  it("fails closed for unscoped scheduled acceptance dispatch", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("PORTAL_JOB_CLIENT_ALLOWLIST", "");
+    await expect(runJobs(undefined,false)).rejects.toThrow("acceptance_job_scope_required");
+    expect(state.rpc).not.toHaveBeenCalled();
+  });
+  it("claims only allowed acceptance clients without fetching domain tables on dispatch ticks", async () => {
+    const id="aaaaaaaa-0000-4000-8000-000000000001";
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("PORTAL_JOB_CLIENT_ALLOWLIST",id);
+    await runJobs(undefined,false);
+    expect(state.rpc.mock.calls).toEqual([["portal_recover_stale_email_claims"],["portal_claim_client_email",{client_ids:[id]}]]);
+    expect(state.assignments).not.toHaveBeenCalled();
   });
 
   it("fails closed when stale-claim recovery is unavailable", async () => {

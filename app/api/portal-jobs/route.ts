@@ -17,7 +17,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ status: "disabled", message: "Background processing awaits operational acceptance." });
     const ids = new URL(req.url).searchParams.getAll("email_id");
     const selected = ids.length ? z.array(z.uuid()).min(1).max(4).parse(ids) : undefined;
-    return NextResponse.json(await runJobs(selected));
+    const reminders = new URL(req.url).searchParams.get("reminders") !== "false";
+    return NextResponse.json(await runJobs(selected, reminders));
   } catch {
     return NextResponse.json(
       { error: "job_execution_failed" },

@@ -1,5 +1,7 @@
 # Functional release checklist
 
+The current consolidated status is [operational-readiness-2026-10-13.json](operational-readiness-2026-10-13.json). The October 12 report below is retained as historical evidence. Its older hosting decisions and unverified-workflow entries are superseded by that current report.
+
 Updated October 12, 2026. One existing Next.js application, GitHub repository and Vercel project. Preview stays protected. No new hosting subscription, Production promotion, live charge or registrar mutation has been performed.
 
 | Acceptance gate | Verified evidence | Remaining requirement |

@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-13",
+  "status": "OWNER_ACCEPTANCE_WORKING_MAIN_DOMAIN_RELEASE_HELD",
+  "acceptanceUrl": "https://stackendbox-static-acceptance.stackendbox.workers.dev",
+  "deployedWorkerVersion": "554a98c8-d85e-41f1-bd24-53c655d389ab",
+  "completedThisSession": [
+    "Fixed the static homepage 404 with an explicit index rewrite. Verified homepage, CSS, JavaScript, icon, sitemap, login and admin shell return HTTP 200.",
+    "Verified the preserved homepage in the built-in browser on desktop and at mobile width. No horizontal overflow.",
+    "Configured actual Cloudflare email schedules: dispatch every ten minutes and reminder generation daily at 05:00 Asia/Karachi.",
+    "Restricted acceptance schedules to the already authorized test client. Claims require active client membership and the correct approved email.",
+    "Removed sandbox domain simulations from scheduled email processing. Dispatch ticks no longer query domain assignments.",
+    "Added a service-role-only scoped atomic claim function, retaining durable claim recovery and manual review for uncertain sends.",
+    "Rejected incomplete registered-domain expiration snapshots before database writes. Provider management refresh displays actual status, expiration and auto-renew state.",
+    "Prepared separate main-domain Worker and Edge release profiles with live operations disabled. Neither production profile was deployed."
+  ],
+  "actualScheduledAcceptance": {
+    "observedAtLocal": "2026-10-13 19:30 Asia/Karachi",
+    "cron": "*/10 * * * *",
+    "outcome": "ok",
+    "workerCpuMs": 1,
+    "workerWallMs": 2141,
+    "workerExceptions": 0,
+    "completionLog": true,
+    "emailsAccepted": 1,
+    "attempts": 1,
+    "providerReferencePersisted": true,
+    "inboxDelivery": "Brevo visible logs report Delivered for the exact persisted outbox tag.",
+    "realCustomerMessages": 0,
+    "registrarOperations": 0,
+    "dailyDomainReminderAcceptance": "Configured and covered by tests, but not claimed as real-domain acceptance. No assigned domain exists in the dedicated account."
+  },
+  "preservedPriorAcceptance": {
+    "clientActivationRecoveryAndLogin": "Previously owner-completed browser flow, not repeated.",
+    "administratorMfa": "Previously owner-completed browser verification on the new architecture, not reset or repeated.",
+    "websiteBillingSupport": "Persistent assigned website fixture, client support conversation, staff reply, Sandbox paid receipt and download previously browser-verified.",
+    "registrar": "Dedicated inventory is genuinely empty. Personal read-only acceptance preserved, not repeated or mixed into the primary account.",
+    "whop": "Genuine Sandbox service payment and provider-signed success/failed replay evidence preserved. One durable payment record after duplicate delivery. No new checkout or charge this session.",
+    "domainAssignment": "Implemented and tested with portal authorization distinct from registrant and custody. Real assigned-domain acceptance remains missing. No domain purchase inside the portal."
+  },
+  "hostedReadSample": {
+    "type": "One SDK-issued authorized fixture session, not password-login or capacity testing",
+    "staticPortalPageMs": [59, 59, 58, 57],
+    "dashboardDataMs": 837,
+    "domainDataMs": 1274,
+    "websiteDataMs": 650,
+    "billingDataMs": 752,
+    "identityMs": 646,
+    "sessionEstablishmentMs": 3235,
+    "clientStaffAccess": "HTTP 403",
+    "anonymousClientData": "HTTP 401",
+    "anonymousStaffData": "HTTP 401",
+    "anonymousJobs": "HTTP 401",
+    "anonymousDiagnostics": "HTTP 404",
+    "capacityBenchmarkRepeated": false
+  },
+  "checks": {
+    "tests": "256 passing tests across 35 files",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "nextProductionBuild": "PASS",
+    "staticAcceptanceBuild": "PASS",
+    "preparedProductionBuildProfile": "PASS, not deployed",
+    "scopedJobRpcPrivileges": { "anon": false, "authenticated": false, "serviceRole": true },
+    "publicHomepageSourceComparedWithMain": "No changes in existing homepage, content or public styles. Portal stylesheet is additional.",
+    "existingProductionHomepage": "HTTP 200",
+    "providerCredentialsChanged": false,
+    "brevoKeysReinvestigated": false,
+    "productionDnsChanged": false,
+    "mainMerged": false
+  },
+  "launchGates": [
+    "Live renewal is unfinished. Order/payment schema and payment handlers currently support Sandbox only. A real payment-to-manual-renewal review, supplier-expense reconciliation and verified expiration extension must be implemented and accepted before enabling money.",
+    "An explicitly authorized real domain is required for complete assignment, renewal quote, DNS and expiry acceptance. No domains may be fabricated or bought by the agent.",
+    "All-client reminder operations require approved production scope and email-quota/backlog acceptance. Current schedule intentionally covers one test client only.",
+    "Production Edge config and private gateway binding, company-domain auth callbacks and full public contact-form browser acceptance must be verified before cutover.",
+    "Independent offsite backup and recovery-key custody remain incomplete.",
+    "Legacy vinext build-chain audit advisories remain unresolved. The deployed static/Edge graph excludes that framework chain, but the repository is not declared audit-clean.",
+    "Final production DNS approval and post-cutover browser acceptance are still required."
+  ],
+  "rollback": {
+    "currentPublicWebsitePreserved": true,
+    "vercelDeployment": "dpl_HwiyiEkB6DXUfGv1gZqfvsckomrE",
+    "vercelAndGithubDisconnected": false,
+    "paidServicesEnabled": false,
+    "livePaymentsAndRegistrarMutationsEnabled": false
+  }
+}

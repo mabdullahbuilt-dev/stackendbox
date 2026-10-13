@@ -1,10 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cookies, withRequest, after } from "../platform/edge/next-runtime";
 import gateway from "../platform/cloudflare/gateway";
-import { acceptanceConfiguration } from "../platform/edge/configuration";
+import { acceptanceConfiguration, productionConfiguration } from "../platform/edge/configuration";
 
 afterEach(() => vi.unstubAllGlobals());
 describe("static frontend server boundary", () => {
+  it("prepares main-domain origin without enabling diagnostics, payments or registrar changes",()=>{
+    const values:Record<string,string>={STACKENDBOX_ACCEPTANCE_BREVO_API_KEY:"public",STACKENDBOX_ACCEPTANCE_BREVO_CLIENT_API_KEY:"portal"};
+    const config=productionConfiguration({PORTAL_DIAGNOSTICS_TOKEN:"fixture",DOMAIN_LIVE_RENEWALS_ENABLED:"true",PORTAL_JOBS_ENABLED:"true"},name=>values[name]);
+    expect(config.PORTAL_APP_URL).toBe("https://www.stackendbox.com");
+    expect(config.BREVO_API_KEY).toBe("public");expect(config.BREVO_CLIENT_API_KEY).toBe("portal");
+    expect(config.PORTAL_DIAGNOSTICS_TOKEN).toBe("");expect(config.PORTAL_JOBS_ENABLED).toBe("false");
+    expect(config.DOMAIN_LIVE_RENEWALS_ENABLED).toBe("false");expect(config.PORTAL_SANDBOX_CHECKOUT_ENABLED).toBe("false");
+  });
   it("keeps public and portal Brevo credentials and identities independent", () => {
     const values: Record<string, string> = {
       STACKENDBOX_ACCEPTANCE_BREVO_API_KEY: "public-fixture",
@@ -50,6 +58,15 @@ describe("static frontend server boundary", () => {
     const fetcher=vi.fn(); vi.stubGlobal("fetch",fetcher);
     await gateway.scheduled({}, {EDGE_BACKEND_URL:"https://project.supabase.co/functions/v1/stackendbox-acceptance",STACKENDBOX_BRIDGE_SECRET:"fixture",PORTAL_JOBS_ENABLED:"false",ASSETS:{fetch:vi.fn()}});
     expect(fetcher).not.toHaveBeenCalled();
+  });
+  it("pins scheduled jobs to the backend region and generates reminders only on the daily tick", async () => {
+    const fetcher=vi.fn(async(_input: string | URL | Request, _init?: RequestInit)=>Response.json({emailsAccepted:0}));vi.stubGlobal("fetch",fetcher);
+    const env={EDGE_BACKEND_URL:"https://project.supabase.co/functions/v1/stackendbox-acceptance",EDGE_BACKEND_REGION:"ap-northeast-1",STACKENDBOX_BRIDGE_SECRET:"fixture",CRON_SECRET:"fixture",PORTAL_JOBS_ENABLED:"true",ASSETS:{fetch:vi.fn()}};
+    await gateway.scheduled({cron:"*/10 * * * *"},env);
+    expect(new URL(fetcher.mock.calls[0][0] as unknown as string).searchParams.get("reminders")).toBe("false");
+    expect((fetcher.mock.calls[0][1] as unknown as {headers:Record<string,string>}).headers["x-region"]).toBe("ap-northeast-1");
+    await gateway.scheduled({cron:"0 0 * * *"},env);
+    expect(new URL(fetcher.mock.calls[1][0] as unknown as string).searchParams.get("reminders")).toBe("true");
   });
   it("does not treat a disabled backend as a completed scheduled run", async () => {
     vi.stubGlobal("fetch",vi.fn(async()=>Response.json({status:"disabled"})));

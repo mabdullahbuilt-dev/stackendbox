@@ -1,13 +1,15 @@
 type Env = { EDGE_BACKEND_URL: string; EDGE_BACKEND_REGION?: string; STACKENDBOX_BRIDGE_SECRET: string; PORTAL_JOBS_ENABLED?: string; CRON_SECRET?: string; ASSETS: { fetch(req: Request): Promise<Response> } };
 const gateway = {
-  async scheduled(_event: unknown, env: Env) {
+  async scheduled(event: {cron?:string}, env: Env) {
     if (env.PORTAL_JOBS_ENABLED !== "true") return;
     if (!env.CRON_SECRET || !env.STACKENDBOX_BRIDGE_SECRET || !env.EDGE_BACKEND_URL) throw Error("scheduled_configuration_required");
     const target=new URL(env.EDGE_BACKEND_URL + "/api/portal-jobs");
+    target.searchParams.set("reminders",event.cron === "0 0 * * *" ? "true" : "false");
     if (target.protocol !== "https:" || !target.hostname.endsWith(".supabase.co")) throw Error("scheduled_backend_invalid");
-    const response=await fetch(target,{headers:{"x-stackendbox-bridge":env.STACKENDBOX_BRIDGE_SECRET,Authorization:`Bearer ${env.CRON_SECRET}`},redirect:"manual",signal:AbortSignal.timeout(60000)});
-    const result=await response.json() as {status?:string};
+    const response=await fetch(target,{headers:{"x-stackendbox-bridge":env.STACKENDBOX_BRIDGE_SECRET,Authorization:`Bearer ${env.CRON_SECRET}`,...(env.EDGE_BACKEND_REGION?{"x-region":env.EDGE_BACKEND_REGION}:{})},redirect:"manual",signal:AbortSignal.timeout(60000)});
+    const result=await response.json() as {status?:string;emailsAccepted?:number};
     if (!response.ok || result.status === "disabled") throw Error("scheduled_job_not_completed");
+    console.info(JSON.stringify({event:"portal_schedule_complete",cron:event.cron,emailsAccepted:result.emailsAccepted||0}));
   },
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);

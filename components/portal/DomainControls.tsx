@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { api } from "./Portal";
 type RecordRow = Record<string, unknown> & { type: string; name: string; group: { type: string } };
-type State = { version: string; managed: boolean; changesEnabled: boolean; detail: { nameservers?: { hosts: string[] }; privacyProtection?: { level: string } }; dns: { items: RecordRow[] } };
+type State = { version: string; managed: boolean; changesEnabled: boolean; checked_at?:string; detail: { expirationDate?:string|null; lifecycleStatus?:string;autoRenew?:boolean; nameservers?: { hosts: string[] }; privacyProtection?: { level: string } }; dns: { items: RecordRow[] } };
 const fields: Record<string, string[]> = {
   A: ["address"], AAAA: ["address"], ALIAS: ["aliasName"], CNAME: ["cname"],
   CAA: ["flag", "tag", "value"], MX: ["exchange", "preference"], NS: ["nameserver"], PTR: ["pointer"], TXT: ["value"],
@@ -32,6 +32,7 @@ export function DomainControls({ name, panel, admin = false }: { name: string; p
     void change({ kind: "dns", action: editing ? "edit" : "add", ...(editing ? { before: clean(editing) } : {}), after: { ...after, type } });
   }
   return <section>
+    {state && <p>Spaceship status: {state.detail.lifecycleStatus || "Not reported"}. Provider expiration: {state.detail.expirationDate ? new Date(state.detail.expirationDate).toLocaleDateString() : "Not reported"}. Auto-renew: {state.detail.autoRenew === undefined ? "Not reported" : state.detail.autoRenew ? "On, administrator review required" : "Off"}.</p>}
     <button className="portal-button" disabled={busy} onClick={() => void load()}>{busy ? "Checking provider…" : "Refresh verified settings"}</button>
     {message && <p role="status" className="portal-notice">{message}</p>}
     {state && <>

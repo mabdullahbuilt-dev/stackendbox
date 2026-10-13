@@ -1,0 +1,23 @@
+{
+  // Prepared cutover configuration only. Deploying custom_domain changes DNS.
+  // Do not run this configuration before the founder's final DNS approval.
+  "name": "stackendbox-production",
+  "main": "platform/cloudflare/gateway.ts",
+  "compatibility_date": "2026-10-13",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "www.stackendbox.com", "custom_domain": true }],
+  "assets": {
+    "directory": "dist/static",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "run_worker_first": ["/api/*", "/client-portal/auth/callback"]
+  },
+  "vars": {
+    "EDGE_BACKEND_URL": "https://irzjkdxxfvobtabwkqmz.supabase.co/functions/v1/stackendbox-production",
+    "EDGE_BACKEND_REGION": "ap-northeast-1",
+    "PORTAL_JOBS_ENABLED": "false"
+  },
+  "triggers": { "crons": [] },
+  "observability": { "enabled": true }
+}

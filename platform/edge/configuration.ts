@@ -9,6 +9,7 @@ export const acceptanceSettings = [
   "BREVO_SENDER_EMAIL", "BREVO_SENDER_NAME", "BRIEF_TO_EMAIL",
   "PORTAL_DIAGNOSTICS_TOKEN",
   "CRON_SECRET", "PORTAL_JOBS_ENABLED",
+  "PORTAL_JOB_CLIENT_ALLOWLIST",
 ] as const;
 
 export function acceptanceConfiguration(base: Record<string, string>, get: (name: string) => string | undefined): Readonly<Record<string, string>> {
@@ -25,4 +26,12 @@ export function acceptanceConfiguration(base: Record<string, string>, get: (name
   // These safeguards cannot be lifted by the credential-entry path.
   return Object.freeze({ ...config, WHOP_MODE: "sandbox", DOMAIN_LIVE_PURCHASES_ENABLED: "false",
     DOMAIN_LIVE_RENEWALS_ENABLED: "false", DOMAIN_LIVE_MUTATIONS_ENABLED: "false", DOMAIN_MUTATION_ALLOWLIST: "" });
+}
+
+// Prepared release profile. Reuses each provider's own existing secret binding,
+// never exchanges public/portal keys or enables money and registrar operations.
+export function productionConfiguration(base:Record<string,string>,get:(name:string)=>string|undefined):Readonly<Record<string,string>> {
+  const providerConfig=acceptanceConfiguration(base,name=>get(name.replace("STACKENDBOX_ACCEPTANCE_","STACKENDBOX_PRODUCTION_"))||get(name));
+  return Object.freeze({...providerConfig,VERCEL_ENV:"production",PORTAL_APP_URL:"https://www.stackendbox.com",
+    PORTAL_DIAGNOSTICS_TOKEN:"",PORTAL_SANDBOX_CHECKOUT_ENABLED:"false",PORTAL_JOBS_ENABLED:"false"});
 }

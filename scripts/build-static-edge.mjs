@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { materializePublicAssets } from './cloudflare-public-assets.ts';
 
 const root = process.cwd();
+const productionBuild = process.argv.includes('--production');
 const runtime = resolve(root, 'platform/edge/next-runtime.ts');
 const navigation = resolve(root, 'platform/static/navigation.tsx');
 const localConfiguration = process.env.PORTAL_PRIVATE_ENV ? parseEnv(await readFile(process.env.PORTAL_PRIVATE_ENV,'utf8')) : {};
@@ -23,9 +24,9 @@ if (excluded.length) throw Error('Unexpected framework dependency in Edge runtim
 await writeFile('dist/edge/dependency-evidence.json', JSON.stringify({ forbiddenFrameworkInputs:excluded, inputs:Object.keys(edgeBuild.metafile.inputs) },null,2));
 // Configuration is read inside the Edge runtime, never compiled into a bundle.
 await cp('platform/edge/configuration.ts', 'dist/edge/configuration.ts');
-await writeFile('dist/edge/index.ts', `import {acceptanceConfiguration} from "./configuration.ts";
-const config = JSON.parse(Deno.env.get("STACKENDBOX_ACCEPTANCE_CONFIG") || "{}");
-globalThis.STACKENDBOX_RUNTIME_ENV = acceptanceConfiguration(config, name => Deno.env.get(name));
+await writeFile('dist/edge/index.ts', `import {${productionBuild?'productionConfiguration':'acceptanceConfiguration'}} from "./configuration.ts";
+const config = JSON.parse(Deno.env.get("${productionBuild?'STACKENDBOX_PRODUCTION_CONFIG':'STACKENDBOX_ACCEPTANCE_CONFIG'}") || "{}");
+globalThis.STACKENDBOX_RUNTIME_ENV = ${productionBuild?'productionConfiguration':'acceptanceConfiguration'}(config, name => Deno.env.get(name));
 const {handleEdge} = await import("./handler.mjs");
 Deno.serve(req => handleEdge(req, p => EdgeRuntime.waitUntil(p)));
 `);
@@ -42,7 +43,7 @@ await cp('node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2','dist/s
 await cp('node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2','dist/static/fonts/geist-mono.woff2');
 await build({ entryPoints: ['platform/static/portal.tsx'], outfile: 'dist/static/portal.js', bundle: true, platform: 'browser', format: 'esm', target: 'es2022', minify: true, plugins: [frontendAliases], define: { 'process.env': '{}', 'process.env.NODE_ENV': '"production"', 'process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY': JSON.stringify(publicSiteKey) } });
 await writeFile('dist/static/portal.html', '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>StackEndBox Portal</title><link rel="stylesheet" href="/portal.css"></head><body><div id="root"></div><script type="module" src="/portal.js"></script></body></html>');
-await writeFile('dist/static/_redirects', '/admin /portal.html 200\n/admin/* /portal.html 200\n/client-portal /portal.html 200\n/client-portal/* /portal.html 200\n');
+await writeFile('dist/static/_redirects', '/ /index.html 200\n/admin /portal.html 200\n/admin/* /portal.html 200\n/client-portal /portal.html 200\n/client-portal/* /portal.html 200\n');
 await writeFile('dist/static/_headers', '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n/portal.html\n  Cache-Control: no-cache\n');
 const publicDefines = { 'process.env':JSON.stringify(publicConfiguration), 'process.env.NODE_ENV':'"production"', 'process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY':JSON.stringify(publicSiteKey) };
 await build({ entryPoints:['platform/static/site-browser.tsx'], outfile:'dist/static/site.js', bundle:true, platform:'browser', format:'esm', target:'es2022', minify:true, plugins:[frontendAliases], define:publicDefines });
@@ -54,7 +55,6 @@ await writeFile('dist/static/index.html', `<!doctype html><html lang="en" data-m
 // images or running a metadata renderer in the Free Worker at request time.
 for (const name of ['icon.png','apple-icon.png','opengraph-image','twitter-image','sitemap.xml'])
   await cp(`.next/server/app/${name}.body`,`dist/static/${name}`);
-const productionBuild = process.argv.includes('--production');
 await writeFile('dist/static/robots.txt', productionBuild ? await readFile('.next/server/app/robots.txt.body','utf8') : 'User-agent: *\nDisallow: /\n');
 await writeFile('dist/static/_headers', `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n${productionBuild?'':'  X-Robots-Tag: noindex, nofollow\n'}/portal.html\n  Cache-Control: no-cache\n/opengraph-image\n  Content-Type: image/png\n/twitter-image\n  Content-Type: image/png\n`);
 console.log(JSON.stringify({ edgeBundleBytes: (await stat('dist/edge/handler.mjs')).size, portalBundleBytes: (await stat('dist/static/portal.js')).size, scope: 'isolated portal proof, existing public site untouched' }));

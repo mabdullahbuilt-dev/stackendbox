@@ -3,3 +3,9 @@ project_id = "stackendbox"
 [functions.stackendbox-acceptance]
 verify_jwt = false
 entrypoint = "../dist/edge/index.ts"
+
+# Prepared release profile, not deployed. Requires build-static-edge --production
+# and reviewed STACKENDBOX_PRODUCTION_CONFIG with its private gateway binding.
+[functions.stackendbox-production]
+verify_jwt = false
+entrypoint = "../dist/edge/index.ts"
