@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-13",
+  "scope": "isolated Cloudflare acceptance Worker only",
+  "source_sha": "c2b0246ffa010cf8ae1478a190e2a136aceda8d6",
+  "worker_version": "65dbad7c-7ac8-4d15-a92d-16413513855e",
+  "change": "Admin workspace queries now select the active page's tables and omit a redundant administrator membership lookup.",
+  "validation": {
+    "unit_tests": "227 passed",
+    "typecheck": "passed",
+    "lint": "passed",
+    "vinext_build": "passed",
+    "browser": "administrator billing and domains pages loaded correctly and the Sandbox paid invoice remained visible"
+  },
+  "bounded_route_cpu_samples_ms": {
+    "login": 3,
+    "admin_billing_page": 17,
+    "admin_domains_page": 14,
+    "admin_operations_page": 15,
+    "admin_billing_workspace_api": 9,
+    "admin_domains_workspace_api": 9,
+    "admin_operations_workspace_api": 20
+  },
+  "measurement_limit": "Individual exact-version tail samples, not a load benchmark. A later admin domains request reached 47 ms, so variance remains material.",
+  "free_plan_cpu_limit_ms": 10,
+  "production_release_gate": "BLOCKED: authenticated server-rendered pages and the operations workspace still exceed the Free-plan CPU limit. No main, public-domain, DNS, or live-payment deployment was made."
+}
