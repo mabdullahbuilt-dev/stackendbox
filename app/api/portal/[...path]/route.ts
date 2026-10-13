@@ -479,6 +479,10 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/client-update" && req.method === "POST") return reply(await editClient(admin.user.id,body));
       if (route === "admin/invoices" && req.method === "POST") return reply(await createServiceInvoice(admin.user.id,body));
       if (route === "admin/invoice-status" && req.method === "POST") return reply(await transitionServiceInvoice(admin.user.id,body));
+      if (path[1] === "invoices" && path[2] && path[3] === "checkout" && path.length === 4 && req.method === "POST") {
+        requireSandboxCheckout();
+        return reply(await (await import("@/lib/portal/whop")).checkoutServiceInvoice(uuid.parse(path[2])));
+      }
       if (route === "admin/client-access-email" && req.method === "POST") return reply(await sendClientAccess(admin.user.id,body));
       if (route === "admin/registrar-acceptance" && req.method === "POST") {
         const input=z.object({domain:text,authorized_readonly:z.literal(true)}).strict().parse(body);

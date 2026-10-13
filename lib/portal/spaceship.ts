@@ -11,6 +11,14 @@ export const domainContactsSchema = z.object({
   billing: contactIdSchema.optional(),
   attributes: z.array(contactIdSchema).max(5).optional(),
 }).strict();
+// The provider can return null for an absent administrative contact. Keep the
+// mutation schema above strict so null never becomes a valid write input.
+const domainReadContactsSchema = domainContactsSchema.extend({
+  admin:contactIdSchema.nullish(),
+  tech:contactIdSchema.nullish(),
+  billing:contactIdSchema.nullish(),
+  attributes:z.array(contactIdSchema).max(5).nullish(),
+});
 export const contactSchema = z.object({
   firstName: z.string().min(1).max(125),
   lastName: z.string().min(1).max(125),
@@ -36,7 +44,7 @@ export const domainSchema = z.object({
   expirationDate: z.string().nullable().optional(),
   lifecycleStatus: z.string(),
   verificationStatus: z.string().nullable().optional(),
-  contacts: domainContactsSchema.optional(),
+  contacts: domainReadContactsSchema.optional(),
   suspensions: z.array(z.object({ reasonCode: z.string() })).optional(),
   nameservers: z
     .object({ provider: z.string(), hosts: z.array(z.string()) })

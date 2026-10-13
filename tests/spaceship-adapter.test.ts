@@ -79,6 +79,13 @@ describe("registrar adapter mutation boundaries", () => {
     expect(await spaceship.inventory()).toEqual([]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("accepts a missing administrative contact in provider reads without weakening contact writes", async () => {
+    const item={...inventoryDomain("example.com"),contacts:{registrant:"a".repeat(27),admin:null,tech:null,billing:null,attributes:null}};
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[item],total:1})));
+    expect(await spaceshipTest.inventory()).toEqual([item]);
+    await expect(spaceship.setContacts("example.com",item.contacts)).rejects.toThrow();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("rejects duplicate domains and inconsistent totals", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[inventoryDomain("same.invalid"),inventoryDomain("same.invalid")],total:2})));
     await expect(spaceship.inventory()).rejects.toThrow("spaceship_duplicate_inventory");

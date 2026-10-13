@@ -598,7 +598,7 @@ export function PortalContent({
           title="Billing & Invoices"
           description="Your service payments, renewal history, and receipts."
         />
-        {adminMode&&<AdminInvoices clientSelect={clientSelect} reload={reload} invoices={rows(data,"invoices")} clients={rows(data,"clients")}/>}
+        {adminMode&&<AdminInvoices clientSelect={clientSelect} reload={reload} invoices={rows(data,"invoices")} clients={rows(data,"clients")} sandboxCheckoutEnabled={data.sandbox_checkout_enabled === true}/>}
         <OrderList orders={rows(data, "orders")} reload={reload} checkoutEnabled={data.sandbox_checkout_enabled === true} />
         {!!rows(data,"external_payments").length&&<section className="portal-panel"><h2>Payments made to StackEndBox</h2>{rows(data,"external_payments").map(p=><article key={str(p.id)}><p>{money(p.amount_minor)} · {date(p.paid_at)} · {label(p.source)}</p><p>{p.reconciliation_status==="verified"?"Payment evidence verified":"Payment record awaiting reconciliation"}. Reference: {str(p.transaction_reference)}</p></article>)}</section>}
         <h2>Invoices and receipts</h2>
@@ -611,7 +611,7 @@ export function PortalContent({
             </p>
             <Status value={i.status} />
             <p className="portal-small">
-              {i.order_id === null ? `Service invoice ${str(i.id)}. This doesn't confirm a payment.` : `Sandbox receipt ${str(i.id)}. This is not a tax invoice.`}
+              {i.order_id === null ? i.status === "sandbox_paid" ? `Service invoice ${str(i.id)}. Whop confirmed a Sandbox test payment, with no live charge or registrar action.` : i.status === "sandbox_payment_review" ? `Service invoice ${str(i.id)}. Sandbox payment requires refund or dispute review.` : `Service invoice ${str(i.id)}. This doesn't confirm a payment.` : `Sandbox receipt ${str(i.id)}. This is not a tax invoice.`}
             </p>
             <a href={`/api/portal/invoices/${str(i.id)}/download`} download>{i.order_id === null ? "Download invoice" : "Download receipt"}</a>
           </section>

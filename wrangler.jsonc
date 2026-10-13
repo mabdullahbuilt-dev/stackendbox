@@ -5,7 +5,7 @@
   "preview_urls": false,
   "vars": {
     "WHOP_MODE": "sandbox",
-    "PORTAL_SANDBOX_CHECKOUT_ENABLED": "false",
+    "PORTAL_SANDBOX_CHECKOUT_ENABLED": "true",
     "PORTAL_JOBS_ENABLED": "false",
     "DOMAIN_LIVE_PURCHASES_ENABLED": "false",
     "DOMAIN_LIVE_RENEWALS_ENABLED": "false",

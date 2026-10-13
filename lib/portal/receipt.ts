@@ -5,9 +5,10 @@ const receiptSchema = z.object({
 });
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 export function serviceInvoiceHtml(raw:unknown) {
- const i=receiptSchema.omit({order_id:true}).extend({status:z.enum(["draft","issued","void"])}).parse(raw);
+ const i=receiptSchema.omit({order_id:true}).extend({status:z.enum(["draft","issued","void","sandbox_paid","sandbox_payment_review"])}).parse(raw);
  const amount=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(i.amount_minor/100);
- return `<!doctype html><html lang="en"><meta charset="utf-8"><title>StackEndBox invoice</title><main><h1>StackEndBox service invoice</h1><p>Invoice ${i.id}</p><p>${escape(i.description)}</p><p>${amount}</p><p>Status: ${escape(i.status)}</p><p>This document doesn't confirm a payment or a domain registration. Contact StackEndBox about agreed payment arrangements.</p></main></html>`;
+ const paymentNote=i.status==="sandbox_paid"?"Whop confirmed a Sandbox test payment. This was not a live charge or a domain registration.":i.status==="sandbox_payment_review"?"A Sandbox payment was reported, but a refund or dispute requires review. This document does not prove a settled payment or domain registration.":"This document doesn't confirm a payment or a domain registration. Contact StackEndBox about agreed payment arrangements.";
+ return `<!doctype html><html lang="en"><meta charset="utf-8"><title>StackEndBox invoice</title><main><h1>StackEndBox service invoice</h1><p>Invoice ${i.id}</p><p>${escape(i.description)}</p><p>${amount}</p><p>Status: ${escape(i.status)}</p><p>${paymentNote}</p></main></html>`;
 }
 export function receiptHtml(raw: unknown) {
   const receipt = receiptSchema.parse(raw);

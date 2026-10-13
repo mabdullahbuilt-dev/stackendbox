@@ -16,6 +16,73 @@ export function whop() {
     timeoutInSeconds: 15,
   });
 }
+function sandboxCheckoutUrl(value: string) {
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.hostname !== "sandbox.whop.com" || url.username || url.password)
+    throw new PortalError("invalid_checkout_url", 502);
+  return url.href;
+}
+
+export async function checkoutServiceInvoice(invoiceId: string) {
+  sandboxOnly();
+  const db = adminDb();
+  const invoiceResult = await db.from("portal_invoices")
+    .select("id,client_id,order_id,amount_minor,currency,status,description")
+    .eq("id", invoiceId).single();
+  checkDb(invoiceResult.error);
+  const invoice = invoiceResult.data;
+  if (!invoice || invoice.order_id !== null || invoice.status !== "issued" ||
+      invoice.currency !== "usd" || !Number.isSafeInteger(invoice.amount_minor) || invoice.amount_minor < 1)
+    throw new PortalError("issued_service_invoice_required", 409);
+  const company = env("WHOP_SANDBOX_COMPANY_ID");
+  const reserved = await db.rpc("portal_reserve_service_invoice_checkout", {
+    p_invoice: invoiceId, p_company: company,
+  });
+  checkDb(reserved.error);
+  if (reserved.data === "ready") {
+    const existing = await db.from("portal_invoice_checkouts").select("checkout_url")
+      .eq("invoice_id", invoiceId).single();
+    checkDb(existing.error);
+    if (!existing.data?.checkout_url) throw new PortalError("checkout_requires_reconciliation", 409);
+    return { url: sandboxCheckoutUrl(existing.data.checkout_url) };
+  }
+  if (reserved.data !== "create") throw new PortalError("checkout_requires_reconciliation", 409);
+  try {
+    const result = await whop().checkoutConfigurations.create({
+      account_id: company,
+      mode: "payment",
+      metadata: {
+        invoice_id: invoiceId,
+        client_id: invoice.client_id,
+        environment: "sandbox",
+        purpose: "service_invoice",
+      },
+      redirect_url: `${portalOrigin()}/client-portal/billing?invoice=${invoiceId}`,
+      plan: {
+        account_id: company,
+        title: "StackEndBox Sandbox Test",
+        description: "Sandbox service invoice only. No domain purchase or live charge.",
+        currency: "usd",
+        initial_price: invoice.amount_minor / 100,
+        plan_type: "one_time",
+        release_method: "buy_now",
+        visibility: "hidden",
+        force_create_new_plan: false,
+      },
+    }, { idempotencyKey: `portal-service-invoice-${invoiceId}` });
+    const url = sandboxCheckoutUrl(result.purchase_url || "");
+    const finished = await db.rpc("portal_finish_service_invoice_checkout", {
+      p_invoice: invoiceId, p_checkout: result.id, p_url: url,
+    });
+    checkDb(finished.error);
+    return { url };
+  } catch {
+    await db.from("portal_invoice_checkouts").update({ status: "action_required" })
+      .eq("invoice_id", invoiceId).eq("status", "checkout_creating");
+    throw new PortalError("checkout_requires_reconciliation", 502);
+  }
+}
+
 export async function checkout(order: {
   id: string;
   client_id: string;
@@ -152,6 +219,58 @@ export async function processWebhook(
     paymentId = dispute.payment.id;
   }
   const payment = await client.payments.retrieve({ id: paymentId });
+  if (payment.metadata?.purpose === "service_invoice") {
+    const invoiceId = z.string().uuid().parse(payment.metadata.invoice_id);
+    const db = adminDb();
+    const invoiceResult = await db.from("portal_invoices").select("id,client_id,order_id,amount_minor,currency,status")
+      .eq("id", invoiceId).single();
+    const checkoutResult = await db.from("portal_invoice_checkouts").select("invoice_id,client_id,environment,company_id,checkout_id,payment_id")
+      .eq("invoice_id", invoiceId).single();
+    checkDb(invoiceResult.error);
+    checkDb(checkoutResult.error);
+    const invoice = invoiceResult.data;
+    const checkout = checkoutResult.data;
+    if (!invoice || !checkout || invoice.order_id !== null ||
+      checkout.environment !== "sandbox" || checkout.client_id !== invoice.client_id ||
+      payment.id !== paymentId || payment.metadata.environment !== "sandbox" ||
+      payment.metadata.client_id !== invoice.client_id ||
+      payment.account_id !== env("WHOP_SANDBOX_COMPANY_ID") ||
+      payment.account_id !== checkout.company_id ||
+      payment.checkout_configuration_id !== checkout.checkout_id ||
+      payment.currency !== invoice.currency || !payment.total || payment.total.currency !== invoice.currency ||
+      minorUnits(payment.total.amount) !== invoice.amount_minor)
+      throw new PortalError("payment_mismatch", 422);
+    if (event.type === "payment.succeeded" && payment.status === "paid" &&
+      payment.substatus === "succeeded" && payment.paid_at && !payment.refunded_at &&
+      (!payment.refunded_amount || minorUnits(payment.refunded_amount.amount) === 0)) {
+      const confirmed = await db.rpc("portal_confirm_service_invoice_payment", {
+        p_event: headers["webhook-id"], p_invoice: invoiceId, p_payment: payment.id,
+        p_checkout: payment.checkout_configuration_id, p_company: payment.account_id,
+        p_client: invoice.client_id, p_amount: invoice.amount_minor, p_currency: invoice.currency,
+      });
+      checkDb(confirmed.error);
+      await notifyClient(invoice.client_id, "Sandbox service payment received",
+        `Your sandbox service-invoice payment was verified. No live charge or registrar action was made. View your receipt at ${portalOrigin()}/client-portal/billing.`,
+        `service-payment:${payment.id}`);
+      return { status: confirmed.data };
+    }
+    const review = await db.from("portal_invoice_payment_events").upsert({
+      id: headers["webhook-id"], invoice_id: invoiceId, payment_id: payment.id, event_type: event.type,
+    }, { onConflict: "id", ignoreDuplicates: true });
+    checkDb(review.error);
+    if (event.type.startsWith("refund.") || event.type.startsWith("dispute.") || payment.refunded_at) {
+      checkDb((await db.from("portal_invoice_checkouts").update({ status: "action_required" })
+        .eq("invoice_id", invoiceId)).error);
+      checkDb((await db.from("portal_invoices").update({ status: "sandbox_payment_review" })
+        .eq("id", invoiceId).eq("status", "sandbox_paid")).error);
+      checkDb((await db.from("portal_invoice_payments").update({ status: "review_required" })
+        .eq("invoice_id", invoiceId).eq("provider_id", payment.id)).error);
+    } else if (["payment.failed", "payment.canceled"].includes(event.type) && payment.status !== "paid") {
+      checkDb((await db.from("portal_invoice_checkouts").update({ status: "action_required" })
+        .eq("invoice_id", invoiceId).in("status", ["checkout_ready", "checkout_creating"])).error);
+    }
+    return { status: "review_required" };
+  }
   if (!payment.metadata?.order_id) return { ignored: true };
   const orderId = z.string().uuid().parse(payment.metadata?.order_id);
   const db = adminDb();
