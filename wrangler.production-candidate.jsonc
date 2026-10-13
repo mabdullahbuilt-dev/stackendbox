@@ -1,0 +1,15 @@
+{
+  "name": "stackendbox-production",
+  "main": "platform/cloudflare/gateway.ts",
+  "compatibility_date": "2026-10-13",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": { "directory": "dist/static", "binding": "ASSETS", "html_handling": "none", "run_worker_first": ["/api/*", "/client-portal/auth/callback"] },
+  "vars": {
+    "EDGE_BACKEND_URL": "https://irzjkdxxfvobtabwkqmz.supabase.co/functions/v1/stackendbox-production",
+    "EDGE_BACKEND_REGION": "ap-northeast-1",
+    "PORTAL_JOBS_ENABLED": "false"
+  },
+  "triggers": { "crons": [] },
+  "observability": { "enabled": true }
+}

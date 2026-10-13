@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { randomBytes, generateKeyPairSync, publicEncrypt, privateDecrypt, createCipheriv, createDecipheriv } from 'node:crypto';
+import { randomBytes, generateKeyPairSync, publicEncrypt, privateDecrypt, createCipheriv, createDecipheriv, createPrivateKey } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 export async function protect(bytes, decrypt=false) {
@@ -33,7 +33,9 @@ export async function decryptArtifact(path,privatePath) {
   const bytes=await readFile(path),line=bytes.indexOf(10),header=bytes.subarray(0,line+1);
   const metadata=JSON.parse(header.toString());
   if(metadata.version!==1 || metadata.algorithm!=='AES-256-GCM+RSA-OAEP-SHA256') throw new Error('Unsupported encrypted artifact');
-  const privateKey=await protect(await readFile(privatePath),true);
+  const privateKey=process.env.PORTAL_RECOVERY_CODE_FILE
+    ?createPrivateKey({key:await readFile(privatePath),passphrase:(await readFile(process.env.PORTAL_RECOVERY_CODE_FILE,'utf8')).trim()})
+    :await protect(await readFile(privatePath),true);
   const key=privateDecrypt({key:privateKey,oaepHash:'sha256'},Buffer.from(metadata.key,'base64'));
   const decipher=createDecipheriv('aes-256-gcm',key,Buffer.from(metadata.iv,'base64'));
   decipher.setAAD(header); decipher.setAuthTag(bytes.subarray(-16));

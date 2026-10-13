@@ -35,7 +35,7 @@ import { authorizedDomain, changeDomain, readDomainState } from "@/lib/portal/do
 import { sendAuthEmail } from "@/lib/portal/auth-email";
 import { receiptHtml,serviceInvoiceHtml } from "@/lib/portal/receipt";
 import { provisionClient } from "@/lib/portal/provisioning";
-import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
+import { clientDirectory, clientOptions, operationalHealth } from "@/lib/portal/admin-data";
 import { saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { adminTables, clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
@@ -107,14 +107,14 @@ async function handle(req: NextRequest, context: Context) {
             "If this address is approved, you will receive a password recovery email.",
         });
       }
-      const { error } = await db.auth.signInWithPassword({
+      const { data, error } = await db.auth.signInWithPassword({
         email,
         password: input.password || "",
       });
-      if (error) throw new PortalError("invalid_credentials", 401);
+      if (error || !data.user) throw new PortalError("invalid_credentials", 401);
       let passwordChangeRequired = false;
       try {
-        const auth = await identity();
+        const auth = await identity({db,user:data.user});
         passwordChangeRequired = auth.user.app_metadata?.portal_password_change_required === true;
       } catch {
         await db.auth.signOut();
@@ -139,10 +139,10 @@ async function handle(req: NextRequest, context: Context) {
         })
         .parse(body);
       const db = await sessionDb();
-      const { error } = await db.auth.setSession(input);
-      if (error) throw new PortalError("invalid_invitation", 401);
+      const { data, error } = await db.auth.setSession(input);
+      if (error || !data.user) throw new PortalError("invalid_invitation", 401);
       try {
-        await identity();
+        await identity({db,user:data.user});
       } catch {
         await db.auth.signOut();
         throw new PortalError("account_not_authorized", 403);
@@ -479,6 +479,7 @@ async function handle(req: NextRequest, context: Context) {
         db = adminDb();
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined));
+      if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions());
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
       if (route === "admin/client-update" && req.method === "POST") return reply(await editClient(admin.user.id,body));

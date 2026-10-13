@@ -5,6 +5,11 @@ import { acceptanceConfiguration, productionConfiguration } from "../platform/ed
 
 afterEach(() => vi.unstubAllGlobals());
 describe("static frontend server boundary", () => {
+  it("allows only the owned temporary production origin before cutover",()=>{
+    const get=(value:string)=>(name:string)=>name==="STACKENDBOX_PRODUCTION_TEST_ORIGIN"?value:undefined;
+    expect(productionConfiguration({},get("https://stackendbox-production.stackendbox.workers.dev")).PORTAL_APP_URL).toBe("https://stackendbox-production.stackendbox.workers.dev");
+    expect(productionConfiguration({},get("https://attacker.example")).PORTAL_APP_URL).toBe("https://www.stackendbox.com");
+  });
   it("prepares main-domain origin without enabling diagnostics, payments or registrar changes",()=>{
     const values:Record<string,string>={STACKENDBOX_ACCEPTANCE_BREVO_API_KEY:"public",STACKENDBOX_ACCEPTANCE_BREVO_CLIENT_API_KEY:"portal"};
     const config=productionConfiguration({PORTAL_DIAGNOSTICS_TOKEN:"fixture",DOMAIN_LIVE_RENEWALS_ENABLED:"true",PORTAL_JOBS_ENABLED:"true"},name=>values[name]);

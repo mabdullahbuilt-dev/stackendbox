@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["hnd1"],
+  "git": { "deploymentEnabled": { "main": false } },
   "crons": [{ "path": "/api/portal-jobs", "schedule": "0 8 * * *" }]
 }

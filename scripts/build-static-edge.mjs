@@ -7,6 +7,7 @@ import { materializePublicAssets } from './cloudflare-public-assets.ts';
 
 const root = process.cwd();
 const productionBuild = process.argv.includes('--production');
+const candidateBuild = process.argv.includes('--candidate');
 const runtime = resolve(root, 'platform/edge/next-runtime.ts');
 const navigation = resolve(root, 'platform/static/navigation.tsx');
 const localConfiguration = process.env.PORTAL_PRIVATE_ENV ? parseEnv(await readFile(process.env.PORTAL_PRIVATE_ENV,'utf8')) : {};
@@ -25,7 +26,7 @@ await writeFile('dist/edge/dependency-evidence.json', JSON.stringify({ forbidden
 // Configuration is read inside the Edge runtime, never compiled into a bundle.
 await cp('platform/edge/configuration.ts', 'dist/edge/configuration.ts');
 await writeFile('dist/edge/index.ts', `import {${productionBuild?'productionConfiguration':'acceptanceConfiguration'}} from "./configuration.ts";
-const config = JSON.parse(Deno.env.get("${productionBuild?'STACKENDBOX_PRODUCTION_CONFIG':'STACKENDBOX_ACCEPTANCE_CONFIG'}") || "{}");
+const config = ${productionBuild?' {...JSON.parse(Deno.env.get("STACKENDBOX_ACCEPTANCE_CONFIG") || "{}"),...JSON.parse(Deno.env.get("STACKENDBOX_PRODUCTION_CONFIG") || "{}")}':'JSON.parse(Deno.env.get("STACKENDBOX_ACCEPTANCE_CONFIG") || "{}")'};
 globalThis.STACKENDBOX_RUNTIME_ENV = ${productionBuild?'productionConfiguration':'acceptanceConfiguration'}(config, name => Deno.env.get(name));
 const {handleEdge} = await import("./handler.mjs");
 Deno.serve(req => handleEdge(req, p => EdgeRuntime.waitUntil(p)));
@@ -55,6 +56,6 @@ await writeFile('dist/static/index.html', `<!doctype html><html lang="en" data-m
 // images or running a metadata renderer in the Free Worker at request time.
 for (const name of ['icon.png','apple-icon.png','opengraph-image','twitter-image','sitemap.xml'])
   await cp(`.next/server/app/${name}.body`,`dist/static/${name}`);
-await writeFile('dist/static/robots.txt', productionBuild ? await readFile('.next/server/app/robots.txt.body','utf8') : 'User-agent: *\nDisallow: /\n');
-await writeFile('dist/static/_headers', `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n${productionBuild?'':'  X-Robots-Tag: noindex, nofollow\n'}/portal.html\n  Cache-Control: no-cache\n/opengraph-image\n  Content-Type: image/png\n/twitter-image\n  Content-Type: image/png\n`);
+await writeFile('dist/static/robots.txt', productionBuild&&!candidateBuild ? await readFile('.next/server/app/robots.txt.body','utf8') : 'User-agent: *\nDisallow: /\n');
+await writeFile('dist/static/_headers', `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n${productionBuild&&!candidateBuild?'':'  X-Robots-Tag: noindex, nofollow\n'}/portal.html\n  Cache-Control: no-cache\n/opengraph-image\n  Content-Type: image/png\n/twitter-image\n  Content-Type: image/png\n`);
 console.log(JSON.stringify({ edgeBundleBytes: (await stat('dist/edge/handler.mjs')).size, portalBundleBytes: (await stat('dist/static/portal.js')).size, scope: 'isolated portal proof, existing public site untouched' }));

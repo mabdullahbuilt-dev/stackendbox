@@ -1,0 +1,43 @@
+{
+  "status": "PREPARED_NOT_APPROVED_NOT_EXECUTED",
+  "checkedOn": "2026-10-13",
+  "candidate": "https://stackendbox-production.stackendbox.workers.dev",
+  "currentAuthoritativeNameservers": ["launch1.spaceship.net", "launch2.spaceship.net"],
+  "observedPublicRecords": [
+    {"name":"www.stackendbox.com","type":"CNAME","value":"4a78646662027dfa.vercel-dns-017.com","action":"Keep during DNS delegation. After final release approval replace with the Cloudflare Worker custom-domain association, not a guessed workers.dev CNAME."},
+    {"name":"stackendbox.com","type":"A","value":"216.198.79.1","action":"Keep unchanged during initial www cutover and verify existing apex redirect still reaches www."},
+    {"name":"stackendbox.com","type":"MX","priority":0,"value":"mx1.spacemail.com","action":"Preserve exactly, DNS-only."},
+    {"name":"stackendbox.com","type":"MX","priority":0,"value":"mx2.spacemail.com","action":"Preserve exactly, DNS-only."},
+    {"name":"stackendbox.com","type":"TXT","value":"v=spf1 include:spf.spacemail.com ~all","action":"Preserve exactly. Do not create a second SPF record."}
+  ],
+  "inventoryLimitations": [
+    "Public DNS lookups are not a complete zone export.",
+    "Existing Brevo verification TXT must be copied unchanged from the authoritative zone.",
+    "Every DKIM selector, DMARC, mail/autodiscover/service hostname, CAA and other record still needs authoritative inventory.",
+    "The currently signed-in dedicated client-domain Spaceship account has zero domains. It cannot provide the company-domain zone inventory.",
+    "DNSSEC and registrar DS state must be read before planning delegation. No DS change is authorized.",
+    "Cloudflare assigned nameservers are not known yet. Do not invent the target pair or claim this is an executable delegation instruction."
+  ],
+  "sequence": [
+    "Read/export the complete existing stackendbox.com zone from its controlling account, including TTLs and DNSSEC state.",
+    "Prepare the existing Cloudflare account's Free zone with exact record parity. Keep current website targets. Keep mail/service records DNS-only and do not enable Email Routing.",
+    "Record the actual assigned Cloudflare nameserver pair and present the complete before/after record diff for founder approval.",
+    "Only after exact delegation approval, change registrar nameservers to that pair. Verify the existing Vercel website and Spacemail remain functional before any application cutover.",
+    "Only after final release approval, remove the conflicting www Vercel CNAME and attach www.stackendbox.com to stackendbox-production using wrangler.main-domain.jsonc. Verify TLS readiness and the public homepage immediately.",
+    "Build final static assets without --candidate, remove the temporary production origin override, and update Supabase Site URL only when company-domain authentication routes are accessible and verified.",
+    "Verify public contact delivery, normal client login/recovery, existing administrator MFA, tenant isolation, support and saved records on the actual company domain. Keep live checkout and all registrar writes disabled."
+  ],
+  "rollback": {
+    "vercelDeployment":"dpl_HwiyiEkB6DXUfGv1gZqfvsckomrE",
+    "vercelProductionCommit":"3595d8046851ff180e7577855b599589722e3928",
+    "website":"Remove the Worker custom-domain association and restore www CNAME 4a78646662027dfa.vercel-dns-017.com. Preserve apex A 216.198.79.1 and all email records.",
+    "delegation":"If required, restore launch1.spaceship.net and launch2.spaceship.net after verifying the original zone remains intact. DNS caches mean this is not guaranteed instantaneous.",
+    "auth":"Restore the recorded previous Site URL and redirect allowlist if an authentication cutover fails. Do not revoke existing user sessions unnecessarily.",
+    "database":"No destructive migration or data rollback is part of this website cutover. Retain existing customer and audit records."
+  },
+  "officialRequirements": [
+    "https://developers.cloudflare.com/workers/configuration/routing/custom-domains/",
+    "https://developers.cloudflare.com/dns/zone-setups/partial-setup/"
+  ],
+  "changesPerformed": "None to production DNS, registrar nameservers, ownership, DNSSEC, email services or the existing Vercel production deployment."
+}

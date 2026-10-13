@@ -1,0 +1,19 @@
+{
+  "status": "READY_TO_RUN_AFTER_FOUNDER_MANUAL_PURCHASE",
+  "registrarAccount": "Dedicated StackEndBox client-domains Spaceship account",
+  "domain": "Founder supplies the exact newly purchased domain. No invented domain or database fixture substitutes for this acceptance.",
+  "steps": [
+    {"action":"Founder purchases one test domain manually in the dedicated account, with accurate authorized registrant contact information.","expected":"Spaceship shows registered status and an actual expiration. No agent purchase or account transfer."},
+    {"action":"Sign into StackEndBox as administrator and complete the existing authenticator challenge.","expected":"The admin authorization endpoint confirms the existing super-admin and AAL2. No MFA reset."},
+    {"action":"Open /admin/domains and use Activate client and assign domain. Select an existing client by approved email, or provide the approved new client email, name and initial password.","expected":"API reads the domain and official contact from the primary account. The transaction saves Auth identity when needed, client membership and the unique domain assignment. No first-year payment fields or registrar purchase."},
+    {"action":"Confirm contractual portal-management rights and the accurate holder arrangement.","expected":"Registered holder, portal client and registrar custody remain separate. An agency holder does not block authorized client access. No ownership transfer is claimed."},
+    {"action":"The client confirms their branded account-ready invitation if new, then personally signs in.","expected":"Only their assigned domain appears, with provider status, actual expiry, countdown and actual auto-renew state. Existing-client passwords are unchanged."},
+    {"action":"Refresh, sign out, sign in again and check the domain from a new session.","expected":"Persistent assignment and provider-confirmed expiry are unchanged. The account sees only its own website, service, billing and support records."},
+    {"action":"Check the domain from a separate authorized client account and try client access to staff endpoints.","expected":"No cross-client domain access, and staff endpoints return HTTP 403. Database uniqueness rejects a second customer's assignment."},
+    {"action":"Refresh supported DNS, nameserver and privacy details.","expected":"Read-only provider-backed data. All real write controls remain unavailable. Provider failures do not erase stored records."},
+    {"action":"Admin records the exact verified supplier annual-renewal cost and source, then creates a renewal quote for the assigned client.","expected":"Quote uses verified supplier cost and mandatory supplier fees plus 30%. No price is invented. If registrar auto-renew is on or eligibility is unverified, the portal asks for administrator review. Live checkout remains disabled."}
+  ],
+  "passEvidence": ["Normal admin/client browser results","Persisted Auth/client/membership/assignment IDs","Actual provider expiration and registered holder evidence","RLS denial from a separate tenant","Unique-assignment conflict","Refresh and new-session persistence"],
+  "prohibited": ["Agent domain purchase","Registrar-account transfer","Registrant contact change","DNS or nameserver mutation","Auto-renew mutation","Live payment","Live renewal"],
+  "cleanup": "Retain the real purchased domain and all financial/provider history. Remove only the explicitly authorized temporary portal assignment when the founder requests it."
+}

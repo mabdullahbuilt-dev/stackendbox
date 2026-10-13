@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { createHash } from "node:crypto";
 import { PortalError } from "./rules";
 import { observeLatency } from "./latency";
+import type {User} from "@supabase/supabase-js";
 
 export function env(name: string) {
   const value = process.env[name];
@@ -52,12 +53,14 @@ export type Account = {
   role: "super_admin" | "staff" | "client";
   active: boolean;
 };
-export async function identity() {
-  const db = await sessionDb();
+export async function identity(verified?:{db:Awaited<ReturnType<typeof sessionDb>>;user:User}) {
+  const db = verified?.db || await sessionDb();
+  // Only server-held responses from Supabase password/session validation may
+  // supply this identity. Normal requests still perform getUser verification.
   const {
     data: { user },
     error,
-  } = await observeLatency("auth_user", () => db.auth.getUser());
+  } = verified ? {data:{user:verified.user},error:null} : await observeLatency("auth_user", () => db.auth.getUser());
   if (error || !user) throw new PortalError("sign_in_required", 401);
   const { data: account, error: accountError } = await observeLatency("account", () => db
     .from("portal_accounts")

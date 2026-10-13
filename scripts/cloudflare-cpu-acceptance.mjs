@@ -1,7 +1,7 @@
 // Narrow CPU diagnostic after code changes, not a capacity or password-login benchmark.
 import {projectClients} from './lib/supabase-access.mjs';
 const origin=process.env.PORTAL_ACCEPTANCE_ORIGIN || 'https://stackendbox-cf-acceptance.stackendbox.workers.dev';
-if (!['https://stackendbox-cf-acceptance.stackendbox.workers.dev','https://stackendbox-static-acceptance.stackendbox.workers.dev'].includes(origin)) throw Error('Unapproved acceptance origin');
+if (!['https://stackendbox-cf-acceptance.stackendbox.workers.dev','https://stackendbox-static-acceptance.stackendbox.workers.dev','https://stackendbox-production.stackendbox.workers.dev'].includes(origin)) throw Error('Unapproved acceptance origin');
 let auth;
 try {
   const {admin,newSession}=await projectClients();
@@ -24,7 +24,7 @@ try {
   }
   await call('/api/portal/auth/session',{access_token:login.data.session.access_token,refresh_token:login.data.session.refresh_token});
   for(const path of ['/client-portal/dashboard','/api/portal/data?section=dashboard','/client-portal/domains','/api/portal/data?section=domains','/client-portal/websites','/api/portal/data?section=websites'])await call(path);
-  if (origin.includes('static-acceptance')) {
+  if (origin.includes('static-acceptance')||origin.includes('stackendbox-production')) {
     for (const path of ['/api/portal/auth/identity','/client-portal/billing','/api/portal/data?section=billing']) await call(path);
     for (const path of ['/api/portal/auth/identity?admin=1','/api/portal/admin/data?section=billing']) await call(path,undefined,403);
   }

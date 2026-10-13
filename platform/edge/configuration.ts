@@ -10,6 +10,7 @@ export const acceptanceSettings = [
   "PORTAL_DIAGNOSTICS_TOKEN",
   "CRON_SECRET", "PORTAL_JOBS_ENABLED",
   "PORTAL_JOB_CLIENT_ALLOWLIST",
+  "PORTAL_RELEASE_CHECK_TOKEN",
 ] as const;
 
 export function acceptanceConfiguration(base: Record<string, string>, get: (name: string) => string | undefined): Readonly<Record<string, string>> {
@@ -32,6 +33,8 @@ export function acceptanceConfiguration(base: Record<string, string>, get: (name
 // never exchanges public/portal keys or enables money and registrar operations.
 export function productionConfiguration(base:Record<string,string>,get:(name:string)=>string|undefined):Readonly<Record<string,string>> {
   const providerConfig=acceptanceConfiguration(base,name=>get(name.replace("STACKENDBOX_ACCEPTANCE_","STACKENDBOX_PRODUCTION_"))||get(name));
-  return Object.freeze({...providerConfig,VERCEL_ENV:"production",PORTAL_APP_URL:"https://www.stackendbox.com",
+  const candidate="https://stackendbox-production.stackendbox.workers.dev";
+  const origin=get("STACKENDBOX_PRODUCTION_TEST_ORIGIN")===candidate?candidate:"https://www.stackendbox.com";
+  return Object.freeze({...providerConfig,VERCEL_ENV:"production",PORTAL_APP_URL:origin,
     PORTAL_DIAGNOSTICS_TOKEN:"",PORTAL_SANDBOX_CHECKOUT_ENABLED:"false",PORTAL_JOBS_ENABLED:"false"});
 }

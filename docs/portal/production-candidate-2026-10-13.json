@@ -1,0 +1,62 @@
+{
+  "phaseA": "CONDITIONAL_RELEASE_CANDIDATE_NOT_MAIN_DOMAIN_LAUNCHED",
+  "candidateUrl":"https://stackendbox-production.stackendbox.workers.dev",
+  "workerVersion":"29f6d579-6d2c-48fe-9a3a-7a62d83b8cfa",
+  "backend":"Existing Supabase project irzjkdxxfvobtabwkqmz, stackendbox-production Edge Function, ap-northeast-1",
+  "newImplementation": [
+    "Production candidate uses the real public Vercel Production configuration whitelist, with a separate private gateway bridge and production backend profile.",
+    "Fixed Edge function-path routing to support both acceptance and production function names.",
+    "Added staff/MFA-protected minimal active-client selection for domain handoff. Existing clients retain their password and new clients need no first-year payment fields.",
+    "Removed redundant Auth getUser calls only after Supabase has already validated password or session and returned a verified server-held user. Normal requests still verify user and active account.",
+    "Added a temporary token-protected deployed runtime readiness check. The temporary check token was removed after verification.",
+    "Added encrypted portable backup recovery-key export and verified a fresh isolated restore without relying on the original Windows DPAPI key."
+  ],
+  "actualCandidateEvidence": {
+    "publicHomepage":"HTTP 200 with the original homepage and existing company contact settings.",
+    "publicContact":"Normal browser form submitted one clearly labeled TEST ONLY inquiry. UI returned Brief sent. Brevo recorded Sent and Delivered at 20:42 Asia/Karachi to hello@stackendbox.com from hello@stackendbox.com.",
+    "turnstile":"Founder-authorized candidate hostname saved as the sixth hostname. Five prior hostnames, Managed mode, keys and No pre-clearance preserved.",
+    "runtimePreflight":"All required provider/Supabase secret-presence checks true, database reachable, latest migration 202610130008, all live-operation gates disabled. This check did not export provider credentials.",
+    "anonymousAccess":"Identity 401, jobs 401, diagnostics 404. Client staff identity and billing endpoints returned 403 during authenticated read checks.",
+    "authenticatedReadSample":"SDK-authorized test-client saved data returned successfully, not a fresh browser password/MFA journey.",
+    "freshAdminBrowserMfa":"Pending founder personal sign-in on the new hostname. Login page is open with approved administrator email.",
+    "freshClientBrowserLogin":"Pending after new candidate administrator checks. Prior acceptance client activation/recovery/login is retained as historical evidence, not relabeled as candidate evidence.",
+    "mobileBrowser":"A requested 390px viewport override was not reflected by the browser, which still reported 1265px. No new mobile acceptance pass is claimed.",
+    "realDedicatedDomain":"Not performed. Dedicated Spaceship account remains genuinely empty. Founder manual purchase and exact domain authorization are required."
+  },
+  "checks": {
+    "fullTestsBeforeFinalSelector":"262 tests passed across 37 files.",
+    "focusedFinalRegression":"19 tests passed across 4 affected files including client selector and verified-session behavior.",
+    "typecheck":"Passed after final selector change.",
+    "lint":"Passed after final selector change.",
+    "nextProductionBuild":"Passed after final selector change.",
+    "deployedStaticEdgeBuild":"Passed and deployed after final selector change.",
+    "securityReview":"Existing dependency advisories remain. Do not describe the complete dependency audit as clean. No added runtime dependencies."
+  },
+  "performanceSingleReadSampleMs": {
+    "session":{"total":2702,"backend":504.4},
+    "dashboard":{"total":2273,"backend":354.4},
+    "domains":{"total":681,"backend":227.6},
+    "websites":{"total":712,"backend":261.5},
+    "billing":{"total":672,"backend":197.4},
+    "identity":{"total":540,"backend":104},
+    "staticPages":"54-65",
+    "limitation":"One authorized sample with network variance, not a new 400-client capacity benchmark or a fresh browser password-login latency claim."
+  },
+  "emailSeparation":"Public BREVO_API_KEY and private BREVO_CLIENT_API_KEY remain separate named bindings, senders and workflow recipients. Neither existing provider key was replaced or rotated.",
+  "scheduledJobs": {
+    "acceptance":"Existing scoped schedule executed successfully at 19:30 Asia/Karachi, CPU 1ms, wall 2141ms, no exceptions. One test email delivered with attempt_count 1.",
+    "production":"No production cron and PORTAL_JOBS_ENABLED false. Real-customer scheduled delivery must be deliberately activated and verified before promising automatic reminders.",
+    "duplicateSafety":"Atomic claim, dedupe keys and review_required for ambiguous delivery outcomes remain. No blind retry of unknown sends."
+  },
+  "backup": {
+    "freshEncryptedBytes":426845,
+    "includes":"Auth users, public schema data and storage metadata. Current storage objects 0.",
+    "portableRestore":"Passed migration validation, RLS, integrity and persistence after restart. Restored two Auth users/accounts and one client in an isolated local PostgreSQL drill.",
+    "offsite":"Not complete. Founder must store encrypted backup and portable encrypted recovery key outside this computer, with the recovery code separately held. Do not expose either key or code in chat."
+  },
+  "disabled": ["Live checkout and payments","Domain purchases","Registrar renewals","DNS/nameserver writes","Registrant changes","Transfers and unlocks","Production customer cron"],
+  "phaseBRemaining": ["Dedicated-account real-domain acceptance","Verified supplier renewal price and actual auto-renew state","Authorized live Whop payment and settlement acceptance","Authorized Spaceship renewal and supplier billing acceptance","Provider-confirmed new expiry and end-to-end failure reconciliation"],
+  "mainDomain":"DNS unchanged. See main-domain-cutover-plan.json. Complete authoritative zone inventory, actual Cloudflare nameserver pair, TLS readiness, personal credential journeys and founder cutover approval remain.",
+  "preserved":"Existing public Vercel deployment, main branch, company settings, both Brevo provider keys, Spaceship credentials, Supabase customer records and all live registrar settings.",
+  "minimumFounderActions":["Personal administrator sign-in and existing MFA on candidate","Access to the account controlling the company DNS zone for read-only complete inventory","One manually purchased domain in the dedicated account for exact assignment acceptance","Independent offsite backup/key custody","Final approval of the complete exact DNS diff after inventory"]
+}

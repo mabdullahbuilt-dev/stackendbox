@@ -1,4 +1,4 @@
-param([ValidateSet('Inspect','Prepare','Activate','Acceptance','PasswordPolicy')][string]$Action='Inspect')
+param([ValidateSet('Inspect','Prepare','Activate','Acceptance','ProductionCandidate','PasswordPolicy')][string]$Action='Inspect')
 $ErrorActionPreference='Stop'
 # Use the existing supported CLI credential. Never emit secrets or full config.
 Add-Type @'
@@ -24,7 +24,10 @@ try {
       $portalChanges=@{password_min_length=8}
     } else {
     $portalRedirects=@($portalConfig.uri_allow_list -split ',' | Where-Object {$_})
-    if ($Action -eq 'Acceptance') {
+    if ($Action -eq 'ProductionCandidate') {
+      $portalRedirects+='https://stackendbox-production.stackendbox.workers.dev/client-portal/auth/callback'
+      $portalChanges=@{uri_allow_list=($portalRedirects|Select-Object -Unique)-join ','}
+    } elseif ($Action -eq 'Acceptance') {
       $portalRedirects+='https://stackendbox-cf-acceptance.stackendbox.workers.dev/client-portal/auth/callback'
       $portalChanges=@{uri_allow_list=($portalRedirects|Select-Object -Unique)-join ','}
     } else {

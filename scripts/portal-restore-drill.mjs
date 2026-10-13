@@ -8,7 +8,7 @@ const backup=resolve(process.argv[2]||'');
 if(!process.argv[2]||!process.env.POSTGRES_BIN||!process.env.PORTAL_DRILL_ROOT)throw new Error('Backup path, POSTGRES_BIN and PORTAL_DRILL_ROOT required');
 const summary=JSON.parse(await readFile(join(backup,'summary.json'),'utf8'));
 for(const file of summary.files){const bytes=await readFile(join(backup,file.name));if(createHash('sha256').update(bytes).digest('hex')!==file.sha256)throw new Error('Backup checksum mismatch');}
-const archive=await decryptArtifact(join(backup,'database.dump.enc'),join(dirname(backup),'keys','recipient-private.dpapi'));
+const archive=await decryptArtifact(join(backup,'database.dump.enc'),process.env.PORTAL_RECOVERY_KEY_FILE||join(dirname(backup),'keys','recipient-private.dpapi'));
 const directory=await mkdtemp(join(process.env.PORTAL_DRILL_ROOT,'restore-'));
 const password=randomBytes(32).toString('hex');
 const env={...process.env,PGHOST:'127.0.0.1',PGPORT:'55439',PGUSER:'postgres',PGDATABASE:'postgres',PGPASSWORD:password,PGSSLMODE:'disable'};

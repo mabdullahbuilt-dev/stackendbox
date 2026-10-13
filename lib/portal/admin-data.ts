@@ -1,5 +1,13 @@
 import "server-only";
 import { adminDb, checkDb } from "./server";
+export async function clientOptions(){
+  const result=await adminDb().from("portal_memberships").select("client_id,portal_clients!inner(name,business_name,status),portal_accounts!inner(approved_email,active,role)").eq("portal_clients.status","active").eq("portal_accounts.active",true).eq("portal_accounts.role","client").limit(500);
+  checkDb(result.error);
+  return {clients:(result.data||[]).map(row=>{
+    const client=row.portal_clients as unknown as {name:string;business_name:string},account=row.portal_accounts as unknown as {approved_email:string};
+    return {client_id:row.client_id,name:client.name,business_name:client.business_name,email:account.approved_email};
+  }).sort((a,b)=>a.name.localeCompare(b.name))};
+}
 export async function clientDirectory(after?: string) {
   const db=adminDb();
   let query=db.from("portal_clients").select("*,portal_memberships(user_id),portal_domain_assignments(domain_id,holder_arrangement,legal_holder,portal_domains(name,lifecycle_status)),portal_websites(id,name,url)").order("id").limit(51);
