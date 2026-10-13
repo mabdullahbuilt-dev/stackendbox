@@ -21,9 +21,12 @@ try {
   // This short-lived credential permits only existing read diagnostics.
   await writeFile(file,`${setting}=${token}\n`,{flag:'wx'});
   await cli(['secrets','set','--project-ref',projectRef,'--env-file',file]);
-  const response=await fetch('https://stackendbox-static-acceptance.stackendbox.workers.dev/api/portal-diagnostics',{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(60000)});
+  const identities=process.argv.includes('--email-identities');
+  const events=process.argv.includes('--email-events');
+  const url='https://stackendbox-static-acceptance.stackendbox.workers.dev/api/portal-diagnostics'+(identities?'?check=email-identities':events?'?check=email-events':'');
+  const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(60000)});
   const result=await response.json();
-  console.log(JSON.stringify({http:response.status,database:result.database?.ok,registrar:result.registrar?.ok,domainCount:result.registrar?.result?.domainsRead,payments:result.payments?.ok,sandboxPaymentReadAccess:result.payments?.result?.paymentReadAccess,email:result.email?.ok,senderVerified:result.email?.result?.senderVerified,publicWebsiteEmail:result.email?.result?.publicWebsiteEmail,failures:Object.fromEntries(['database','registrar','payments','email'].filter(k=>result[k]?.ok===false).map(k=>[k,result[k].code])),mailSent:false,registrarMutations:false}));
+  console.log(JSON.stringify(identities||events?{http:response.status,...result}:{http:response.status,database:result.database?.ok,registrar:result.registrar?.ok,domainCount:result.registrar?.result?.domainsRead,payments:result.payments?.ok,sandboxPaymentReadAccess:result.payments?.result?.paymentReadAccess,email:result.email?.ok,senderVerified:result.email?.result?.senderVerified,publicWebsiteEmail:result.email?.result?.publicWebsiteEmail,failures:Object.fromEntries(['database','registrar','payments','email'].filter(k=>result[k]?.ok===false).map(k=>[k,result[k].code])),mailSent:false,registrarMutations:false}));
 }catch{console.error('Read-only integration diagnostic failed. Sensitive output withheld.');process.exitCode=1;}
 finally{
   if(directory){await cli(['secrets','unset',setting,'--project-ref',projectRef,'--yes']).catch(()=>{console.error('Temporary diagnostic cleanup requires attention');process.exitCode=1;});await unlink(join(directory,'diagnostic.env')).catch(()=>{});await rmdir(directory).catch(()=>{});}

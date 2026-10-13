@@ -11,18 +11,56 @@ import {brevoEnv} from "@/lib/serverEnv";
 // diagnostic deployment, never into production or the client-side bundle.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function GET(req: Request) {
+function diagnosticAuthorized(req: Request) {
   const token = process.env.PORTAL_DIAGNOSTICS_TOKEN;
   const actual = Buffer.from(req.headers.get("authorization") || "");
   const expected = Buffer.from(`Bearer ${token || ""}`);
-  if (
+  return !(
     process.env.VERCEL_ENV !== "preview" ||
     !token ||
     actual.length !== expected.length ||
     !timingSafeEqual(actual, expected)
-  )
-    return new Response(null, { status: 404 });
+  );
+}
+export async function GET(req: Request) {
+  if(!diagnosticAuthorized(req)) return new Response(null,{status:404});
   sandboxOnly();
+  if(new URL(req.url).searchParams.get("check") === "email-events") {
+    const db=adminDb();
+    const publicRecord=await db.from("portal_audit").select("detail").eq("action","public_email_acceptance_result").eq("target_id","public-email-separation-2026-10-13").order("id",{ascending:false}).limit(1).maybeSingle();
+    const portalRecord=await db.from("portal_email_outbox").select("provider_id").eq("id","cb845beb-66ed-402c-8d5a-000879514525").maybeSingle();
+    if(publicRecord.error||portalRecord.error) return NextResponse.json({error:"audit_unavailable"},{status:503});
+    const events=async(keyName:string,id?:string)=>{
+      if(!id) return {error:"no_provider_reference"};
+      const url=new URL("https://api.brevo.com/v3/smtp/statistics/events");
+      url.searchParams.set("messageId",id);url.searchParams.set("limit","25");
+      const result=await fetch(url,{headers:{"api-key":env(keyName)},signal:AbortSignal.timeout(10000)});
+      const data=result.ok?await result.json():{};
+      return {providerStatus:result.status,events:Array.isArray(data.events)?data.events.map((e:{event?:string;reason?:string;from?:string;email?:string;messageId?:string})=>({event:e.event,reason:e.reason,from:e.from,recipient:e.email,correlated:e.messageId===id})):[]};
+    };
+    const [publicWebsite,clientPortal]=await Promise.all([
+      events("BREVO_API_KEY",publicRecord.data?.detail?.messageId),events("BREVO_CLIENT_API_KEY",portalRecord.data?.provider_id),
+    ]);
+    return NextResponse.json({publicWebsite,clientPortal,readOnly:true},{headers:{"Cache-Control":"no-store"}});
+  }
+  if(new URL(req.url).searchParams.get("check") === "email-identities") {
+    const readIdentity = async (keyName: string, senderName: string) => {
+      const headers = {"api-key":env(keyName)};
+      const [account, senders] = await Promise.all([
+        fetch("https://api.brevo.com/v3/account",{headers,signal:AbortSignal.timeout(10000)}),
+        fetch("https://api.brevo.com/v3/senders",{headers,signal:AbortSignal.timeout(10000)}),
+      ]);
+      const accountData=account.ok?await account.json():{};
+      const senderData=senders.ok?await senders.json():{};
+      return {accountStatus:account.status,sendersStatus:senders.status,accountEmail:accountData.email??null,
+        configuredSender:env(senderName),senderVerified:Array.isArray(senderData.senders)&&senderData.senders.some((s:{email?:string;active?:boolean})=>s.email===env(senderName)&&s.active===true)};
+    };
+    const [publicWebsite,clientPortal]=await Promise.all([
+      readIdentity("BREVO_API_KEY","BREVO_SENDER_EMAIL"),
+      readIdentity("BREVO_CLIENT_API_KEY","BREVO_CLIENT_SENDER_EMAIL"),
+    ]);
+    return NextResponse.json({publicWebsite,clientPortal,readOnly:true},{headers:{"Cache-Control":"no-store"}});
+  }
   if(new URL(req.url).searchParams.get("check") === "personal-connection") {
     try {
       const connection=await spaceshipTest.connection();

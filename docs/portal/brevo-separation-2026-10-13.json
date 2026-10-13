@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-13",
+  "scope": "Existing integrations, acceptance backend only. Production website and Vercel credentials unchanged.",
+  "rootCause": "Public key authenticated, but hello@stackendbox.com was absent from the associated Brevo sender list.",
+  "publicWebsite": {
+    "secret": "STACKENDBOX_ACCEPTANCE_BREVO_API_KEY",
+    "canonicalKey": "BREVO_API_KEY",
+    "authenticationStatus": 200,
+    "sender": "hello@stackendbox.com",
+    "recipient": "hello@stackendbox.com",
+    "senderVerification": "Owner personally completed the Brevo verification code procedure.",
+    "testSubject": "TEST ONLY public website email separation",
+    "providerAcceptanceStatus": 201,
+    "delivery": "Delivered, correlated by exact provider message ID through Brevo API and visible logs.",
+    "testType": "One provider delivery check using public configuration, not a full contact-form browser submission.",
+    "contactFormRegressionTests": "Passed",
+    "domainAuthentication": "Brevo domain settings still offer domain setup. No production DNS changes performed."
+  },
+  "clientPortal": {
+    "secret": "STACKENDBOX_ACCEPTANCE_BREVO_CLIENT_API_KEY",
+    "canonicalKey": "BREVO_CLIENT_API_KEY",
+    "authenticationStatus": 200,
+    "configuredSender": "stackendboxclients@gmail.com",
+    "senderVerified": true,
+    "actualDeliveredFrom": "stackendboxclients@12437455.brevosend.com",
+    "recipient": "abdullahlp114@gmail.com",
+    "testSubject": "Support update: TEST ONLY hosted support acceptance",
+    "dispatch": "Exactly one previously queued, attempt-zero test notification selected. Other outbox records untouched.",
+    "delivery": "Delivered, correlated by exact persisted provider ID through Brevo API and visible logs.",
+    "freemailBehavior": "Brevo rewrites verified Gmail senders. Operational mailbox and reply-to configuration preserved."
+  },
+  "separation": {
+    "publicHandlers": "app/api/brief/route.ts, lib/serverEnv.ts, public sender and business recipient",
+    "portalHandlers": "lib/portal/auth-email.ts, lib/portal/services.ts, approved client recipients",
+    "acceptanceOverrides": "Independent exact secret-name mapping, no cross-key fallback",
+    "keyValuesReadOrPrinted": false,
+    "keysRotatedOrReplaced": false,
+    "crossSystemRecipients": false,
+    "temporaryDiagnosticAndJobSecretsRemoved": true,
+    "oneShotPublicSendEndpointRemovedAfterTest": true
+  },
+  "remainingReleaseGates": [
+    "Real domain assignment and mutation acceptance require an explicitly authorized domain. Dedicated registrar inventory remains empty.",
+    "Automatic scheduled email jobs remain disabled outside selected acceptance dispatch.",
+    "Main-domain cutover and DNS changes require approval and remaining production checks."
+  ]
+}
