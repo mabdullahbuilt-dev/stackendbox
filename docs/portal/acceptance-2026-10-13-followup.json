@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-13",
+  "scope": "isolated Cloudflare acceptance and Whop Sandbox only",
+  "branch": "feature/cloudflare-workers-proof",
+  "source_checkpoint": "38fdc51",
+  "deployed_worker_version": "5bbd9f14-9201-4b3f-8f15-f633c83089e3",
+  "deployed_source_note": "The isolated acceptance Worker is built from the 38fdc51 source checkpoint. No main or Production deployment occurred.",
+  "production_dns_or_main_changed": false,
+  "registrar": {
+    "authorized_personal_domain_read": "provider-backed detail, registrant contact, DNS and public authoritative NS verified",
+    "dedicated_client_account_inventory": "empty and kept separate",
+    "registrar_mutations": 0,
+    "client_assignment_or_transfer": false
+  },
+  "sandbox_payment": {
+    "provider_completed_payment": true,
+    "provider_failed_attempt": true,
+    "initial_webhook_failure": "old protected Preview callback returned HTTP 403 payment_acceptance_pending for both successful and failed Sandbox events",
+    "repair": "existing Sandbox webhook destination changed to isolated acceptance Worker using its existing signed-webhook secret",
+    "signed_success_replay": "HTTP 200 verified",
+    "duplicate_success_replay": "HTTP 200 duplicate, including after the new Worker deployment",
+    "prior_failed_attempt_replay": "HTTP 200 review_required, paid invoice unchanged",
+    "database": {
+      "paid_service_invoices": 1,
+      "paid_checkouts": 1,
+      "confirmed_sandbox_ledger_rows": 1,
+      "signed_success_events": 1,
+      "signed_failed_events": 1
+    },
+    "administrator_visibility": "verified in deployed browser",
+    "client_visibility": "paid invoice visible under active client JWT and PostgreSQL RLS in a rolled-back transaction; client browser session not yet verified",
+    "live_charges": 0,
+    "registrar_fulfillment": 0
+  },
+  "email_recovery": {
+    "schema_head": "202610130005",
+    "stale_claim_transaction_test": "passed then rolled back, no fixture row persisted",
+    "webhook_job_gate_defect": "old webhook invoked runJobs even when PORTAL_JOBS_ENABLED=false; four email claims became review_required with unknown delivery",
+    "repair": "runJobs now enforces the flag itself and webhook skips scheduling when disabled; signed replay on new Worker left payment and email counts unchanged",
+    "email_review_required": 4,
+    "automatic_jobs": "disabled in acceptance Worker; review records were not automatically resent"
+  },
+  "cloudflare_cpu": {
+    "scope": "version 5bbd9f14, bounded individual-request tail samples, not a load benchmark",
+    "login_ms": 3,
+    "dashboard_ms": 19,
+    "admin_billing_ms": 61,
+    "admin_domains_ms": 21,
+    "admin_workspace_ms": [21, 24],
+    "client_data_api_ms": 9,
+    "free_limit_ms": 10,
+    "free_plan_release_gate": "blocked, private-route CPU above limit"
+  },
+  "validation": {
+    "tests": "223 passed; one earlier full run had two timing-linked brief-email failures that passed in focused and subsequent full reruns",
+    "typecheck": "passed",
+    "lint": "full lint passed before job-gate fix; targeted lint passed afterward",
+    "vinext_build": "passed on final deployed source",
+    "production_dependency_advisories": {"high": 6, "moderate": 4, "critical": 0}
+  },
+  "remaining": [
+    "client-browser invoice visibility and download",
+    "review four ambiguous email claims before any retry, then verify Brevo and scheduled jobs",
+    "private-route CPU reduction and latest-version remeasurement",
+    "dependency remediation without breaking vinext",
+    "reviewed main and production deployment"
+  ]
+}
