@@ -10,7 +10,7 @@
     "billing": "No billing account attached during creation or enabled by this work.",
     "dedicatedConsent": "Prepared StackEndBox Encrypted Backups form, owner support/contact email, External audience. Final Google API Services User Data Policy agreement and Create left open for owner. No publishing yet.",
     "newClient": "Not yet created in separate project",
-    "apis": "API Library failed to load. Official Google Drive API was reached through console search and its enable action executed. Notification shows completed Enable service: drive.googleapis.com in StackEndBox Backups. Actual refreshed service status is still being checked, no API-level OAuth request or Picker setup completed yet.",
+    "apis": "API Library failed to load. Official Google Drive API was reached through console search and its enable action executed. Notification shows completed Enable service: drive.googleapis.com in StackEndBox Backups. Fresh page redirects to Google Cloud access blocked for required personal MFA, so refreshed service status and actual OAuth API access remain unverified. Picker setup not completed. Stop this blocked setup until owner completes MFA, do not use cached pages to bypass the gate.",
     "portfolioPreserved": "Owner explicitly rejected shared Portfolio publishing. No branding/audience/scope edits or existing Desktop credential changes performed. Earlier separately approved new backup client in old project is unused."
   },
   "earlierUnusedClient": {
