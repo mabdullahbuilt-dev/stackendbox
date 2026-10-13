@@ -2,6 +2,7 @@
   "status":"RESTORE_VERIFIED_OFFSITE_CUSTODY_PENDING",
   "existingEvidence":"Fresh encrypted backup from 2026-10-13T15-09-46-145Z, 426845 bytes. Portable-key restore passed migration validation, RLS, integrity and persistence after restart in isolated local PostgreSQL. Do not repeat this completed drill or describe it as a full hosted Supabase restore.",
   "backupDirectory":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/2026-10-13T15-09-46-145Z",
+  "latestAdditionalGeneration":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/2026-10-13T17-28-43-681Z, 431435 encrypted bytes, includes the real test123.buzz assignment and migration 202610130009. Copy this generation as well, checking its own summary.json hashes. The earlier restore evidence is retained, not claimed as a fresh restore of this generation.",
   "encryptedFileSha256":{"database.dump.enc":"F89A0367321B1CEE4FCCF9BD12F7D847914BE201DC5495A887618B0C53AEB4F7","manifest.enc":"D5AFE53D00C11F9CE25D5066167B73BE298700052F04CE9BFDB6DF29AC7C932C"},
   "encryptedRecoveryKey":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/keys/portable-recovery-key.pem",
   "recoveryCodeFile":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/keys/portable-recovery-code.txt",

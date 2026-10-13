@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { env } from "./server";
 import { domainName, PortalError } from "./rules";
+import {approvedAcceptanceRecord} from "./dns-acceptance-grant";
 
 export const contactIdSchema = z.string().regex(/^[a-zA-Z0-9]{27,32}$/);
 export const domainContactsSchema = z.object({
@@ -178,6 +179,15 @@ export function createSpaceship(account: "primary" | "test") {
   async saveDns(name: string, items: unknown[]) {
     allowWrite(name);
     return request(`/dns/records/${encodeURIComponent(domainName(name))}`, { force: false, items }, "PUT");
+  },
+  async acceptanceTxt(name:string,action:"add"|"delete",record:unknown){
+    if(account!=="primary")throw new PortalError("personal_test_read_only",403);
+    if(action!=="add"&&action!=="delete")throw new PortalError("dns_acceptance_action_invalid",403);
+    const approved=approvedAcceptanceRecord(name,record);
+    const path=`/dns/records/${encodeURIComponent(domainName(name))}`;
+    if(action==="add")return request(path,{force:false,items:[approved]},"PUT");
+    const {ttl:_ttl,...remove}=approved;
+    return request(path,[remove],"DELETE");
   },
   async deleteDns(name: string, items: Record<string, unknown>[]) {
     allowWrite(name);

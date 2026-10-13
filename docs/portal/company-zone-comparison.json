@@ -25,7 +25,7 @@
     "risk":"A nameserver change with the stale old DS can break validating resolvers. No claim of instant DNS rollback.",
     "documentation":"https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/"
   },
-  "applicationCutover":"Separate later approval replaces only www Vercel CNAME with the production Worker custom domain. Initial apex record and all mail/service records remain unchanged. The existing www currently redirects to the apex in the Vercel browser flow. Do not assume the apex redirects to www.",
+  "applicationCutover":"Separate later approval replaces both www Vercel CNAME and apex Vercel A with custom-domain associations to the same production Worker. All nine mail/service records and their TTLs remain unchanged. The existing www currently redirects to apex on Vercel, so retaining the apex website target after launch is unsafe for canonical routing. The new Worker redirects only the owned apex to www with uncached HTTP 307, preserving paths/query/method for rollback safety.",
   "verification":"Read complete authoritative Spaceship UI inventory, confirmed SRV priority/weight/port through authoritative DNS, read staged Cloudflare table values, TTLs and DNS-only states, and read actual Cloudflare-assigned nameservers. Google DNS-over-HTTPS still reports original NS/DS with authenticated data and the existing public homepage loads in the browser. The local Windows DNS resolver intermittently returned server failure, so its result was not used as evidence of a public outage.",
   "paidFeaturesEnabled":false,
   "emailRoutingEnabled":false,

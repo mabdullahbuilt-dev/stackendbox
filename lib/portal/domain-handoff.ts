@@ -31,7 +31,7 @@ export async function activateDomainClient(actor:string,raw:unknown){
   if(clientId){
     const holder=await verifyPortalAssignment(name);
     checkDb((await db.rpc("portal_assign_verified_domain",{p_domain:domain.id,p_client:clientId,p_holder:holder.holder,p_arrangement:input.holder_arrangement,p_actor:actor})).error);
-    await audit(actor,"existing_client_domain_handoff",domain.id,{client_id:clientId,registered_holder_unchanged:true,registrar_custody_unchanged:true,password_unchanged:true});
+    await audit(actor,"existing_client_domain_handoff",domain.id,{client_id:clientId,contact_id:holder.contact_id,verification_status:holder.verification_status,checked_at:holder.checked_at,registered_holder_unchanged:true,registrar_custody_unchanged:true,password_unchanged:true});
     await notifyClient(clientId,"Your domain is available in StackEndBox",`${name} is assigned to your StackEndBox account for authorized management. Your existing password is unchanged. This does not change the registered holder or registrar account.`,`domain-assigned:${domain.id}:${clientId}`);
     return {client_id:clientId,domain_id:domain.id,message:"Verified domain assigned to the existing client. Their password and registrar ownership are unchanged."};
   }

@@ -5,6 +5,19 @@ import { acceptanceConfiguration, productionConfiguration } from "../platform/ed
 
 afterEach(() => vi.unstubAllGlobals());
 describe("static frontend server boundary", () => {
+  it("canonicalizes only the owned apex without caching a rollback redirect loop",async()=>{
+    const backend=vi.fn();vi.stubGlobal("fetch",backend);
+    const assets=vi.fn(async()=>new Response("static"));
+    const env={EDGE_BACKEND_URL:"",STACKENDBOX_BRIDGE_SECRET:"",ASSETS:{fetch:assets}};
+    const response=await gateway.fetch(new Request("https://stackendbox.com/client-portal/auth/callback?type=recovery&token_hash=fixture"),env);
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://www.stackendbox.com/client-portal/auth/callback?type=recovery&token_hash=fixture");
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(assets).not.toHaveBeenCalled();expect(backend).not.toHaveBeenCalled();
+    expect((await gateway.fetch(new Request("https://www.stackendbox.com/"),env)).status).toBe(200);
+    expect((await gateway.fetch(new Request("https://stackendbox-production.stackendbox.workers.dev/"),env)).status).toBe(200);
+    expect((await gateway.fetch(new Request("https://stackendbox.com/api/brief",{method:"POST",body:"fixture"}),env)).status).toBe(307);
+  });
   it("requires main-domain origin and a dedicated credential for production email scheduling",()=>{
     const values:Record<string,string>={STACKENDBOX_ACCEPTANCE_CRON_SECRET:"acceptance-fixture",STACKENDBOX_ACCEPTANCE_PORTAL_JOBS_ENABLED:"true",STACKENDBOX_ACCEPTANCE_PORTAL_JOB_CLIENT_ALLOWLIST:"acceptance-client"};
     const read=(name:string)=>values[name];

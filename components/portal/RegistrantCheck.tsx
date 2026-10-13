@@ -31,7 +31,8 @@ export function RegistrantCheck({ name }: { name: string }) {
       <dt>Checked</dt><dd>{new Date(result.checked_at).toLocaleString()}</dd>
     </dl>}
     <p>Holder changes may require Spaceship verification emails. Required registrar notices aren’t replaced by StackEndBox service emails.</p>
-    <button disabled>Change registered holder, awaiting live-operation approval</button>
+    <button disabled>Transfer Ownership, legal registrant change awaiting approval</button>
+    <p>Requires the exact intended legal holder, accurate contact details, destination email and specific consent. The supported process saves an official Spaceship contact, updates the domain’s registrant contact ID and verifies the resulting provider state. No ownership change is claimed before confirmation.</p>
     <p>An account-to-account move is a separate, optional dashboard workflow. No documented generic API endpoint has been verified for it.</p>
   </section>;
 }

@@ -11,6 +11,7 @@ export const acceptanceSettings = [
   "CRON_SECRET", "PORTAL_JOBS_ENABLED",
   "PORTAL_JOB_CLIENT_ALLOWLIST",
   "PORTAL_RELEASE_CHECK_TOKEN",
+  "DOMAIN_ACCEPTANCE_GRANT",
 ] as const;
 
 export function acceptanceConfiguration(base: Record<string, string>, get: (name: string) => string | undefined): Readonly<Record<string, string>> {
@@ -42,5 +43,6 @@ export function productionConfiguration(base:Record<string,string>,get:(name:str
   return Object.freeze({...providerConfig,VERCEL_ENV:"production",PORTAL_APP_URL:origin,
     PORTAL_DIAGNOSTICS_TOKEN:"",PORTAL_SANDBOX_CHECKOUT_ENABLED:"false",CRON_SECRET:cron,
     PORTAL_JOB_CLIENT_ALLOWLIST:get("STACKENDBOX_PRODUCTION_PORTAL_JOB_CLIENT_ALLOWLIST")?.trim()||"",
+    PORTAL_PROVIDER_RECONCILIATION_ENABLED:jobs?"true":"false",
     PORTAL_JOBS_ENABLED:jobs?"true":"false"});
 }

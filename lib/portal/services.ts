@@ -12,7 +12,7 @@ import {
 import { domainSchema, spaceship } from "./spaceship";
 import {requireVerifiedExpiration} from "./domain-snapshot";
 
-async function saveVerifiedDomain(d: z.infer<typeof domainSchema>) {
+export async function saveVerifiedDomain(d: z.infer<typeof domainSchema>) {
   const name = domainName(d.name);
   const expiration=requireVerifiedExpiration(d.lifecycleStatus,d.expirationDate);
   const db = adminDb();
@@ -328,6 +328,8 @@ export async function runJobs(targetEmailIds?: string[], generateReminders = tru
   const clientScope = scopeRaw ? z.array(z.uuid()).min(1).max(400).parse(scopeRaw.split(",").map(s=>s.trim())) : undefined;
   if (!targetEmailIds && process.env.VERCEL_ENV === "preview" && !clientScope)
     throw new PortalError("acceptance_job_scope_required", 503);
+  if(!targetEmailIds&&process.env.PORTAL_PROVIDER_RECONCILIATION_ENABLED==="true")
+    await (await import("./provider-reconciliation")).reconcileAssignedDomains(clientScope);
   checkDb((await db.rpc("portal_recover_stale_email_claims")).error);
   // Email schedules never fulfill orders or mutate domain expiration.
   let assignments: {client_id:string;portal_domains:unknown}[] = [];

@@ -1,0 +1,81 @@
+{
+  "status": "REAL_DOMAIN_ACCEPTANCE_PASSED_MAIN_DOMAIN_CUTOVER_NOT_EXECUTED",
+  "candidate": "https://stackendbox-production.stackendbox.workers.dev",
+  "workerVersion": "6a12e922-9eed-47a1-8d9d-5adf39ceeea8",
+  "architecture": "Existing public frontend and portal compiled as static assets, authenticated server routes in the existing Supabase Edge backend. Old vinext runtime was not changed.",
+  "domain": {
+    "name": "test123.buzz",
+    "source": "Dedicated primary Spaceship credentials and real administrator Verify and import action, independently matched against .buzz RDAP",
+    "status": "registered",
+    "registeredAt": "2026-10-13T16:32:28.670Z",
+    "expiresAt": "2027-10-13T16:32:28.670Z",
+    "autoRenew": false,
+    "nameservers": ["launch2.spaceship.net", "launch1.spaceship.net"],
+    "privacy": "high",
+    "portalAssignment": "Existing authorized test client abdullahlp114@gmail.com. Management access only, licensed arrangement, existing password preserved.",
+    "legalRegistrant": "Read and verified through Spaceship official contact ID. Unchanged by assignment. Detailed holder information remains in the authorized staff view and database, not this release artifact.",
+    "custody": "Dedicated StackEndBox Spaceship account, unchanged",
+    "renewalQuote": "Not verified. UI correctly shows Quote required, with no invented supplier price.",
+    "assignmentRetained": true
+  },
+  "actualBrowserAcceptance": {
+    "administrator": "Normal administrator password login and enrolled authenticator MFA passed. Staff domain forms loaded. Existing-client handoff succeeded with owner confirmation. Create-client form inspected, no additional identity created in this acceptance run.",
+    "client": "Owner entered the existing client password personally. Domain appears on dashboard, list and details with actual expiry, privacy, nameservers and registrar auto-renew Off. Refresh and candidate redeployment retained the assignment and session.",
+    "dns": "Client Refresh verified settings succeeded against the secured provider-backed API. Empty DNS baseline displayed correctly. General mutations remain disabled.",
+    "staffAuthorization": "A new browser tab in the client session visiting /admin/domains showed Account access unavailable and denied administrator access.",
+    "services": "Existing labelled website fixture, Sandbox paid receipt and saved staff support replies visible as the client. No additional payment or email journey repeated.",
+    "email": "Domain assignment has one outbox record, one send attempt and Brevo provider acceptance ID. Inbox delivery is not inferred from provider acceptance.",
+    "tenantIsolationScope": "This run proves authorized assignment visibility and staff denial. Previously completed isolated RLS tests remain evidence for cross-client isolation. No second real customer browser identity was created for this run."
+  },
+  "approvedTxtAcceptance": {
+    "hostname": "_stackendbox-acceptance.test123.buzz",
+    "value": "stackendbox-acceptance-20261013",
+    "ttl": 300,
+    "addOperation": "919af9e9-a9dc-4292-9472-3249d9f3ad1b",
+    "deleteOperation": "ad1c412f-c7c8-4ac7-8c61-5fcd1172ceb7",
+    "result": "Both durable operations verified through the normal admin UI. Authoritative TXT presence verified after add, absence verified after delete. Spaceship DNS count restored to zero.",
+    "grant": "Expiring exact-record admin grant removed after successful cleanup. No blanket registrar write flag enabled.",
+    "unrelatedSettingsChanged": false
+  },
+  "implementationCompleted": [
+    "Reusable narrowly authorized TXT acceptance with strict domain, actor, record, expiry and idempotency checks, baseline preservation and ambiguous-operation review lock.",
+    "Fixed PostgREST one-to-one assignment relationship handling, accepting the documented object or single-item array without admitting multiple clients.",
+    "Added read-only scheduled provider reconciliation with bounded four-domain claims, overlapping-job protection, verified snapshot preservation and retry backoff. Candidate schedule remains disabled.",
+    "Recorded more precise holder verification references in future domain handoff audits.",
+    "Prepared both apex and www Worker custom domains. Apex redirects only to www with uncached 307 preserving path, query and method. Not applied to live DNS.",
+    "Clarified disabled legal Transfer Ownership action and its separate consent/contact/provider-confirmation requirements."
+  ],
+  "verification": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "targetedTests": "99 earlier focused assertions and 34 latest focused assertions passed, overlapping suites not summed as a unique total",
+    "productionStaticEdgeBuild": "passed, Edge bundle 2138854 bytes and portal JavaScript 319587 bytes",
+    "diffCheck": "passed",
+    "duplicateAssignment": "Actual database unique constraint rejected a second client assignment in an isolated rolled-back transaction. Existing assignment survived and temporary client rolled back.",
+    "migration": "202610130009 applied non-destructively. Scoped atomic claim test returned first claim 1 and overlapping second claim 0 inside a rolled-back transaction.",
+    "deployment": "Existing production candidate Worker and Edge function updated. Candidate client records remained visible afterward. Main domain and Vercel production unchanged."
+  },
+  "backup": {
+    "newSnapshot": "C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/2026-10-13T17-28-43-681Z",
+    "encryptedBytes": 431435,
+    "includesAuth": true,
+    "objects": 0,
+    "recoveryEvidence": "Prior portable-key isolated restore evidence retained, not repeated. This new generation has not undergone a new restore drill.",
+    "offsiteCustody": "Still pending owner custody in an existing private offsite destination. Recovery code must be stored separately. See offsite-backup-custody.json."
+  },
+  "phaseA": "Core tested client/admin/domain workflow is ready for a controlled main-domain cutover, subject to independent backup custody and approved staged DNSSEC/delegation/routing changes. Actual company-domain TLS, auth redirects and mail/contact smoke checks must pass before declaring launch complete.",
+  "disabled": [
+    "Live payments and renewal checkout",
+    "Registrar purchases, renewals, transfers, unlocking, contact/ownership changes and general DNS/nameserver writes",
+    "Production candidate background dispatch/reminder/reconciliation schedules"
+  ],
+  "phaseBRemaining": "Verified supplier renewal quote, explicitly authorized real payment-to-registrar renewal acceptance, durable reconciliation of Whop settlement separately from Spaceship billing, verified extended expiration and notifications. Existing Sandbox payment evidence is retained, not represented as live renewal proof.",
+  "cutover": {
+    "nameservers": ["hugh.ns.cloudflare.com", "jillian.ns.cloudflare.com"],
+    "oldDs": "Key tag 23596, algorithm 13, digest type 2, observed parent TTL 21600 seconds. Must be removed only with approval, parent absence and cache expiry verified before delegation.",
+    "preservation": "All eleven source records retained during delegation. At later approved application cutover replace only apex A and www CNAME with Worker custom-domain associations, preserving all nine mail/service records and TTLs.",
+    "rollback": "Existing Vercel deployment dpl_HwiyiEkB6DXUfGv1gZqfvsckomrE retained. Restore original apex A 216.198.79.1 and www CNAME 4a78646662027dfa.vercel-dns-017.com with TTL 1800, preserving mail. Delegation/DNSSEC rollback requires signer-compatible DS handling and cache considerations.",
+    "plan": "main-domain-cutover-plan.json and company-zone-comparison.json",
+    "executed": false
+  }
+}

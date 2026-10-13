@@ -12,6 +12,7 @@ const runtime = resolve(root, 'platform/edge/next-runtime.ts');
 const navigation = resolve(root, 'platform/static/navigation.tsx');
 const localConfiguration = process.env.PORTAL_PRIVATE_ENV ? parseEnv(await readFile(process.env.PORTAL_PRIVATE_ENV,'utf8')) : {};
 const publicConfiguration = Object.fromEntries(['NEXT_PUBLIC_SITE_URL','NEXT_PUBLIC_COMPANY_EMAIL','NEXT_PUBLIC_CAL_URL','NEXT_PUBLIC_CONTACT_PHONE','NEXT_PUBLIC_WHATSAPP_URL','NEXT_PUBLIC_GITHUB_URL','NEXT_PUBLIC_LINKEDIN_URL','NEXT_PUBLIC_X_URL','NEXT_PUBLIC_ANALYTICS_ENDPOINT','NEXT_PUBLIC_TURNSTILE_SITE_KEY'].map(name=>[name,process.env[name]||localConfiguration[name]]).filter(([,value])=>value));
+if (productionBuild) publicConfiguration.NEXT_PUBLIC_SITE_URL = 'https://www.stackendbox.com';
 const publicSiteKey = publicConfiguration.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 const edgeAliases = { name: 'edge-boundary', setup(b) {
   b.onResolve({ filter: /^next\/(server|headers)$/ }, () => ({ path: runtime }));

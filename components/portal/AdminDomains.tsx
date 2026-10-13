@@ -5,6 +5,7 @@ import { api, type Data } from "./Portal";
 import { DomainControls } from "./DomainControls";
 import { RegistrantCheck } from "./RegistrantCheck";
 import { DomainHandoff } from "./DomainHandoff";
+import {DnsAcceptance} from "./DnsAcceptance";
 
 type Row = Record<string, unknown>;
 const rows = (data: Data, key: string) => (data[key] || []) as Row[];
@@ -77,6 +78,7 @@ export function AdminDomains({
                 ? "Inventory reconciliation required."
                 : ""}
             </p>
+            <DnsAcceptance name={text(selected.name)}/>
             {(["dns", "nameservers", "privacy"] as const).map((panel) => (
               <section className="portal-panel" key={panel}>
                 <h2>

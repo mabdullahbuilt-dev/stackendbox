@@ -10,5 +10,6 @@
   ],
   "disable":"Set production job switches false and remove cron triggers. Keep the queue and delivery ledger intact.",
   "providerSeparation":"Scheduler uses only BREVO_CLIENT_API_KEY and the verified client sender. Public contact continues using BREVO_API_KEY independently.",
+  "providerReconciliation":"The same approved main-domain job gate enables read-only primary-account reconciliation. At most four assigned active-client domains are atomically claimed per tick. Successful snapshots are checked again after 24 hours, failures after one hour, abandoned claims after 15 minutes. Prior verified records survive provider failure, and actual auto-renew drift is reported for review without changing registrar settings.",
   "guardrails":"Live payments, purchases, renewals, transfers and DNS writes remain disabled regardless of scheduler activation."
 }

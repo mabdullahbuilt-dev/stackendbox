@@ -13,6 +13,15 @@ const gateway = {
   },
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
+    if (url.hostname === "stackendbox.com") {
+      const canonical = new URL(url);
+      canonical.protocol = "https:";
+      canonical.hostname = "www.stackendbox.com";
+      canonical.port = "";
+      // Temporary and uncached during cutover, so a rollback cannot leave a
+      // cached apex-to-www redirect looping against the old Vercel redirect.
+      return new Response(null, {status:307,headers:{Location:canonical.href,"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
+    }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/client-portal/auth/callback") return env.ASSETS.fetch(req);
     if (!env.EDGE_BACKEND_URL || !env.STACKENDBOX_BRIDGE_SECRET) return Response.json({ error: "backend_unavailable" }, { status: 503 });
     const target = new URL(env.EDGE_BACKEND_URL + url.pathname + url.search);

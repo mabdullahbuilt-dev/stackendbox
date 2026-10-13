@@ -12,6 +12,7 @@ function canonical(value: unknown): unknown {
   return value;
 }
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
+export const domainStateVersion=(detail:Awaited<ReturnType<typeof spaceship.detail>>,items:Record<string,unknown>[])=>hash({nameservers:detail.nameservers,privacy:detail.privacyProtection,records:items.map(r=>recordKey(r,true)).sort()});
 const dnsPage = z.object({ items: z.array(z.object({ type: z.string(), name: z.string(), ttl: z.number().optional(), group: z.object({ type: z.string() }) }).passthrough()), total: z.number() });
 export const domainChangeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("dns"), action: z.enum(["add", "edit", "delete"]), before: dnsRecordSchema.optional(), after: dnsRecordSchema.optional() }),
@@ -36,7 +37,7 @@ export async function readDomainState(name: string) {
   const expectedHosts = detail.nameservers?.hosts.map(s => s.toLowerCase().replace(/\.$/, "")) || [];
   const managed = detail.nameservers?.provider === "basic" && authoritativeHosts.length > 0 && authoritativeHosts.every(s => expectedHosts.includes(s.toLowerCase().replace(/\.$/, ""))) && authoritativeHosts.length === expectedHosts.length;
   const dns = managed ? dnsPage.parse(await spaceship.dns(name)) : { items: [], total: 0 };
-  const version = hash({ nameservers: detail.nameservers, privacy: detail.privacyProtection, records: dns.items.map(r => recordKey(r, true)).sort() });
+  const version = domainStateVersion(detail,dns.items);
   let changesEnabled = true;
   try { mutationAllowed(name); } catch { changesEnabled = false; }
   return { detail, dns, version, managed, changesEnabled, checked_at:new Date().toISOString() };

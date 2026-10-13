@@ -482,6 +482,11 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions());
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
+      if(path[1]==="domains"&&path[2]&&path[3]==="dns-acceptance"&&path.length===4){
+        const acceptance=await import("@/lib/portal/dns-acceptance");
+        if(req.method==="GET")return reply(await acceptance.readDnsAcceptance(domainName(path[2]),admin.user.id));
+        if(req.method==="POST")return reply(await acceptance.executeDnsAcceptance(domainName(path[2]),admin.user.id,body));
+      }
       if (route === "admin/client-update" && req.method === "POST") return reply(await editClient(admin.user.id,body));
       if (route === "admin/invoices" && req.method === "POST") return reply(await createServiceInvoice(admin.user.id,body));
       if (route === "admin/invoice-status" && req.method === "POST") return reply(await transitionServiceInvoice(admin.user.id,body));
