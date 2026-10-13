@@ -309,6 +309,8 @@ export async function notifyClient(
     );
 }
 export async function runJobs() {
+  if (process.env.PORTAL_JOBS_ENABLED !== "true")
+    return { emailsAccepted: 0, status: "disabled" as const };
   const db = adminDb();
   checkDb((await db.rpc("portal_recover_stale_email_claims")).error);
   if (sandboxCheckoutEnabled()) checkDb((await db.rpc("portal_run_simulations")).error);

@@ -13,13 +13,14 @@ export async function POST(req: Request) {
       raw,
       Object.fromEntries(req.headers.entries()),
     );
-    after(async () => {
-      try {
-        await runJobs();
-      } catch {
-        /* Durable queued work is retained for the scheduled or admin retry. */
-      }
-    });
+    if (process.env.PORTAL_JOBS_ENABLED === "true")
+      after(async () => {
+        try {
+          await runJobs();
+        } catch {
+          /* Durable queued work is retained for the scheduled or admin retry. */
+        }
+      });
     return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json(

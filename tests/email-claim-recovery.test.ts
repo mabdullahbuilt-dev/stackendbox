@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 const state = vi.hoisted(() => ({ rpc: vi.fn(), assignments: vi.fn() }));
@@ -21,6 +21,7 @@ import { runJobs } from "@/lib/portal/services";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("PORTAL_JOBS_ENABLED", "true");
   vi.stubEnv("PORTAL_SANDBOX_CHECKOUT_ENABLED", "false");
   state.assignments.mockResolvedValue({ data: [], error: null });
   state.rpc.mockImplementation(async (name: string) => ({
@@ -28,8 +29,15 @@ beforeEach(() => {
     error: null,
   }));
 });
+afterEach(() => vi.unstubAllEnvs());
 
 describe("durable email claim recovery", () => {
+  it("does not touch the database when operational jobs are disabled", async () => {
+    vi.stubEnv("PORTAL_JOBS_ENABLED", "false");
+    expect(await runJobs()).toEqual({ emailsAccepted: 0, status: "disabled" });
+    expect(state.rpc).not.toHaveBeenCalled();
+    expect(state.assignments).not.toHaveBeenCalled();
+  });
   it("classifies abandoned sends before claiming new work, without resending them", async () => {
     expect(await runJobs()).toEqual({ emailsAccepted: 0 });
     expect(state.rpc.mock.calls.map(([name]) => name)).toEqual([
