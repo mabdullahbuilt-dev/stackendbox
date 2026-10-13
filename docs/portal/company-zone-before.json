@@ -1,0 +1,21 @@
+{
+  "source":"Spaceship Advanced DNS, signed-in company-domain account Ibrahim123, loaded DNS Records (11), 2026-10-13",
+  "zone":"stackendbox.com",
+  "nameservers":["launch1.spaceship.net","launch2.spaceship.net"],
+  "dnssec":{"enabled":true,"keyTag":23596,"algorithm":13,"digestType":2,"digest":"9e75d2d538a3a452396704694a53c6f4b1ad7fb08b147c87f3b86c47550211ab","provider":"Spaceship automatically managed DS"},
+  "records":[
+    {"name":"@","type":"MX","content":"mx2.spacemail.com","priority":0,"ttl":300},
+    {"name":"@","type":"MX","content":"mx1.spacemail.com","priority":0,"ttl":300},
+    {"name":"_autodiscover._tcp","type":"SRV","content":"autoconfig.spacemail.com","priority":0,"weight":0,"port":443,"ttl":300},
+    {"name":"@","type":"TXT","content":"v=spf1 include:spf.spacemail.com ~all","ttl":300},
+    {"name":"spacemail._domainkey","type":"TXT","content":"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlLB9T6IOXbJ9ARMUZzlv/VaRC7dcjL1mNzWnh9/A59Zhhh6/t1cGnl7IxmYU5hef2xCZzmPH89n1K9GOj6KWQLpbZQgrDP1qzChxZNlWesnARBa4BpJUuBukN7DVbDvIsu+4C71PjbJzzb33gtKr993e02LylfJKVVycAA8E5MS0RYE7UR7jk2JJHTaz4hR567zaCy1gWq8JjbyBTJ8fU/LTE+jtA+zeGff1h0BWzVen0wKuNds9bIT0dWKWPmwApCABpMD6d7A5d0nxZQGZjzT7dLPgEqQTlwAfArxDKTCG7OZS/LHlrEf4dL0orj9VwyvL4z0akabMd5X05z7f0QIDAQAB","ttl":300},
+    {"name":"@","type":"A","content":"216.198.79.1","ttl":1800},
+    {"name":"brevo1._domainkey","type":"CNAME","content":"b1.stackendbox-com.dkim.brevo.com","ttl":1800},
+    {"name":"brevo2._domainkey","type":"CNAME","content":"b2.stackendbox-com.dkim.brevo.com","ttl":1800},
+    {"name":"www","type":"CNAME","content":"4a78646662027dfa.vercel-dns-017.com","ttl":1800},
+    {"name":"_dmarc","type":"TXT","content":"v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com","ttl":1800},
+    {"name":"@","type":"TXT","content":"brevo-code:e7e12daf87117b9b53f3af00a7760747","ttl":1800}
+  ],
+  "caa":"No CAA record present among the complete 11-record authoritative UI inventory. No new CAA will be invented.",
+  "changesPerformed":"Read-only inventory. No registrar settings, DNS records, DNSSEC or account/API credentials changed."
+}

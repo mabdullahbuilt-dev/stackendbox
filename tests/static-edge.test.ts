@@ -5,6 +5,20 @@ import { acceptanceConfiguration, productionConfiguration } from "../platform/ed
 
 afterEach(() => vi.unstubAllGlobals());
 describe("static frontend server boundary", () => {
+  it("requires main-domain origin and a dedicated credential for production email scheduling",()=>{
+    const values:Record<string,string>={STACKENDBOX_ACCEPTANCE_CRON_SECRET:"acceptance-fixture",STACKENDBOX_ACCEPTANCE_PORTAL_JOBS_ENABLED:"true",STACKENDBOX_ACCEPTANCE_PORTAL_JOB_CLIENT_ALLOWLIST:"acceptance-client"};
+    const read=(name:string)=>values[name];
+    expect(productionConfiguration({},read).PORTAL_JOBS_ENABLED).toBe("false");
+    expect(productionConfiguration({},read).CRON_SECRET).toBe("");
+    values.STACKENDBOX_PRODUCTION_PORTAL_JOBS_ENABLED="true";
+    expect(productionConfiguration({},read).PORTAL_JOBS_ENABLED).toBe("false");
+    values.STACKENDBOX_PRODUCTION_CRON_SECRET="x".repeat(32);
+    expect(productionConfiguration({},read).PORTAL_JOBS_ENABLED).toBe("true");
+    expect(productionConfiguration({},read).PORTAL_JOB_CLIENT_ALLOWLIST).toBe("");
+    expect(productionConfiguration({},read).DOMAIN_LIVE_RENEWALS_ENABLED).toBe("false");
+    values.STACKENDBOX_PRODUCTION_TEST_ORIGIN="https://stackendbox-production.stackendbox.workers.dev";
+    expect(productionConfiguration({},read).PORTAL_JOBS_ENABLED).toBe("false");
+  });
   it("allows only the owned temporary production origin before cutover",()=>{
     const get=(value:string)=>(name:string)=>name==="STACKENDBOX_PRODUCTION_TEST_ORIGIN"?value:undefined;
     expect(productionConfiguration({},get("https://stackendbox-production.stackendbox.workers.dev")).PORTAL_APP_URL).toBe("https://stackendbox-production.stackendbox.workers.dev");

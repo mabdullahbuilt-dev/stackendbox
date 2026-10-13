@@ -35,6 +35,12 @@ export function productionConfiguration(base:Record<string,string>,get:(name:str
   const providerConfig=acceptanceConfiguration(base,name=>get(name.replace("STACKENDBOX_ACCEPTANCE_","STACKENDBOX_PRODUCTION_"))||get(name));
   const candidate="https://stackendbox-production.stackendbox.workers.dev";
   const origin=get("STACKENDBOX_PRODUCTION_TEST_ORIGIN")===candidate?candidate:"https://www.stackendbox.com";
+  // Candidate testing must never widen the acceptance mail scope. Main-domain
+  // dispatch requires its own explicit switch and private scheduler credential.
+  const cron=get("STACKENDBOX_PRODUCTION_CRON_SECRET")?.trim()||"";
+  const jobs=origin!==candidate && get("STACKENDBOX_PRODUCTION_PORTAL_JOBS_ENABLED")==="true" && cron.length>=32;
   return Object.freeze({...providerConfig,VERCEL_ENV:"production",PORTAL_APP_URL:origin,
-    PORTAL_DIAGNOSTICS_TOKEN:"",PORTAL_SANDBOX_CHECKOUT_ENABLED:"false",PORTAL_JOBS_ENABLED:"false"});
+    PORTAL_DIAGNOSTICS_TOKEN:"",PORTAL_SANDBOX_CHECKOUT_ENABLED:"false",CRON_SECRET:cron,
+    PORTAL_JOB_CLIENT_ALLOWLIST:get("STACKENDBOX_PRODUCTION_PORTAL_JOB_CLIENT_ALLOWLIST")?.trim()||"",
+    PORTAL_JOBS_ENABLED:jobs?"true":"false"});
 }

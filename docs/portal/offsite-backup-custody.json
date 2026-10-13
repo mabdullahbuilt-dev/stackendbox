@@ -1,0 +1,19 @@
+{
+  "status":"RESTORE_VERIFIED_OFFSITE_CUSTODY_PENDING",
+  "existingEvidence":"Fresh encrypted backup from 2026-10-13T15-09-46-145Z, 426845 bytes. Portable-key restore passed migration validation, RLS, integrity and persistence after restart in isolated local PostgreSQL. Do not repeat this completed drill or describe it as a full hosted Supabase restore.",
+  "backupDirectory":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/2026-10-13T15-09-46-145Z",
+  "encryptedFileSha256":{"database.dump.enc":"F89A0367321B1CEE4FCCF9BD12F7D847914BE201DC5495A887618B0C53AEB4F7","manifest.enc":"D5AFE53D00C11F9CE25D5066167B73BE298700052F04CE9BFDB6DF29AC7C932C"},
+  "encryptedRecoveryKey":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/keys/portable-recovery-key.pem",
+  "recoveryCodeFile":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/keys/portable-recovery-code.txt",
+  "ownerSteps":[
+    "Copy the entire dated encrypted backup directory and portable-recovery-key.pem into an existing private offsite account or separately stored encrypted removable drive. Do not create public links or use a Git repository.",
+    "Store the recovery code personally in a separate trusted vault or sealed offline location, not beside the offsite backup and encrypted key. Never paste it into chat, email or an application log.",
+    "Keep at least two dated backup generations and the original local keys. Do not replace the original provider credentials or upload plaintext database dumps.",
+    "Record who can recover the backup, where each component is held and a private access-recovery method that survives loss of this computer.",
+    "Verify the copied encrypted file hashes against the original manifest. A complete backup and key can remain together only when the strong recovery code is held separately.",
+    "For recovery on another computer, install the official PostgreSQL/runtime tools, obtain the encrypted key and code separately, and run an isolated restore before any production database writes. Do not overwrite the live project as a drill.",
+    "A hosted disaster recovery also needs provider-secret recovery, Supabase Auth configuration, redirect allowlist, project/storage policy restoration and any storage object payloads. These are separate from the completed local SQL/data drill."
+  ],
+  "constraints":"No offsite upload destination is assumed or authorized by this document. Use existing storage with restricted access. Do not buy backup services or expose recovery material.",
+  "readyWhen":"Owner confirms independent custody and copied encrypted-file integrity. Current key and code remain locally ACL protected, so computer-independent custody is not yet complete."
+}

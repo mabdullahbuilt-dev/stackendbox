@@ -1,0 +1,14 @@
+{
+  "status":"PREPARED_NOT_ENABLED",
+  "candidate":"Production candidate stays disabled even if a production job-enable secret is present. Existing acceptance dispatch and scoped delivery evidence remain unchanged.",
+  "activationAfterMainDomainAcceptance":[
+    "Generate a new private production scheduler secret securely, at least 32 characters. Store STACKENDBOX_PRODUCTION_CRON_SECRET in existing Supabase secrets and the same value as CRON_SECRET in the production Worker. Never reuse the acceptance scheduler secret or print it.",
+    "Only after company-domain routes are verified, remove STACKENDBOX_PRODUCTION_TEST_ORIGIN and set STACKENDBOX_PRODUCTION_PORTAL_JOBS_ENABLED=true in Supabase. A dedicated explicit production client allowlist can restrict the first operational run.",
+    "Set Worker PORTAL_JOBS_ENABLED=true and configure */10 * * * * for dispatch plus 0 0 * * * for daily renewal reminders. This activates only outbox/reminder jobs, not payment fulfilment or registrar execution.",
+    "Before lifting an initial client allowlist, review pending shared-database test messages and ambiguous delivery states. Preserve customer history and never retry already accepted or unknown sends blindly.",
+    "Verify one authorized production-origin notification has a single provider acceptance/ledger entry, then confirm schedule telemetry and mailbox delivery. Monitor quota and outbox age, rather than assuming the four-message dispatch batch can clear an unlimited backlog."
+  ],
+  "disable":"Set production job switches false and remove cron triggers. Keep the queue and delivery ledger intact.",
+  "providerSeparation":"Scheduler uses only BREVO_CLIENT_API_KEY and the verified client sender. Public contact continues using BREVO_API_KEY independently.",
+  "guardrails":"Live payments, purchases, renewals, transfers and DNS writes remain disabled regardless of scheduler activation."
+}

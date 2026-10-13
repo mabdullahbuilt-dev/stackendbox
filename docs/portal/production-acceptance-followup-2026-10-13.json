@@ -1,0 +1,22 @@
+{
+  "status":"AWAITING_PERSONAL_CANDIDATE_AUTHENTICATION_NOT_FINAL_LAUNCH_SIGNOFF",
+  "candidate":"https://stackendbox-production.stackendbox.workers.dev",
+  "completedThisFollowup":[
+    "Read the company account's complete 11-record DNS inventory and enabled Spaceship DNSSEC/DS without changing it.",
+    "Created the requested pending Cloudflare Free zone, imported all 11 records DNS-only, verified displayed values and TTLs, and recorded actual assigned nameservers hugh.ns.cloudflare.com and jillian.ns.cloudflare.com.",
+    "Preserved Vercel A/CNAME website targets, both MX records, Spacemail SPF/DKIM/SRV, Brevo DKIM/verification and DMARC. No CAA was present in the source inventory.",
+    "Confirmed original NS and DS still resolve with authenticated data through public DNS-over-HTTPS and the existing main-domain homepage loads in the built-in browser.",
+    "Prepared secure independent backup/key/code custody instructions with encrypted file SHA256 hashes. Existing successful restore evidence preserved and not repeated.",
+    "Fixed production email scheduling activation so it requires the main-domain origin, an explicit production-only enable flag and its own private cron credential. Candidate testing remains disabled and acceptance credentials cannot silently enable production jobs.",
+    "Built and deployed the updated production Edge backend. Candidate jobs return anonymous 401 and diagnostics 404. Focused static/Edge tests 14 passed, lint passed, production build with TypeScript passed."
+  ],
+  "browserAcceptance":"The candidate tab still shows the login form. No password login, fresh MFA, administrator form, or test-client browser result is fabricated. Continue these checks once founder personally authenticates.",
+  "historicalEvidence":"Prior public contact delivery, client activation/recovery/login, support/website/billing persistence, genuine Whop Sandbox and personal Spaceship read-only acceptance remain valid historical evidence and were not repeated here.",
+  "stillDisabled":["Candidate/production customer email scheduler","Live payments and checkout","Real purchases/renewals/transfers/unlocks","DNS/nameserver/registrant writes"],
+  "stillPending":["Fresh candidate administrator MFA and staff form acceptance","Fresh candidate client session and isolated record browser acceptance","One real domain manually purchased in dedicated account for handoff acceptance","Owner confirms independent offsite backup/key custody","Explicit final DNSSEC-transition, delegation and later website-routing approval"],
+  "founderNextAction":"Personally sign into the prepared production candidate tab and verify the existing authenticator. Do not send credentials in chat. No company registrar sign-in is currently needed because the correct company account was already signed in.",
+  "dnsChanges":"Only inactive Cloudflare zone preparation. Active Spaceship nameservers, DNSSEC/DS, website routing, registrar settings and email service remain unchanged.",
+  "importantCorrection":"Initial empty registrar DOM rows were loading placeholders. Loaded company-account inventory has seven domains including stackendbox.com. This does not change the dedicated API integration's separately verified empty inventory.",
+  "dnsEvidence":"company-zone-before.json, company-zone-staging.bind, company-zone-comparison.json",
+  "cost":"No paid plan, paid services, new registrar account or provider credential changes."
+}

@@ -1,0 +1,14 @@
+$ORIGIN stackendbox.com.
+; Exact 11-record Spaceship UI inventory, 2026-10-13. No SOA, NS or DS imported.
+; Keep every eligible A/CNAME DNS-only during staging. No live cutover authorized.
+@ 300 IN MX 0 mx2.spacemail.com.
+@ 300 IN MX 0 mx1.spacemail.com.
+_autodiscover._tcp 300 IN SRV 0 0 443 autoconfig.spacemail.com.
+@ 300 IN TXT "v=spf1 include:spf.spacemail.com ~all"
+spacemail._domainkey 300 IN TXT ("v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlLB9T6IOXbJ9ARMUZzlv/VaRC7dcjL1mNzWnh9/A59Zhhh6/t1cGnl7IxmYU5hef2xCZzmPH89n1K9GOj6KWQLpbZQgrDP1qzChxZNlWesnARBa4BpJUuBukN7DVbDvIsu+4C71PjbJzzb33gtKr993e02LylfJKVVycAA8E5MS0RYE7UR7jk2JJHTaz4hR" "567zaCy1gWq8JjbyBTJ8fU/LTE+jtA+zeGff1h0BWzVen0wKuNds9bIT0dWKWPmwApCABpMD6d7A5d0nxZQGZjzT7dLPgEqQTlwAfArxDKTCG7OZS/LHlrEf4dL0orj9VwyvL4z0akabMd5X05z7f0QIDAQAB")
+@ 1800 IN A 216.198.79.1
+brevo1._domainkey 1800 IN CNAME b1.stackendbox-com.dkim.brevo.com.
+brevo2._domainkey 1800 IN CNAME b2.stackendbox-com.dkim.brevo.com.
+www 1800 IN CNAME 4a78646662027dfa.vercel-dns-017.com.
+_dmarc 1800 IN TXT "v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com"
+@ 1800 IN TXT "brevo-code:e7e12daf87117b9b53f3af00a7760747"

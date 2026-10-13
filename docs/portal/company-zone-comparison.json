@@ -1,0 +1,33 @@
+{
+  "status":"CLOUDFLARE_FREE_ZONE_STAGED_DELEGATION_NOT_CHANGED",
+  "zone":"stackendbox.com",
+  "before":"company-zone-before.json contains every original value, TTL and the current DS record.",
+  "stagedImport":"company-zone-staging.bind, 11 records, no provider SOA, NS or DS imported.",
+  "comparison":[
+    {"name":"@","type":"A","before":"216.198.79.1","after":"216.198.79.1","ttlBefore":1800,"ttlAfter":1800,"proxyAfter":false},
+    {"name":"www","type":"CNAME","before":"4a78646662027dfa.vercel-dns-017.com","after":"4a78646662027dfa.vercel-dns-017.com","ttlBefore":1800,"ttlAfter":1800,"proxyAfter":false},
+    {"name":"brevo1._domainkey","type":"CNAME","before":"b1.stackendbox-com.dkim.brevo.com","after":"b1.stackendbox-com.dkim.brevo.com","ttlBefore":1800,"ttlAfter":1800,"proxyAfter":false},
+    {"name":"brevo2._domainkey","type":"CNAME","before":"b2.stackendbox-com.dkim.brevo.com","after":"b2.stackendbox-com.dkim.brevo.com","ttlBefore":1800,"ttlAfter":1800,"proxyAfter":false},
+    {"name":"@","type":"MX","before":"0 mx1.spacemail.com","after":"0 mx1.spacemail.com","ttlBefore":300,"ttlAfter":300,"proxyAfter":false},
+    {"name":"@","type":"MX","before":"0 mx2.spacemail.com","after":"0 mx2.spacemail.com","ttlBefore":300,"ttlAfter":300,"proxyAfter":false},
+    {"name":"_autodiscover._tcp","type":"SRV","before":"0 0 443 autoconfig.spacemail.com","after":"0 0 443 autoconfig.spacemail.com","ttlBefore":300,"ttlAfter":300,"proxyAfter":false},
+    {"name":"@","type":"TXT","before":"v=spf1 include:spf.spacemail.com ~all","after":"v=spf1 include:spf.spacemail.com ~all","ttlBefore":300,"ttlAfter":300,"proxyAfter":false},
+    {"name":"spacemail._domainkey","type":"TXT","before":"Exact complete DKIM public key in company-zone-before.json","after":"Same key, BIND character-string chunks concatenate unchanged","ttlBefore":300,"ttlAfter":300,"proxyAfter":false},
+    {"name":"_dmarc","type":"TXT","before":"v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com","after":"v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com","ttlBefore":1800,"ttlAfter":1800,"proxyAfter":false},
+    {"name":"@","type":"TXT","before":"brevo-code:e7e12daf87117b9b53f3af00a7760747","after":"brevo-code:e7e12daf87117b9b53f3af00a7760747","ttlBefore":1800,"ttlAfter":1800,"proxyAfter":false}
+  ],
+  "absent":"No CAA or additional mail-service records are present in the complete source UI inventory. No replacement records invented.",
+  "delegationProposal":{"before":["launch1.spaceship.net","launch2.spaceship.net"],"after":["hugh.ns.cloudflare.com","jillian.ns.cloudflare.com"],"approved":false,"executed":false},
+  "dnssecProposal":{
+    "current":"Enabled, Spaceship key tag 23596, algorithm 13, digest type 2, parent DS TTL observed 21600 seconds.",
+    "requiredApproval":"Separate explicit approval for temporary DNSSEC/DS removal, delegation and subsequent Cloudflare DNSSEC/registrar DS setup. None performed.",
+    "sequence":"With approval, remove the old registrar DS using Spaceship's DNSSEC workflow. Verify absence at the parent and allow the previous DS cache lifetime to expire before switching delegation. Keep Spaceship DNS working during that interval. After Cloudflare is active, enable Cloudflare signing, register only its actual DS and verify validation. Never copy the old Spaceship DS to the new zone.",
+    "risk":"A nameserver change with the stale old DS can break validating resolvers. No claim of instant DNS rollback.",
+    "documentation":"https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/"
+  },
+  "applicationCutover":"Separate later approval replaces only www Vercel CNAME with the production Worker custom domain. Initial apex record and all mail/service records remain unchanged. The existing www currently redirects to the apex in the Vercel browser flow. Do not assume the apex redirects to www.",
+  "verification":"Read complete authoritative Spaceship UI inventory, confirmed SRV priority/weight/port through authoritative DNS, read staged Cloudflare table values, TTLs and DNS-only states, and read actual Cloudflare-assigned nameservers. Google DNS-over-HTTPS still reports original NS/DS with authenticated data and the existing public homepage loads in the browser. The local Windows DNS resolver intermittently returned server failure, so its result was not used as evidence of a public outage.",
+  "paidFeaturesEnabled":false,
+  "emailRoutingEnabled":false,
+  "robotsPolicyRewriteEnabled":false
+}
