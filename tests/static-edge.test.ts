@@ -5,6 +5,25 @@ import { acceptanceConfiguration } from "../platform/edge/configuration";
 
 afterEach(() => vi.unstubAllGlobals());
 describe("static frontend server boundary", () => {
+  it("keeps public and portal Brevo credentials and identities independent", () => {
+    const values: Record<string, string> = {
+      STACKENDBOX_ACCEPTANCE_BREVO_API_KEY: "public-fixture",
+      STACKENDBOX_ACCEPTANCE_BREVO_CLIENT_API_KEY: "portal-fixture",
+      STACKENDBOX_ACCEPTANCE_BREVO_SENDER_EMAIL: "public@example.test",
+      STACKENDBOX_ACCEPTANCE_BREVO_CLIENT_SENDER_EMAIL: "portal@example.test",
+      STACKENDBOX_ACCEPTANCE_BRIEF_TO_EMAIL: "business@example.test",
+    };
+    const config = acceptanceConfiguration({}, name => values[name]);
+    expect(config.BREVO_API_KEY).toBe("public-fixture");
+    expect(config.BREVO_CLIENT_API_KEY).toBe("portal-fixture");
+    expect(config.BREVO_SENDER_EMAIL).toBe("public@example.test");
+    expect(config.BREVO_CLIENT_SENDER_EMAIL).toBe("portal@example.test");
+    expect(config.BRIEF_TO_EMAIL).toBe("business@example.test");
+    const publicOnly = acceptanceConfiguration({}, name => name === "STACKENDBOX_ACCEPTANCE_BREVO_API_KEY" ? "public-fixture" : undefined);
+    expect(publicOnly.BREVO_CLIENT_API_KEY).toBeUndefined();
+    const portalOnly = acceptanceConfiguration({}, name => name === "STACKENDBOX_ACCEPTANCE_BREVO_CLIENT_API_KEY" ? "portal-fixture" : undefined);
+    expect(portalOnly.BREVO_API_KEY).toBeUndefined();
+  });
   it("uses only acceptance-scoped credential overrides and preserves bridge settings", () => {
     const values: Record<string,string> = {
       STACKENDBOX_ACCEPTANCE_BREVO_CLIENT_SENDER_EMAIL: "verified@example.test",
