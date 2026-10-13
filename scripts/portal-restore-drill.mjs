@@ -29,7 +29,7 @@ try{
   await run('pg_ctl',['-D',join(directory,'data'),'-l',join(directory,'postgres.log'),'-o','-h 127.0.0.1 -p 55439','-w','start']);started=true;
   // Only the newly initialized, empty local cluster. No remote connection is accepted.
   await run('psql',['-v','ON_ERROR_STOP=1','-c','drop schema public;']);
-  await run('psql',['-v','ON_ERROR_STOP=1','-c',"create role anon; create role authenticated; create role service_role bypassrls; create role supabase_auth_admin; create role supabase_storage_admin; create role authenticator; create role supabase_admin superuser; create role dashboard_user; create role pgbouncer; create schema extensions; create extension pgcrypto with schema extensions;"]);
+  await run('psql',['-v','ON_ERROR_STOP=1','-c',"create role anon; create role authenticated; create role service_role bypassrls; create role supabase_auth_admin; create role supabase_storage_admin; create role authenticator; create role supabase_admin superuser; create role dashboard_user; create role pgbouncer; create role stackendbox_backup_reader nologin; create schema extensions; create extension pgcrypto with schema extensions;"]);
   await run('pg_restore',['--exit-on-error','--no-owner','-d','postgres'],archive);
   const before=await run('psql',['-t','-A','-c',"select json_build_object('accounts',(select count(*) from portal_accounts),'auth_users',(select count(*) from auth.users),'clients',(select count(*) from portal_clients));"]);
   for(const migration of ['202610120002_domain_operations.sql','202610120003_integrity_provisioning.sql','202610120004_agency_workflow.sql']){

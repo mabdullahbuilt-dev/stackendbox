@@ -26,7 +26,7 @@ export async function startDriveAuthorization(configPath,outputPath,expectedProj
   let session=random(),csrf=random(),state,verifier,tokens,expires=Date.now()+30*60*1000,completed=false;
   const request=async(url,options={})=>{const response=await fetch(url,{...options,signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('google_authorization_request_failed');return response.json();};
   const server=createServer(async(req,res)=>{
-    res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');
+    res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');
     // Google's Picker needs its own iframe and scripts. No other third-party code.
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self' https://apis.google.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src https://docs.google.com https://drive.google.com; connect-src 'self' https://*.googleapis.com; img-src 'self' https://*.googleusercontent.com data:");
@@ -53,8 +53,6 @@ export async function startDriveAuthorization(configPath,outputPath,expectedProj
         if(url.pathname==='/select-folder'){
           if(completed||!tokens?.access_token||data.get('folder')!==folder)throw Error('backup_folder_invalid');
           const headers={Authorization:`Bearer ${tokens.access_token}`};
-          const about=await request('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)',{headers});
-          if(about.user?.emailAddress!==owner)throw Error('backup_owner_mismatch');
           const metadata=await request(`https://www.googleapis.com/drive/v3/files/${folder}?fields=id,name,mimeType,trashed`,{headers});
           if(metadata.mimeType!=='application/vnd.google-apps.folder'||metadata.trashed||metadata.name!=='Encrypted-Backups')throw Error('backup_folder_invalid');
           const permissions=await request(`https://www.googleapis.com/drive/v3/files/${folder}/permissions?fields=permissions(type,role,emailAddress),nextPageToken`,{headers});
@@ -67,11 +65,14 @@ export async function startDriveAuthorization(configPath,outputPath,expectedProj
         }
       }
       if(url.pathname==='/oauth/callback'&&req.method==='GET'){
+        res.setHeader('Referrer-Policy','no-referrer');
         if(!state||!equal(url.searchParams.get('state'),state)||!url.searchParams.get('code')||url.searchParams.has('error'))throw Error('oauth_callback_invalid');
         state=undefined;
         tokens=await request('https://oauth2.googleapis.com/token',{method:'POST',body:new URLSearchParams({client_id:client.client_id,client_secret:client.client_secret,code:url.searchParams.get('code'),redirect_uri:redirect,grant_type:'authorization_code',code_verifier:verifier})});
         verifier=undefined;
         if(!tokens.refresh_token||!tokens.access_token||tokens.scope!==scope)throw Error('oauth_offline_scope_invalid');
+        const about=await request('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)',{headers:{Authorization:`Bearer ${tokens.access_token}`}});
+        if(about.user?.emailAddress!==owner)throw Error('backup_owner_mismatch');
         // Strip the single-use code before loading Google's Picker scripts.
         res.writeHead(303,{Location:'/choose-folder'});return res.end();
       }
@@ -91,6 +92,7 @@ export async function startDriveAuthorization(configPath,outputPath,expectedProj
       }
       return send(404,html('<p>Page unavailable. Start at the authorization home.</p>'));
     }catch{
+      tokens=undefined;state=undefined;verifier=undefined;
       // No OAuth errors, request URLs, token bodies or private fields in logs.
       send(400,html('<p>Authorization failed safely. No credentials were displayed or uploaded. Check the approved client, Drive API, Picker API, consent status and folder selection.</p>'));
     }

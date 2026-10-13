@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>StackEndBox Encrypted Backups</title>
+<style>body{font:18px system-ui;line-height:1.65;max-width:760px;margin:48px auto;padding:24px;color:#18202a}a{color:#174ea6}</style>
+<main><h1>StackEndBox Encrypted Backups</h1>
+<p>This is StackEndBox's owner-operated backup tool, not a public customer service. It exports the existing Supabase application's database and file storage, encrypts the exports and uploads them to the owner's private Google Drive folder.</p>
+<p>The hosted job runs in a restricted GitHub Actions environment. It doesn't need the owner's computer to stay on. The initial Google authorization uses a local callback and Google's folder picker.</p>
+<p>Google access is limited to <code>drive.file</code>, covering files selected for or created by this application. The application checks the authorized account and exact private backup folder before every backup. It doesn't request access to the entire Drive account.</p>
+<p>Only the public encryption key goes to the hosted runner. The private recovery key and separate recovery code are required for recovery and aren't sent to GitHub Actions.</p>
+<p><a href="/backup-privacy.html">Privacy and data use</a> | <a href="#operational-terms">Operational terms</a> | <a href="mailto:hello@stackendbox.com">Contact StackEndBox</a></p>
+<h2 id="operational-terms">Operational terms</h2>
+<p>This tool is restricted to the authorized StackEndBox owner. It isn't offered for other accounts. It may create encrypted backup generations and move expired application-owned generations to recoverable Google Drive Trash according to the reviewed retention setting. It doesn't change sharing permissions or permanently empty Trash.</p>
+<p>Scheduled execution can be delayed or disabled by the hosting provider. Check the newest verified backup and failure notifications regularly. A logical backup and isolated SQL recovery drill don't establish point-in-time recovery or a complete hosted Supabase disaster recovery.</p>
+<p>Revoking the app's Google authorization stops future uploads. Backup recovery also requires independent account access, the encrypted portable key and the separately held recovery code.</p></main></html>

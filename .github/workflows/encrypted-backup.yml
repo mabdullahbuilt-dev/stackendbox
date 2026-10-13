@@ -10,7 +10,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   backup:
-    if: vars.STACKENDBOX_BACKUPS_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.STACKENDBOX_BACKUPS_ENABLED == 'true')
+    environment: stackendbox-backups
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -24,7 +25,7 @@ jobs:
         run: node scripts/portal-offsite-backup.mjs
         env:
           BACKUP_DATABASE_URL: ${{ secrets.STACKENDBOX_BACKUP_DATABASE_URL }}
-          BACKUP_SUPABASE_SECRET_KEY: ${{ secrets.STACKENDBOX_BACKUP_SUPABASE_SECRET_KEY }}
+          BACKUP_EXPORT_TOKEN: ${{ secrets.STACKENDBOX_BACKUP_EXPORT_TOKEN }}
           BACKUP_PUBLIC_KEY: ${{ secrets.STACKENDBOX_BACKUP_PUBLIC_KEY }}
           BACKUP_DRIVE_CLIENT_ID: ${{ secrets.STACKENDBOX_BACKUP_DRIVE_CLIENT_ID }}
           BACKUP_DRIVE_CLIENT_SECRET: ${{ secrets.STACKENDBOX_BACKUP_DRIVE_CLIENT_SECRET }}

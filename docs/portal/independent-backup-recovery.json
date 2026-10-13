@@ -1,4 +1,5 @@
 {
+  "currentSetupEvidence": "hosted-backup-setup-2026-10-14.json supersedes the earlier setup status below. Restore instructions and verified original offsite custody remain applicable.",
   "status": "EXISTING_OFFSITE_CUSTODY_VERIFIED_SEPARATE_GOOGLE_PROJECT_CREATED_HOSTED_JOB_NOT_RUN",
   "verifiedCustody": {
     "owner": "mabdullah.built@gmail.com",

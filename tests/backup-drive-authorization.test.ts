@@ -17,7 +17,7 @@ it('restricts the one-time helper to scoped offline consent, protected session a
     const page=await initial.text(),cookie=initial.headers.get('set-cookie')!.split(';')[0];
     expect(page).not.toContain('synthetic-test-only');
     expect(initial.headers.get('cache-control')).toBe('no-store');
-    expect(initial.headers.get('referrer-policy')).toBe('no-referrer');
+    expect(initial.headers.get('referrer-policy')).toBe('strict-origin-when-cross-origin');
     const csrf=/name="csrf" value="([^"]+)"/.exec(page)![1];
     const body=new URLSearchParams({csrf});
     expect((await fetch('http://127.0.0.1:8765/authorize',{method:'POST',headers:{cookie,Origin:'https://unrelated.example'},body})).status).toBe(403);
@@ -32,6 +32,7 @@ it('restricts the one-time helper to scoped offline consent, protected session a
     expect(target.searchParams.get('code_challenge_method')).toBe('S256');
     const invalid=await fetch('http://127.0.0.1:8765/oauth/callback?code=synthetic&state=incorrect',{headers:{cookie}});
     expect(invalid.status).toBe(400);
+    expect(invalid.headers.get('referrer-policy')).toBe('no-referrer');
     expect(await invalid.text()).not.toContain('synthetic-test-only');
   }finally{
     if(server){const running=server;running.closeAllConnections();await new Promise<void>(done=>running.close(()=>done()));}

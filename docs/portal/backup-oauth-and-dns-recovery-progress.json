@@ -1,4 +1,5 @@
 {
+  "supersededBy": "hosted-backup-setup-2026-10-14.json, this file preserves earlier DNS and setup observations",
   "checkedAt": "2026-10-13T19:12:33Z",
   "baseline": "6dc0c15d67f465f40f0ec0c5bc7f7bf3e5125d88",
   "backupToolingCommitBeforeThisWork": "c4723d8",

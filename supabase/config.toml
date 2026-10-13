@@ -9,3 +9,8 @@ entrypoint = "../dist/edge/index.ts"
 [functions.stackendbox-production]
 verify_jwt = false
 entrypoint = "../dist/edge/index.ts"
+
+# Non-JWT backup token is checked explicitly by this separate narrow handler.
+# Existing application functions and their settings are unchanged.
+[functions.stackendbox-backup-export]
+verify_jwt = false

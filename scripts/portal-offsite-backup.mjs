@@ -5,9 +5,9 @@ import {tmpdir} from 'node:os';
 import {join,resolve,dirname} from 'node:path';
 import {Readable} from 'node:stream';
 import {fileURLToPath} from 'node:url';
-import {encryptStream,sha256File,assertPrivatePermissions,retirementCandidates} from './lib/offsite-backup.mjs';
+import {encryptStream,sha256File,assertPrivatePermissions,retirementCandidates,verifiedRootCertificate} from './lib/offsite-backup.mjs';
 const project='irzjkdxxfvobtabwkqmz',owner='mabdullah.built@gmail.com';
-const names=['BACKUP_DATABASE_URL','BACKUP_SUPABASE_SECRET_KEY','BACKUP_PUBLIC_KEY','BACKUP_DRIVE_CLIENT_ID','BACKUP_DRIVE_CLIENT_SECRET','BACKUP_DRIVE_REFRESH_TOKEN','BACKUP_DRIVE_FOLDER_ID'];
+const names=['BACKUP_DATABASE_URL','BACKUP_EXPORT_TOKEN','BACKUP_PUBLIC_KEY','BACKUP_DRIVE_CLIENT_ID','BACKUP_DRIVE_CLIENT_SECRET','BACKUP_DRIVE_REFRESH_TOKEN','BACKUP_DRIVE_FOLDER_ID'];
 async function request(url,options={}){
   const response=await fetch(url,{...options,signal:AbortSignal.timeout(120000)});
   if(!response.ok)throw Error(`backup_provider_http_${response.status}`);return response;
@@ -24,6 +24,8 @@ export async function runOffsiteBackup(env=process.env){
     if(typeof auth.access_token!=='string')throw Error('backup_oauth_failed');token=auth.access_token;
     const driveHeaders={Authorization:`Bearer ${token}`};
     const drive=async(path,options={})=>(await request(`https://www.googleapis.com/drive/v3/${path}`,{...options,headers:{...driveHeaders,...options.headers}})).json();
+    const account=await drive('about?fields=user(emailAddress)');
+    if(account.user?.emailAddress!==owner)throw Error('backup_owner_mismatch');
     const permissions=await drive(`files/${env.BACKUP_DRIVE_FOLDER_ID}/permissions?fields=permissions(type,role,emailAddress),nextPageToken`);
     if(permissions.nextPageToken)throw Error('backup_permissions_incomplete');assertPrivatePermissions(permissions.permissions||[],owner);
     const generation=await drive('files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:`backup-${runId}`,mimeType:'application/vnd.google-apps.folder',parents:[env.BACKUP_DRIVE_FOLDER_ID],appProperties:{system:'stackendbox-encrypted-backup',state:'incomplete'}})});
@@ -43,25 +45,25 @@ export async function runOffsiteBackup(env=process.env){
       if(await sha256File(verifiedPath)!==digest.sha256)throw Error('backup_upload_checksum_mismatch');
       files.push({name,...digest});return name;
     }
-    const pgEnv={...process.env,PGHOST:connection.hostname,PGPORT:connection.port||'5432',PGUSER:decodeURIComponent(connection.username),PGPASSWORD:decodeURIComponent(connection.password),PGDATABASE:connection.pathname.slice(1)||'postgres',PGSSLMODE:'verify-full',PGSSLROOTCERT:'system',PGCONNECT_TIMEOUT:'20'};
+    const certificate=await verifiedRootCertificate();
+    const pgEnv={...process.env,PGHOST:connection.hostname,PGPORT:connection.port||'5432',PGUSER:decodeURIComponent(connection.username),PGPASSWORD:decodeURIComponent(connection.password),PGDATABASE:connection.pathname.slice(1)||'postgres',PGSSLMODE:'verify-full',PGSSLROOTCERT:'/stackendbox-root-ca.crt',PGCONNECT_TIMEOUT:'20'};
     const args=['--format=custom','--no-owner','--schema=public','--schema=auth','--schema=storage','--schema=supabase_migrations'];
-    const child=spawn('docker',['run','--rm',...['PGHOST','PGPORT','PGUSER','PGPASSWORD','PGDATABASE','PGSSLMODE','PGSSLROOTCERT','PGCONNECT_TIMEOUT'].flatMap(n=>['-e',n]),'postgres:17','pg_dump',...args],{env:pgEnv,stdio:['ignore','pipe','pipe']});
+    const child=spawn('docker',['run','--rm','--mount',`type=bind,source=${certificate},target=/stackendbox-root-ca.crt,readonly`,...['PGHOST','PGPORT','PGUSER','PGPASSWORD','PGDATABASE','PGSSLMODE','PGSSLROOTCERT','PGCONNECT_TIMEOUT'].flatMap(n=>['-e',n]),'postgres:17','pg_dump',...args],{env:pgEnv,stdio:['ignore','pipe','pipe']});
     child.stderr.resume();const ended=new Promise((res,rej)=>{child.on('error',()=>rej(Error('backup_dump_start_failed')));child.on('close',code=>code===0?res():rej(Error('backup_dump_failed')));});
     await Promise.all([save('database.dump.enc',child.stdout),ended]);
-    const storageHeaders={apikey:env.BACKUP_SUPABASE_SECRET_KEY,Authorization:`Bearer ${env.BACKUP_SUPABASE_SECRET_KEY}`};
-    const storage=async(path,options={})=>request(`https://${project}.supabase.co/storage/v1/${path}`,{...options,headers:{...storageHeaders,...options.headers}});
-    const buckets=await (await storage('bucket')).json();if(!Array.isArray(buckets))throw Error('backup_bucket_inventory_invalid');
+    const exportOperation=async(data)=>request(`https://${project}.supabase.co/functions/v1/stackendbox-backup-export`,{method:'POST',headers:{Authorization:`Bearer ${env.BACKUP_EXPORT_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const buckets=await (await exportOperation({operation:'buckets'})).json();if(!Array.isArray(buckets))throw Error('backup_bucket_inventory_invalid');
     for(const bucket of buckets){
       if(typeof bucket.id!=='string')throw Error('backup_bucket_inventory_invalid');
       async function walk(prefix=''){
         for(let offset=0;;offset+=100){
-          const items=await (await storage(`object/list/${encodeURIComponent(bucket.id)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prefix,offset,limit:100,sortBy:{column:'name',order:'asc'}})})).json();
+          const items=await (await exportOperation({operation:'list',bucket:bucket.id,prefix,offset})).json();
           if(!Array.isArray(items))throw Error('backup_object_inventory_invalid');
           for(const item of items){
             if(typeof item.name!=='string')throw Error('backup_object_inventory_invalid');
             const objectPath=prefix?`${prefix}/${item.name}`:item.name;
             if(!item.id){await walk(objectPath);continue;}
-            const response=await storage(`object/authenticated/${encodeURIComponent(bucket.id)}/${objectPath.split('/').map(encodeURIComponent).join('/')}`);
+            const response=await exportOperation({operation:'download',bucket:bucket.id,path:objectPath});
             const file=await save(`object-${objects.length}.enc`,Readable.fromWeb(response.body));objects.push({bucket:bucket.id,path:objectPath,file,id:item.id});
           }
           if(items.length<100)break;
@@ -73,7 +75,7 @@ export async function runOffsiteBackup(env=process.env){
     await save('manifest.enc',Readable.from([Buffer.from(JSON.stringify(manifest))]));
     await save('summary.json.enc',Readable.from([Buffer.from(JSON.stringify({runId,status:'completed',encrypted:true,includesAuth:true,objects:objects.length,files:[...files],restoreTested:false}))]));
     await drive(`files/${generation.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({appProperties:{system:'stackendbox-encrypted-backup',state:'complete'}})});
-    await request(`https://${project}.supabase.co/rest/v1/portal_backup_runs`,{method:'POST',headers:{...storageHeaders,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({kind:'backup',status:'completed',completed_at:new Date().toISOString(),bytes:files.reduce((total,file)=>total+file.bytes,0),artifact_sha256:files[0].sha256,destination_ref:runId,includes_auth:true,includes_objects:true,detail:{offsite:true,objects:objects.length,drive_generation:generation.id,checksum_readback_verified:true}})});
+    await exportOperation({operation:'record',runId,bytes:files.reduce((total,file)=>total+file.bytes,0),sha256:files[0].sha256,objects:objects.length,generation:generation.id});
     const listing=[];let page='';
     do{
       const q=`'${env.BACKUP_DRIVE_FOLDER_ID}' in parents and trashed=false and mimeType='application/vnd.google-apps.folder' and appProperties has { key='system' and value='stackendbox-encrypted-backup' }`;
