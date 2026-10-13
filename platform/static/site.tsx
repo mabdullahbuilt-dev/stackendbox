@@ -1,0 +1,26 @@
+import Home from "../../app/page";
+import { Providers } from "../../components/site/Providers";
+import "./fonts.css";
+import "../../styles/tokens.css";
+import "../../styles/base.css";
+import "../../styles/site.css";
+import "../../styles/sections.css";
+import "../../styles/scenes.css";
+import "../../styles/start.css";
+import "../../styles/transform.css";
+import "../../styles/product.css";
+import "../../styles/rescue.css";
+import "../../styles/ai.css";
+import "../../styles/depth.css";
+import "../../styles/why.css";
+import "../../styles/services.css";
+import "../../styles/proof.css";
+import "../../styles/process.css";
+import "../../styles/business.css";
+import "../../styles/specialized.css";
+import "../../styles/chapters.css";
+import "../../styles/environments.css";
+import "../../styles/handoffs.css";
+import "../../styles/touch.css";
+import "../../styles/pointer.css";
+export function StaticSite() { return <Providers><Home /></Providers>; }

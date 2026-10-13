@@ -1,12 +1,14 @@
 import { after, NextResponse } from "next/server";
 import { runJobs } from "@/lib/portal/services";
 import { processWebhook } from "@/lib/portal/whop";
-import { PortalError, requireSandboxCheckout } from "@/lib/portal/rules";
+import { PortalError, sandboxOnly } from "@/lib/portal/rules";
 import {boundedText} from "@/lib/portal/request-body";
 export const runtime = "nodejs";
 export async function POST(req: Request) {
   try {
-    requireSandboxCheckout();
+    // Stopping new checkouts must never drop a signed event for an already
+    // created payment. Live credentials and registrar operations remain gated.
+    sandboxOnly();
     const raw = await boundedText(req,256000);
     if (raw.length > 256000) return new Response(null, { status: 413 });
     const result = await processWebhook(

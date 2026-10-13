@@ -1,5 +1,6 @@
 # Uses only the existing Supabase CLI credential, never browser session storage.
 # SQL is supplied on stdin. Tokens are never written to output or disk.
+param([switch]$FunctionLogs)
 $ErrorActionPreference = 'Stop'
 Add-Type @'
 using System;
@@ -17,7 +18,13 @@ try {
   if ($portalToken.StartsWith('go-keyring-base64:')) { $portalToken=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($portalToken.Substring(18))) }
   if ($portalToken -notmatch '^sbp_(oauth_|v0_)?[a-f0-9]{40}$') { throw 'Invalid CLI credential format' }
   $portalSql=[Console]::In.ReadToEnd()
-  $portalResult=Invoke-RestMethod -Method Post -Uri 'https://api.supabase.com/v1/projects/irzjkdxxfvobtabwkqmz/database/query' -Headers @{Authorization="Bearer $portalToken"} -ContentType 'application/json' -Body (@{query=$portalSql}|ConvertTo-Json -Compress) -TimeoutSec 60
+  if ($FunctionLogs) {
+    $portalEnd=[DateTime]::UtcNow
+    $portalUrl='https://api.supabase.com/v1/projects/irzjkdxxfvobtabwkqmz/analytics/endpoints/logs?sql='+[Uri]::EscapeDataString($portalSql)+'&iso_timestamp_start='+[Uri]::EscapeDataString($portalEnd.AddMinutes(-15).ToString('o'))+'&iso_timestamp_end='+[Uri]::EscapeDataString($portalEnd.ToString('o'))
+    $portalResult=Invoke-RestMethod -Method Get -Uri $portalUrl -Headers @{Authorization="Bearer $portalToken"} -TimeoutSec 60
+  } else {
+    $portalResult=Invoke-RestMethod -Method Post -Uri 'https://api.supabase.com/v1/projects/irzjkdxxfvobtabwkqmz/database/query' -Headers @{Authorization="Bearer $portalToken"} -ContentType 'application/json' -Body (@{query=$portalSql}|ConvertTo-Json -Compress) -TimeoutSec 60
+  }
   ConvertTo-Json -InputObject @($portalResult) -Depth 40 -Compress
 } catch {
   # Provider errors can include query text or credentials. Keep diagnostics private.

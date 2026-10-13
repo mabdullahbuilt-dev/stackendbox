@@ -36,7 +36,7 @@ import { sendAuthEmail } from "@/lib/portal/auth-email";
 import { receiptHtml,serviceInvoiceHtml } from "@/lib/portal/receipt";
 import { provisionClient } from "@/lib/portal/provisioning";
 import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
-import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
+import { saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { adminTables, clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 import { checkPassword } from "@/lib/portal/password-check";
@@ -150,6 +150,10 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ redirect: "/client-portal/reset-password" });
     }
     const auth = await identity();
+    if (route === "auth/identity" && req.method === "GET") {
+      if (req.nextUrl.searchParams.get("admin") === "1") await superAdmin(auth);
+      return reply({ user_id: auth.user.id, role: auth.account.role, password_change_required: auth.user.app_metadata?.portal_password_change_required === true });
+    }
     if (auth.user.app_metadata?.portal_password_change_required === true && route !== "auth/password") {
       if (route === "data" && req.method === "GET" && req.nextUrl.searchParams.get("section") === "reset-password")
         return reply({ account: auth.account, factors: [], clients: [], password_change_required: true });
@@ -160,7 +164,7 @@ async function handle(req: NextRequest, context: Context) {
       const { data: invoice, error } = await auth.db.from("portal_invoices").select("*").eq("id", id).maybeSingle();
       checkDb(error);
       if (!invoice) throw new PortalError("receipt_not_found", 404);
-      await clientAccess(invoice.client_id);
+      await clientAccess(invoice.client_id, auth);
       if (invoice.order_id === null && invoice.status === "draft" && auth.account.role !== "super_admin") throw new PortalError("invoice_not_issued",403);
       return new Response(invoice.order_id === null ? serviceInvoiceHtml(invoice) : receiptHtml(invoice), { headers: {
         "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `attachment; filename="stackendbox-${invoice.order_id === null ? "invoice" : "sandbox-receipt"}-${id}.html"`,
@@ -284,7 +288,7 @@ async function handle(req: NextRequest, context: Context) {
           kind: z.enum(["registration", "renewal"]),
         })
         .parse(body);
-      await clientAccess(input.client_id);
+      await clientAccess(input.client_id, auth);
       if (input.kind === "registration") await superAdmin(auth);
       return reply(
         await createQuote(input.client_id, input.domain, input.kind),
@@ -304,7 +308,7 @@ async function handle(req: NextRequest, context: Context) {
       if (!q || Date.parse(q.valid_until) <= Date.now())
         throw new PortalError("quote_expired", 409);
       if (q.kind === "registration") await superAdmin(auth);
-      await clientAccess(q.client_id);
+      await clientAccess(q.client_id, auth);
       await validateQuote(q.id);
       assertCustomerDomain(q.domain);
       const { data: e, error: ee } = await adminDb()
@@ -345,7 +349,7 @@ async function handle(req: NextRequest, context: Context) {
       checkDb(error);
       if (!o) throw new PortalError("order_not_found", 404);
       if (o.kind === "registration") await superAdmin(auth);
-      await clientAccess(o.client_id);
+      await clientAccess(o.client_id, auth);
       await validateQuote(o.quote_id);
       if (o.checkout_url && o.status === "checkout_ready")
         return reply({ url: o.checkout_url });
@@ -371,7 +375,7 @@ async function handle(req: NextRequest, context: Context) {
       checkDb(error);
       if (!o || o.kind !== "renewal")
         throw new PortalError("order_not_found", 404);
-      await clientAccess(o.client_id);
+      await clientAccess(o.client_id, auth);
       if (o.status !== "awaiting_payment")
         throw new PortalError("checkout_exists_contact_support", 409);
       checkDb(
@@ -404,7 +408,7 @@ async function handle(req: NextRequest, context: Context) {
           ]),
         })
         .parse(body);
-      await clientAccess(input.client_id);
+      await clientAccess(input.client_id, auth);
       const { data, error } = await adminDb()
         .from("portal_requests")
         .insert({ ...input, created_by: auth.user.id })
@@ -426,7 +430,7 @@ async function handle(req: NextRequest, context: Context) {
         .single();
       checkDb(error);
       if (!r) throw new PortalError("request_not_found", 404);
-      await clientAccess(r.client_id);
+      await clientAccess(r.client_id, auth);
       checkDb(
         (
           await adminDb()
@@ -476,6 +480,7 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined));
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
+      if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
       if (route === "admin/client-update" && req.method === "POST") return reply(await editClient(admin.user.id,body));
       if (route === "admin/invoices" && req.method === "POST") return reply(await createServiceInvoice(admin.user.id,body));
       if (route === "admin/invoice-status" && req.method === "POST") return reply(await transitionServiceInvoice(admin.user.id,body));
@@ -493,7 +498,7 @@ async function handle(req: NextRequest, context: Context) {
         checkDb(result.error);
         return reply({requests:result.data});
       }
-      if (route === "admin/acquisitions" && req.method === "POST") return reply(await saveAcquisition(admin.user.id,body));
+      if (route === "admin/acquisitions" && req.method === "POST") throw new PortalError("initial_registration_outside_portal", 409);
       if (route === "admin/external-payments" && req.method === "POST") return reply(await saveExternalPayment(admin.user.id,body));
       if (path[1] === "domains" && path[2] && path[3] === "manage" && path.length === 4 && req.method === "GET")
         return reply(await readDomainState(domainName(path[2])));

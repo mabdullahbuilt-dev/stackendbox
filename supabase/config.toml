@@ -1,0 +1,5 @@
+project_id = "stackendbox"
+
+[functions.stackendbox-acceptance]
+verify_jwt = false
+entrypoint = "../dist/edge/index.ts"

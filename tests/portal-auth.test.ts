@@ -22,6 +22,23 @@ import { identity, sessionDb, superAdmin, turnstile } from "@/lib/portal/server"
 import { PortalError } from "@/lib/portal/rules";
 import { adminTables, clientTables } from "@/lib/portal/data-scope";
 
+describe("static portal identity boundary", () => {
+  it("returns identity and explicit password policy without querying tenant records", async () => {
+    const from=vi.fn();
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture",app_metadata:{}},account:{role:"client"},db:{from}} as unknown as Awaited<ReturnType<typeof identity>>);
+    const response=await GET(new NextRequest("https://portal.example/api/portal/auth/identity"),{params:Promise.resolve({path:["auth","identity"]})});
+    expect(await response.json()).toEqual({user_id:"fixture",role:"client",password_change_required:false});
+    expect(from).not.toHaveBeenCalled();
+  });
+  it("requires canonical admin MFA for the administration shell", async () => {
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture",app_metadata:{}},account:{role:"super_admin"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>);
+    vi.mocked(superAdmin).mockRejectedValueOnce(new PortalError("administrator_mfa_required",403));
+    const response=await GET(new NextRequest("https://portal.example/api/portal/auth/identity?admin=1"),{params:Promise.resolve({path:["auth","identity"]})});
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({error:"administrator_mfa_required"});
+  });
+});
+
 describe("mandatory temporary password replacement", () => {
   it("denies tenant data before querying client tables", async () => {
     const from=vi.fn();

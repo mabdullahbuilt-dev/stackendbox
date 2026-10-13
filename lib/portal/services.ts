@@ -95,6 +95,7 @@ export async function createQuote(
   input: string,
   kind: "registration" | "renewal",
 ) {
+  if (String(kind) === "registration") throw new PortalError("initial_registration_outside_portal", 409);
   const name = domainName(input);
   assertCustomerDomain(name);
   const db = adminDb();
@@ -148,7 +149,7 @@ export async function createQuote(
     .select("*")
     .single();
   checkDb(se);
-  if (settings.registration_minor !== 4500 || settings.markup_basis_points !== 3000)
+  if (settings.markup_basis_points !== 3000)
     throw new PortalError("pricing_policy_requires_review", 409);
   const suffix = name.split(".").slice(1).join(".");
   if (
@@ -208,6 +209,7 @@ export async function validateQuote(quoteId: string) {
   checkDb(error);
   if (!q || Date.parse(q.valid_until) <= Date.now())
     throw new PortalError("quote_expired", 409);
+  if (q.kind === "registration") throw new PortalError("initial_registration_outside_portal", 409);
   assertCustomerDomain(q.domain);
   const { data: e, error: ee } = await db
     .from("portal_quote_evidence")
@@ -308,17 +310,25 @@ export async function notifyClient(
       ).error,
     );
 }
-export async function runJobs() {
+export async function runJobs(targetEmailIds?: string[]) {
   if (process.env.PORTAL_JOBS_ENABLED !== "true")
     return { emailsAccepted: 0, status: "disabled" as const };
+  // Validate before claiming durable work. Missing configuration is a known
+  // pre-dispatch failure, not an ambiguous provider delivery.
+  const mailConfiguration = {
+    key: env("BREVO_CLIENT_API_KEY"),
+    sender: z.email().parse(env("BREVO_CLIENT_SENDER_EMAIL")),
+    replyTo: z.email().parse(env("BREVO_CLIENT_REPLY_TO")),
+    name: process.env.BREVO_CLIENT_SENDER_NAME || "StackEndBox",
+  };
   const db = adminDb();
   checkDb((await db.rpc("portal_recover_stale_email_claims")).error);
-  if (sandboxCheckoutEnabled()) checkDb((await db.rpc("portal_run_simulations")).error);
+  if (!targetEmailIds && sandboxCheckoutEnabled()) checkDb((await db.rpc("portal_run_simulations")).error);
   const { data: assignments, error } = await db
     .from("portal_domain_assignments")
     .select("client_id,portal_domains(name,expiration_date)");
   checkDb(error);
-  for (const a of assignments || []) {
+  for (const a of targetEmailIds ? [] : assignments || []) {
     const d = a.portal_domains as unknown as {
       name: string;
       expiration_date: string;
@@ -338,7 +348,9 @@ export async function runJobs() {
   }
   let sent = 0;
   for (let i = 0; i < 10; i++) {
-    const { data, error: ce } = await db.rpc("portal_claim_email");
+    const { data, error: ce } = targetEmailIds
+      ? await db.rpc("portal_claim_selected_email", { target_ids: targetEmailIds })
+      : await db.rpc("portal_claim_email");
     checkDb(ce);
     const mail = data?.[0];
     if (!mail) break;
@@ -346,16 +358,18 @@ export async function runJobs() {
       const r = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: {
-          "api-key": env("BREVO_CLIENT_API_KEY"),
+          "api-key": mailConfiguration.key,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           sender: {
-            email: env("BREVO_CLIENT_SENDER_EMAIL"),
-            name: process.env.BREVO_CLIENT_SENDER_NAME || "StackEndBox",
+            email: mailConfiguration.sender,
+            name: mailConfiguration.name,
           },
           to: [{ email: mail.recipient }],
-          replyTo: { email: env("BREVO_CLIENT_REPLY_TO") },
+          replyTo: { email: mailConfiguration.replyTo },
+          tags: [`outbox-${mail.id}`],
+          headers: { "X-Mailin-custom": `outbox_id:${mail.id}` },
           subject: mail.subject,
           textContent: mail.body,
         }),

@@ -5,6 +5,7 @@ import { adminDb, env } from "@/lib/portal/server";
 import { spaceship,spaceshipTest } from "@/lib/portal/spaceship";
 import { whop } from "@/lib/portal/whop";
 import { PortalError, sandboxOnly } from "@/lib/portal/rules";
+import {brevoEnv} from "@/lib/serverEnv";
 
 // Preview-only, read-only verification. A fresh token is injected into just the
 // diagnostic deployment, never into production or the client-side bundle.
@@ -87,7 +88,19 @@ export async function GET(req: Request) {
       });
       if (!result.ok) throw new PortalError(`brevo_${result.status}`);
       const data = await result.json();
+      const publicConfiguration=brevoEnv();
+      let publicWebsiteEmail: {configured:boolean;senderVerified?:boolean;providerStatus?:number;missingSettings?:string[];domainStatus?:number;domainVerified?:boolean;domainAuthenticated?:boolean}={configured:false};
+      if(publicConfiguration.ok){
+        const publicSenders=await fetch("https://api.brevo.com/v3/senders",{headers:{"api-key":publicConfiguration.env.BREVO_API_KEY},signal:AbortSignal.timeout(10000)});
+        const publicData=publicSenders.ok?await publicSenders.json():{};
+        publicWebsiteEmail={configured:true,providerStatus:publicSenders.status,senderVerified:Array.isArray(publicData.senders)&&publicData.senders.some((s:{email?:string;active?:boolean})=>s.email===publicConfiguration.env.BREVO_SENDER_EMAIL&&s.active===true)};
+        const domain=publicConfiguration.env.BREVO_SENDER_EMAIL.split("@")[1];
+        const domainResponse=await fetch(`https://api.brevo.com/v3/senders/domains/${encodeURIComponent(domain)}`,{headers:{"api-key":publicConfiguration.env.BREVO_API_KEY},signal:AbortSignal.timeout(10000)});
+        const domainData=domainResponse.ok?await domainResponse.json():{};
+        publicWebsiteEmail={...publicWebsiteEmail,domainStatus:domainResponse.status,domainVerified:domainData.verified===true,domainAuthenticated:domainData.authenticated===true};
+      }else publicWebsiteEmail={configured:false,missingSettings:publicConfiguration.missing};
       return {
+        publicWebsiteEmail,
         senderVerified:
           Array.isArray(data.senders) &&
           data.senders.some(

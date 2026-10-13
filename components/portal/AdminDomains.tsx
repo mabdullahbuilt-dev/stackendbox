@@ -1,16 +1,15 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
-import { AdminDomainSearch, api, type Data } from "./Portal";
+import { useState, type FormEvent } from "react";
+import { api, type Data } from "./Portal";
 import { DomainControls } from "./DomainControls";
 import { RegistrantCheck } from "./RegistrantCheck";
+import { DomainHandoff } from "./DomainHandoff";
 
 type Row = Record<string, unknown>;
 const rows = (data: Data, key: string) => (data[key] || []) as Row[];
 const text = (value: unknown) =>
   value == null ? "Not recorded" : String(value);
-const money = (value: unknown) =>
-  typeof value === "number" ? `$${(value / 100).toFixed(2)}` : "Quote required";
 export function AdminDomains({
   data,
   reload,
@@ -23,22 +22,6 @@ export function AdminDomains({
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
-  const [acquisitions, setAcquisitions] = useState<Row[]>([]);
-  const [requestId, setRequestId] = useState(""),
-    [paymentId, setPaymentId] = useState("");
-  const [acquisitionAttempt, setAcquisitionAttempt] = useState<Row | null>(
-      null,
-    ),
-    [paymentAttempt, setPaymentAttempt] = useState<Row | null>(null);
-  async function loadRequests() {
-    const r = await api("admin/acquisitions");
-    setAcquisitions(r.requests);
-  }
-  useEffect(() => {
-    setRequestId(crypto.randomUUID());
-    setPaymentId(crypto.randomUUID());
-    void loadRequests().catch((e) => setError(e.message));
-  }, []);
   async function run(action: () => Promise<{ message?: string }>) {
     setBusy(true);
     setMessage("");
@@ -47,7 +30,6 @@ export function AdminDomains({
       const result = await action();
       setMessage(result.message || "Saved.");
       await reload();
-      await loadRequests();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed.");
     } finally {
@@ -122,8 +104,8 @@ export function AdminDomains({
     <>
       <h1>Domains</h1>
       <p>
-        Acquire and assign domains for clients. Live registration, renewal, and
-        DNS changes are disabled.
+        Assign domains already purchased manually in the dedicated Spaceship account.
+        Initial domain purchases and first-year checkout aren’t available here. Live renewal and DNS changes remain disabled.
       </p>
       {error && (
         <p role="alert" className="portal-error">
@@ -135,6 +117,7 @@ export function AdminDomains({
           {message}
         </p>
       )}
+      <DomainHandoff reload={reload}/>
       <section className="portal-panel">
         <h2>Client-domain registrar inventory</h2>
         <p>Use the dedicated StackEndBox client-domains Spaceship account. Keep personal domains outside this integration.</p>
@@ -290,177 +273,6 @@ export function AdminDomains({
           The registrar record is fetched again before assignment. Assignment
           grants portal access and doesn&apos;t change registrar ownership.
         </p>
-      </section>
-      <AdminDomainSearch clientSelect={clientSelect} />
-      <section className="portal-panel">
-        <h2>Record an approved purchase request</h2>
-        <p>
-          Use the customer&apos;s actual quote and approval reference. The standard
-          eligible first-year package is $45.
-        </p>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = fields(e);
-            const payload = acquisitionAttempt || {
-              ...f,
-              idempotency_key: requestId,
-              retail_minor: Math.round(Number(f.retail_usd) * 100),
-            };
-            delete payload.retail_usd;
-            setAcquisitionAttempt(payload);
-            void run(() => api("admin/acquisitions", payload));
-          }}
-        >
-          <fieldset disabled={busy || !!acquisitionAttempt}>
-            {clientSelect}
-            <label>
-              Requested domain
-              <input name="domain" required maxLength={253} />
-            </label>
-            <label>
-              Approved customer price, USD
-              <input
-                name="retail_usd"
-                type="number"
-                min="0.01"
-                max="10000"
-                step="0.01"
-                defaultValue="45"
-                required
-              />
-            </label>
-            <label>
-              Customer approval reference
-              <input name="customer_approval" required maxLength={1000} />
-            </label>
-            <label>
-              Actual legal holder
-              <input name="legal_holder" required maxLength={160} />
-            </label>
-            <label>
-              Arrangement
-              <select name="holder_arrangement">
-                <option value="client_owned">Client-owned</option>
-                <option value="licensed">
-                  Agency-owned, licensed to client
-                </option>
-              </select>
-            </label>
-          </fieldset>
-          <button disabled={busy || !requestId} className="portal-button">
-            {acquisitionAttempt
-              ? "Retry saved request"
-              : "Save purchase request"}
-          </button>
-        </form>
-        <p>
-          Registrar purchase remains unavailable pending supplier pricing,
-          registration contacts, and live-operation acceptance.
-        </p>
-        <button disabled className="portal-button">
-          Live registration disabled
-        </button>
-      </section>
-      <section className="portal-panel">
-        <h2>Purchase requests and external payments</h2>
-        {!acquisitions.length ? (
-          <p>No customer purchase requests.</p>
-        ) : (
-          acquisitions.map((r) => (
-            <article key={text(r.id)}>
-              <h3>
-                {text(r.domain)} · {money(r.retail_minor)}
-              </h3>
-              <p>
-                {text(clients.find((c) => c.id === r.client_id)?.business_name)}{" "}
-                · {text(r.status).replaceAll("_", " ")}
-              </p>
-              <small>Reference: {text(r.id)}</small>
-              {((r.portal_external_payments || []) as Row[]).map((p) => (
-                <p key={text(p.id)}>
-                  {money(p.amount_minor)} ·{" "}
-                  {text(p.source).replaceAll("_", " ")} ·{" "}
-                  {text(p.reconciliation_status)} ·{" "}
-                  {text(p.transaction_reference)}
-                </p>
-              ))}
-            </article>
-          ))
-        )}
-        {!!acquisitions.length && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = fields(e);
-              const r = acquisitions.find((r) => r.id === f.acquisition_id);
-              if (!r) return;
-              const payload = paymentAttempt || {
-                ...f,
-                idempotency_key: paymentId,
-                client_id: r.client_id,
-                amount_minor: r.retail_minor,
-                paid_at: new Date(String(f.paid_at)).toISOString(),
-                confirmed: f.confirmed === "on",
-              };
-              setPaymentAttempt(payload);
-              void run(() => api("admin/external-payments", payload));
-            }}
-          >
-            <fieldset disabled={busy || !!paymentAttempt}>
-              <label>
-                Purchase request
-                <select name="acquisition_id" required>
-                  {acquisitions.map((r) => (
-                    <option key={text(r.id)} value={text(r.id)}>
-                      {text(r.domain)} · {money(r.retail_minor)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Actual payment source
-                <select name="source">
-                  <option value="bank_transfer">Bank transfer</option>
-                  <option value="cash">Cash</option>
-                  <option value="external_processor">External processor</option>
-                </select>
-              </label>
-              <label>
-                Transaction or receipt reference
-                <input name="transaction_reference" required maxLength={1000} />
-              </label>
-              <label>
-                Payment date and time
-                <input name="paid_at" type="datetime-local" required />
-              </label>
-              <label>
-                Payment evidence reference
-                <input name="evidence" required maxLength={1000} />
-              </label>
-              <label>
-                Reconciliation
-                <select name="reconciliation_status">
-                  <option value="unreconciled">
-                    Unreconciled, needs verification
-                  </option>
-                  <option value="verified">
-                    Verified against payment evidence
-                  </option>
-                </select>
-              </label>
-              <label className="portal-check">
-                <input name="confirmed" type="checkbox" required />I confirm the
-                source, amount, date, and evidence reflect the actual payment.
-              </label>
-            </fieldset>
-            <button className="portal-button" disabled={busy || !paymentId}>
-              {paymentAttempt
-                ? "Retry same payment record"
-                : "Save external payment evidence"}
-            </button>
-          </form>
-        )}
       </section>
     </>
   );

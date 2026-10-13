@@ -1,0 +1,19 @@
+"use client";
+import {useState} from "react";
+import {api} from "./Portal";
+export function DomainHandoff({reload}:{reload:()=>Promise<void>}){
+  const [id,setId]=useState(()=>crypto.randomUUID()),[password,setPassword]=useState(""),[show,setShow]=useState(false),[busy,setBusy]=useState(false),[attempt,setAttempt]=useState<Record<string,unknown>|null>(null),[finished,setFinished]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
+  return <section className="portal-panel"><h2>Activate Client &amp; Assign Domain</h2><p>Enter a domain already purchased manually in the dedicated Spaceship account. Existing clients keep their password. Portal access doesn&apos;t transfer legal ownership.</p><form key={id} onSubmit={async e=>{e.preventDefault();setBusy(true);setError("");const fields=Object.fromEntries(new FormData(e.currentTarget));const input=attempt||{...fields,idempotency_key:id,rights_confirmed:fields.rights_confirmed==="on",...(password?{initial_password:password}:{})};setAttempt(input);try{const result=await api("admin/activate-domain-client",input);setMessage(result.message);setFinished(true);await reload();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}>
+    <fieldset disabled={busy||!!attempt}>
+      <label>Previously purchased domain<input name="domain" required maxLength={253} autoComplete="off" /></label>
+      <label>Approved client email<input name="email" type="email" required maxLength={254}/></label>
+      <label>Client name<input name="name" required maxLength={100}/></label>
+      <label>Business name, optional<input name="business_name" maxLength={150}/></label>
+      <label>Initial StackEndBox password, new clients only<input type={show?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} minLength={8} maxLength={128} autoComplete="new-password"/></label>
+      <label className="portal-check"><input type="checkbox" checked={show} onChange={e=>setShow(e.target.checked)}/>Show initial password</label>
+      <button type="button" className="portal-button" onClick={()=>{const bytes=crypto.getRandomValues(new Uint8Array(20));setPassword(Array.from(bytes,b=>"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%"[b%67]).join(""));}}>Generate password</button>
+      <label>Contractual arrangement<select name="holder_arrangement"><option value="licensed">Managed access, registered holder unchanged</option><option value="client_owned">Client ownership agreement, separate legal handoff</option></select></label>
+      <label className="portal-check"><input name="rights_confirmed" type="checkbox" required/>I verified authorization to assign this domain to this client.</label>
+    </fieldset><button className="portal-button" disabled={busy||finished}>{busy?"Verifying and saving…":attempt?"Retry the same handoff":"Activate Client & Assign Domain"}</button>
+  </form>{password&&attempt&&<button type="button" className="portal-button" onClick={()=>setShow(!show)}>{show?"Hide":"Show"} initial portal password</button>}{error&&<><p role="alert" className="portal-error">{error}</p><button className="portal-button" disabled={busy} onClick={()=>setAttempt(null)}>Edit details, keep the same operation reference</button><p>If provisioning was partially completed, retry the same details or review the saved client first. Existing credentials aren&apos;t replaced on retry.</p></>}{message&&<p role="status" className="portal-notice">{message}</p>}{finished&&<button className="portal-button" onClick={()=>{setId(crypto.randomUUID());setPassword("");setAttempt(null);setFinished(false);setMessage("");}}>Start another handoff</button>}<p>New clients must verify their email, but aren&apos;t forced to replace an administrator-created usable password. Passwords aren&apos;t emailed or stored as plaintext.</p></section>;
+}

@@ -1480,7 +1480,6 @@ function Admin({
             <label>
               Operation
               <select name="kind">
-                <option value="registration">Registration</option>
                 <option value="renewal">Renewal</option>
               </select>
             </label>
@@ -1505,60 +1504,12 @@ function Admin({
             />
             <label className="portal-check">
               <input type="checkbox" name="requirements_verified" required />I
-              verified standard non-premium pricing and registration
-              requirements.
+              verified the exact renewal cost, supplier fees and renewal eligibility.
             </label>
           </Form>
         </section>
       </div>
-      <section className="portal-panel">
-        <h2>Package policy</h2>
-        <Form
-          button="Save pricing policy"
-          onSubmit={(f) =>
-            api("admin/settings", {
-              allowed_tlds: str(f.allowed_tlds)
-                .split(",")
-                .map((s) => s.trim().replace(/^\./, "")),
-              max_supplier_minor: Number(f.max_supplier_minor),
-              tolerance_minor: Number(f.tolerance_minor),
-              registration_minor: Number(f.registration_minor),
-              markup_basis_points: Number(f.markup_basis_points),
-            })
-          }
-        >
-          <Field
-            name="allowed_tlds"
-            title="Allowed extensions, comma-separated"
-            placeholder="com, net, org"
-          />
-          <Field
-            name="max_supplier_minor"
-            title="Maximum supplier cost, USD cents"
-            type="number"
-            min={0}
-          />
-          <Field
-            name="tolerance_minor"
-            title="Maximum price increase, USD cents"
-            type="number"
-            min={0}
-            defaultValue={0}
-          />
-          <Field
-            name="registration_minor"
-            title="First-year retail price, USD cents"
-            type="number"
-            defaultValue={4500}
-          />
-          <Field
-            name="markup_basis_points"
-            title="Renewal markup, basis points (3000 = 30%)"
-            type="number"
-            defaultValue={3000}
-          />
-        </Form>
-      </section>
+      <section className="portal-panel"><h2>Annual renewal policy</h2><p>Customer pricing uses verified supplier cost and the agreed 30% markup. Supplier fees must be verified. Processor costs are accounted for in the agency margin. Domains are purchased manually outside StackEndBox, with no first-year checkout here.</p><p>Live customer payments and supplier renewals remain disabled until acceptance and explicit approval.</p></section>
       {admin && (
         <>
           <section className="portal-panel">

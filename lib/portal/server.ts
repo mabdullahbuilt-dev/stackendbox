@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { createHash } from "node:crypto";
 import { PortalError } from "./rules";
+import { observeLatency } from "./latency";
 
 export function env(name: string) {
   const value = process.env[name];
@@ -56,13 +57,13 @@ export async function identity() {
   const {
     data: { user },
     error,
-  } = await db.auth.getUser();
+  } = await observeLatency("auth_user", () => db.auth.getUser());
   if (error || !user) throw new PortalError("sign_in_required", 401);
-  const { data: account, error: accountError } = await db
+  const { data: account, error: accountError } = await observeLatency("account", () => db
     .from("portal_accounts")
     .select("*")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .maybeSingle());
   if (accountError) throw new PortalError("portal_database_unavailable", 503);
   if (
     !account ||
@@ -81,8 +82,10 @@ export async function superAdmin(existing?: Awaited<ReturnType<typeof identity>>
     throw new PortalError("administrator_mfa_required", 403);
   return auth;
 }
-export async function clientAccess(id: string) {
-  const auth = await identity();
+export async function clientAccess(id: string, existing?: Awaited<ReturnType<typeof identity>>) {
+  // Reuse only the identity already verified by this request's handler. The
+  // tenant RPC still runs for every target, and no identity is cached globally.
+  const auth = existing || await identity();
   const { data, error } = await auth.db.rpc("portal_access", { target: id });
   if (error || !data) throw new PortalError("access_denied", 403);
   return auth;
