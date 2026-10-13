@@ -310,6 +310,7 @@ export async function notifyClient(
 }
 export async function runJobs() {
   const db = adminDb();
+  checkDb((await db.rpc("portal_recover_stale_email_claims")).error);
   if (sandboxCheckoutEnabled()) checkDb((await db.rpc("portal_run_simulations")).error);
   const { data: assignments, error } = await db
     .from("portal_domain_assignments")
