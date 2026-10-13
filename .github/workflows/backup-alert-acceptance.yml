@@ -1,0 +1,14 @@
+name: TEST ONLY backup failure notification acceptance
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  notification-check:
+    if: github.ref == 'refs/heads/main' && github.actor == 'mabdullahbuilt-dev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Intentional alert test with no secrets or data access
+        run: |
+          echo 'TEST ONLY. Intentional failure to verify the owner notification channel. No backup, database, Drive or provider access.'
+          exit 1
