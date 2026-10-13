@@ -1,5 +1,6 @@
 {
-  "status": "PREPARED_FOUNDER_SELECTED_KEEP_DNSSEC_ENABLED_AWAIT_CACHE_RECOVERY",
+  "status": "SUPERSEDED_DO_NOT_EXECUTE_WHOLE_DOMAIN_CUTOVER_PUBLIC_WEBSITE_FROZEN",
+  "replacementDirection": "Founder requires only /client-portal and /admin, preserving Vercel public deployment. Historical sequence below is retained as incident history, not an active release plan. No DNSSEC, nameserver, website routing or Vercel configuration changes authorized. See portal-path-release.json for routing investigation.",
   "checkedOn": "2026-10-13",
   "candidate": "https://stackendbox-production.stackendbox.workers.dev",
   "currentAuthoritativeNameservers": ["launch1.spaceship.net", "launch2.spaceship.net"],

@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    {"source":"/client-portal/:path*","destination":"https://stackendbox-static-acceptance.stackendbox.workers.dev/client-portal/:path*"},
+    {"source":"/admin/:path*","destination":"https://stackendbox-static-acceptance.stackendbox.workers.dev/admin/:path*"}
+  ]
+}

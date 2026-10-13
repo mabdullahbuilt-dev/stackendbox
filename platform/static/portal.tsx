@@ -4,6 +4,7 @@ import { Portal } from "../../components/portal/Portal";
 import { AdminPortal } from "../../components/portal/AdminPortal";
 import { PortalCache } from "../../components/portal/PortalCache";
 import { Link } from "./navigation";
+import { portalApiPath } from "../../lib/portal/browser-path";
 import "./fonts.css";
 import "../../styles/tokens.css";
 import "../../styles/base.css";
@@ -19,7 +20,7 @@ function App() {
   useEffect(() => {
     if (publicPage) return;
     const controller = new AbortController();
-    fetch(`/api/portal/auth/identity${admin ? "?admin=1" : ""}`, { cache: "no-store", signal: controller.signal }).then(async r => {
+    fetch(portalApiPath(`auth/identity${admin ? "?admin=1" : ""}`), { cache: "no-store", signal: controller.signal }).then(async r => {
       const data = await r.json();
       if (r.status === 401) return window.location.replace("/client-portal/login");
       if (!r.ok) throw new Error(data.error === "administrator_mfa_required" ? "Verify your authenticator in Account security before opening administration." : data.error === "administrator_required" ? "This account doesn't have administrator access. Use your client portal." : "Account access could not be verified. Sign in again or retry.");

@@ -1,0 +1,30 @@
+{
+  "status": "PORTAL_ONLY_ACCEPTANCE_DEPLOYED_AND_VERIFIED_COMPANY_ROUTING_NOT_ENABLED",
+  "deployedWorkerVersion": "f817869c-ca69-4777-859e-5b939a09e0b5",
+  "acceptanceUrl": "https://stackendbox-static-acceptance.stackendbox.workers.dev/client-portal/login",
+  "scope": "Existing Vercel public website frozen. No public source, styles, content, public contact integration, Vercel configuration or DNS changes. Whole-domain migration superseded.",
+  "implementation": {
+    "build": "scripts/build-portals-only.mjs builds only existing client/admin components and their styles/fonts. It does not import or rebuild Home, copy public assets or include the public contact handler.",
+    "paths": ["/client-portal", "/admin"],
+    "assets": "/client-portal/_assets/portal.js, portal.css and fonts",
+    "browserApi": "/client-portal/api/* forwards to existing authenticated Supabase Edge /api/portal/*",
+    "callback": "/client-portal/auth/callback retains scanner-safe confirmation and maps legacy fragment session POST within portal namespace.",
+    "webhook": "Existing /api/webhooks/whop on the Worker hostname remains supported and isn't part of the proposed company-domain rewrites.",
+    "operations": "Existing acceptance email cron schedule preserved. Live charges and registrar operations remain disabled by unchanged backend configuration.",
+    "security": "Existing server verification, tenant policies and admin MFA remain in force. Request Origin and host-only HttpOnly/Secure/SameSite=Lax cookies preserved. Private API responses never cached. Fixed server PORTAL_APP_URL validates the intended origin, forwarded host headers never select it. Main-domain activation must deliberately set that fixed origin, callbacks and Turnstile after routing is permitted."
+  },
+  "routingFindings": {
+    "vercel": "External rewrites support these two prefixes without changing homepage source or public API routing. Applying them still requires a Vercel routing configuration change and subjects portal requests to Vercel terms. Existing Hobby permits non-commercial personal use only, so commercial portal release isn't compliant merely because compute runs elsewhere. No configuration applied.",
+    "cloudflare": "Path-specific Worker routes can preserve a Vercel origin, but require a proxied DNS hostname. Cloudflare partial setup retaining external authoritative nameservers is Business/Enterprise only. No free no-DNS-change Cloudflare path interception has been verified.",
+    "constraint": "Exact same hostname paths cannot be activated while every existing routing layer and DNS remains frozen. Current constraints also exclude a compliant commercial Vercel Hobby proxy. This is a release constraint, not a reason to rebuild the public website or stop portal development.",
+    "proposal": "platform/routing/portal-rewrites.proposed.json is a review artifact only. Acceptance destination and server origin must be deliberately finalized before any future authorized routing change. It isn't loaded by Vercel or deployed automatically."
+  },
+  "officialSources": ["https://vercel.com/docs/routing/rewrites", "https://vercel.com/docs/limits/fair-use-guidelines", "https://developers.cloudflare.com/dns/zone-setups/partial-setup/", "https://developers.cloudflare.com/workers/configuration/routing/routes/"],
+  "verification": {
+    "checks": "19 targeted routing/Edge tests passed, TypeScript passed, modified files ESLint passed and new gateway warning corrected. Portal-only production bundle built. Original homepage/public handler/styles/assets/Vercel config diff remains empty.",
+    "hosted": "Client login and admin shell 200, namespaced JS/CSS/fonts 200, callback 200 with scoped session endpoint, anonymous private identity 401, unsigned original Whop webhook 401. Portal origin root and /api/brief return 404 by design, never serving a replacement public website. Existing crons and secrets retained.",
+    "actualBrowser": "Existing authorized test-client session persisted across deployment. My Domains shows saved test123.buzz, registered, expiry Oct 13 2027, manual renewal and Quote required. Same client denied /admin. Billing shows saved $1 Sandbox invoice. Namespaced invoice link downloaded actual 410-byte HTML containing expected Sandbox description, not an error body. No record assignment, registrar change or charge repeated.",
+    "observedSamplesMs": {"loginShell":306,"adminShell":62,"javascript":551,"css":329,"font":87,"anonymousIdentity":1284,"callback":784},
+    "limitations": "These are single requests, not load or capacity claims. Existing session continuity verified, fresh password login and administrator MFA not repeated. Exact company-domain reverse proxy remains unapplied and untested under current constraints. Production origin/Turnstile/callback activation still depends on permitted routing."
+  }
+}

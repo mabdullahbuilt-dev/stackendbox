@@ -29,6 +29,7 @@ import { usePortalCache } from "./PortalCache";
 import { DomainControls } from "./DomainControls";
 import {AdminInvoices} from "./AdminInvoices";
 import { validatePassword } from "@/lib/portal/password-policy";
+import { portalApiPath } from "@/lib/portal/browser-path";
 
 type Row = Record<string, unknown>;
 export type Data = {
@@ -89,7 +90,7 @@ const errors: Record<string, string> = {
     "Checkout could not be confirmed. StackEndBox needs to check its status before you retry.",
 };
 export async function api(path: string, body?: unknown, signal?: AbortSignal) {
-  const r = await fetch(`/api/portal/${path}`, {
+  const r = await fetch(portalApiPath(path), {
     method: body ? "POST" : "GET",
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
@@ -613,7 +614,7 @@ export function PortalContent({
             <p className="portal-small">
               {i.order_id === null ? i.status === "sandbox_paid" ? `Service invoice ${str(i.id)}. Whop confirmed a Sandbox test payment, with no live charge or registrar action.` : i.status === "sandbox_payment_review" ? `Service invoice ${str(i.id)}. Sandbox payment requires refund or dispute review.` : `Service invoice ${str(i.id)}. This doesn't confirm a payment.` : `Sandbox receipt ${str(i.id)}. This is not a tax invoice.`}
             </p>
-            <a href={`/api/portal/invoices/${str(i.id)}/download`} download>{i.order_id === null ? "Download invoice" : "Download receipt"}</a>
+            <a href={portalApiPath(`invoices/${str(i.id)}/download`)} download>{i.order_id === null ? "Download invoice" : "Download receipt"}</a>
           </section>
         ))}
       </>
@@ -986,7 +987,7 @@ function DocumentUpload({
         setBusy(true);
         setMessage("");
         try {
-          const response = await fetch("/api/portal/upload", {
+          const response = await fetch(portalApiPath("upload"), {
             method: "POST",
             body: new FormData(form),
           });
