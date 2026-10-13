@@ -1,0 +1,54 @@
+{
+  "checkedAt": "2026-10-13T19:12:33Z",
+  "baseline": "6dc0c15d67f465f40f0ec0c5bc7f7bf3e5125d88",
+  "backupToolingCommitBeforeThisWork": "c4723d8",
+  "googleProject": "stackendbox-backups",
+  "dedicatedProject": {
+    "name": "StackEndBox Backups",
+    "createdAt": "2026-10-13T19:05:24Z",
+    "proof": "Project picker shows stackendbox-backups, selected header names StackEndBox Backups, and Cloud audit entry confirms CreateProject by owner.",
+    "billing": "No billing account attached during creation or enabled by this work.",
+    "dedicatedConsent": "Prepared StackEndBox Encrypted Backups form, owner support/contact email, External audience. Final Google API Services User Data Policy agreement and Create left open for owner. No publishing yet.",
+    "newClient": "Not yet created in separate project",
+    "apis": "API Library failed to load. Official Google Drive API was reached through console search and its enable action executed. Notification shows completed Enable service: drive.googleapis.com in StackEndBox Backups. Actual refreshed service status is still being checked, no API-level OAuth request or Picker setup completed yet.",
+    "portfolioPreserved": "Owner explicitly rejected shared Portfolio publishing. No branding/audience/scope edits or existing Desktop credential changes performed. Earlier separately approved new backup client in old project is unused."
+  },
+  "earlierUnusedClient": {
+    "name": "StackEndBox Encrypted Backup Authorization",
+    "type": "Web application",
+    "clientId": "607048445965-3rnntevhu8mhnr98nr0ihle9t0frhu0n.apps.googleusercontent.com",
+    "origin": "http://127.0.0.1:8765",
+    "redirect": "http://127.0.0.1:8765/oauth/callback",
+    "existingClientPreserved": "Desktop client 1",
+    "security": "New client secret was exposed in the Google dialog's copy-button accessibility metadata during a tool observation. Value is omitted here. Credential is quarantined outside the repository with owner/System ACL and must be replaced securely before any hosted activation. No existing integration key rotated.",
+    "ownerDriveConsent": "Not completed",
+    "apisAndPickerKey": "Not completed",
+    "personalMfa": "Owner completed identity challenge. Google account page still shows Turn on 2-Step Verification, and a fresh Cloud Console page still blocks access. Final enable step remains owner action.",
+    "projectConsent": "Existing app Portfolio is External/Testing. Owner rejected project-wide changes, so its branding, audience, scopes and existing Desktop client remain preserved. Dedicated backup consent now belongs only in stackendbox-backups.",
+    "testingTokenLimit": "Drive refresh tokens expire after seven days while External/Testing. Do not present this as permanent unattended authorization.",
+    "source": "https://developers.google.com/identity/protocols/oauth2#expiration"
+  },
+  "offsite": {
+    "folder": "https://drive.google.com/drive/folders/1myfe2U3XTBILqOVp77dTbSMDGwRkUj7m",
+    "custody": "Previously verified private archive contains two encrypted generations and encrypted portable key. Downloaded checksum matched. Recovery code excluded.",
+    "scheduledJob": "Prepared and disabled on feature branch, not run remotely. Needs stable database/Storage credentials, owner Drive authorization, reviewed default-branch workflow and successful hosted integrity check before enablement. Local OAuth helper is only initial authorization."
+  },
+  "dnsRecovery": {
+    "parentCheckAt": "2026-10-13T18:51:49Z",
+    "parentAuthorities": ["a.gtld-servers.net", "b.gtld-servers.net"],
+    "dsKeyTag": 38997,
+    "algorithm": 13,
+    "digestType": 2,
+    "digest": "90de957dae2de4145e548a4172e6a11ef5016c0094383e53c6a1934177bb6d77",
+    "parentTtlSeconds": 86400,
+    "publicResolvers": "Google and Cloudflare DoH returned status 0 for apex and www. Both apex responses AD true. www resolves through existing Vercel CNAME. AD false on the complete www response is not itself proof of failure, because the external CNAME target may be unsigned.",
+    "verifiedTlsCheckAt": "2026-10-13T18:57:07Z",
+    "apex": "HTTPS 308 redirect to https://www.stackendbox.com/ from existing Vercel endpoint, normal TLS validation, using per-request public-resolver IP pinning.",
+    "www": "HTTPS 200, existing Vercel public site, normal TLS validation using per-request public-resolver IP pinning.",
+    "ordinaryLocalResolution": "Windows default DNS resolver still returns DNS server failure for both names. A direct local-resolver DS query returned original key tag 23596 with remaining TTL 55686 seconds, while parent authorities publish recovery key 38997. This confirms stale old-DS cache divergence, with roughly 15.5 hours left in this particular sampled cache. Ordinary local fetch and built-in browser recovery remain unconfirmed. No resolver configuration, certificate validation or OS security setting changed.",
+    "migration": "No further DS, DNSKEY, record, nameserver or Worker routing changes performed. Provider-supported signing-preserving transition still required. Do not repeat the previous Disable action or use the superseded six-hour wait.",
+    "alternativeReviewed": "Cloudflare publishes a DNSSEC-active migration procedure requiring both providers to cross-import zone-signing DNSKEY records. Spaceship support for importing and serving another provider's DNSKEY has not been verified. No keys or records added.",
+    "source": "https://developers.cloudflare.com/dns/dnssec/dnssec-active-migration/"
+  },
+  "preserved": "Existing public Vercel deployment, company nameservers, all eleven DNS records, database/customer records, provider credentials, verified portal contract and live-operation safety gates. No billing enabled."
+}
