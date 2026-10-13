@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '23 21 * * *'
+    # Temporary real scheduler acceptance, remove after verified execution.
+    - cron: '55 20 13 10 *'
 permissions:
   contents: read
 concurrency:
