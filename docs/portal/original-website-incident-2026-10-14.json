@@ -1,0 +1,32 @@
+{
+  "status": "ORIGINAL_WEBSITE_CODE_INTACT_DNS_RECOVERY_PARTIAL_MIGRATION_PAUSED",
+  "checkedAt": "2026-10-13T21:31:12Z",
+  "originalProductionCommit": "3595d8046851ff180e7577855b599589722e3928",
+  "currentMainAndVercelProductionCommit": "a00db027ac60d22e22e19c1846055e692e5f3514",
+  "production": {
+    "browserEvidence": "Signed-in Vercel project overview shows current Production Ready, main a00db02, deployment stackendbox-1bn7gttdc-portfolio-ab4e.vercel.app.",
+    "codeComparison": "Fetched actual main. git diff between original production and main contains only six added backup workflow/script/certificate files. No changes to app, components, public assets, styles, content, public contact handler, package configuration or original website design.",
+    "addedFiles": [".github/workflows/encrypted-backup.yml", ".github/workflows/backup-alert-acceptance.yml", "scripts/assets/supabase-root-ca-2021.crt", "scripts/lib/backup-crypto.mjs", "scripts/lib/offsite-backup.mjs", "scripts/portal-offsite-backup.mjs"],
+    "websiteBrowser": "https://stackendbox.vercel.app/ loads the original homepage with original title, navigation, hero, business email and sections.",
+    "tlsOriginProbe": "Explicit request-only resolve to existing Vercel IP 216.198.79.1 with normal hostname certificate validation returns www HTTP 200 and apex HTTP 308 to https://www.stackendbox.com/. This proves the retained origin works, not that ordinary DNS has recovered. No hosts file, resolver setting, browser warning or certificate validation changed.",
+    "apiLimitation": "Existing Vercel CLI token returns 403. Signed-in browser independently verified current production state, without requesting new credentials."
+  },
+  "candidate": {
+    "homepageSource": "platform/static/site.tsx imports original app/page.tsx and original Providers plus original styles. Static delivery adapters alter Next link/image/navigation delivery, not original public source or design. No candidate is routed onto the company domain.",
+    "portalRoutes": ["/client-portal", "/admin"],
+    "scope": "No homepage redesign or deployment performed during incident investigation. Existing production candidate left unchanged."
+  },
+  "dns": {
+    "nameservers": ["launch1.spaceship.net", "launch2.spaceship.net"],
+    "apexA": "216.198.79.1",
+    "wwwCname": "4a78646662027dfa.vercel-dns-017.com",
+    "records": "All 11 original records match both authoritative servers, including two Spacemail MX, SRV, SPF, Spacemail DKIM, Brevo DKIM, DMARC and verification TXT. No record/routing/delegation changes.",
+    "historicalChange": "Earlier separately approved Spaceship Disable removed automatic DS 23596 and authoritative signing. Separately approved recovery re-enabled signing with a new key, DS 38997. Cached old DS no longer matched the new authoritative key.",
+    "currentAuthoritativeState": "Both .com parent authorities publish DS 38997, algorithm 13, digest type 2, TTL 86400. Both Spaceship DNSKEY sets contain key 38997 with computed SHA256 matching parent digest 90de957dae2de4145e548a4172e6a11ef5016c0094383e53c6a1934177bb6d77. DNSKEY RRSIG key tag 38997, valid time window 2026-10-01 through 2026-10-22. Full local cryptographic signature verification isn't claimed. Independent Google and Cloudflare validate apex and successfully resolve apex and www.",
+    "remainingFailure": "Default resolver still returns old DS 23596 with TTL 47638 at 2026-10-13T21:25:50Z. Ordinary curl for both hostnames and fresh in-app www browser fail resolution. This isn't globally recovered. Earlier one local cache clear did not resolve the stale default-resolver response.",
+    "ownerDecision": "Founder explicitly selected Keep DNSSEC enabled and wait for recovery. Keep DS 38997 and signing stable. No new consequential DNS change approved.",
+    "nextStep": "Read-only monitoring until old DS caches expire and ordinary resolution is stable. Then prepare a fresh separately approved migration sequence. No nameserver, DS, DNSSEC or custom-domain action during this incident investigation."
+  },
+  "verifiedRestored": "Authoritative signing chain and independent Google/Cloudflare DNS answers. Original website code and retained Vercel origin verified intact. Reliable ordinary access through the failing default resolver is still pending.",
+  "rollback": "Recorded original Vercel deployment dpl_HwiyiEkB6DXUfGv1gZqfvsckomrE remains the planned rollback reference. No rollback executed because current production application source matches the original website. No customer/database rollback or destructive change."
+}
