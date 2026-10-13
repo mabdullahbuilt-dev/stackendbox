@@ -6,7 +6,12 @@ import {createServer} from 'node:net';
 import {decryptArtifact} from './lib/backup-crypto.mjs';
 const backup=resolve(process.argv[2]||'');
 if(!process.argv[2]||!process.env.POSTGRES_BIN||!process.env.PORTAL_DRILL_ROOT)throw new Error('Backup path, POSTGRES_BIN and PORTAL_DRILL_ROOT required');
-const summary=JSON.parse(await readFile(join(backup,'summary.json'),'utf8'));
+const summaryText=await readFile(join(backup,'summary.json'),'utf8').catch(async error=>{
+  if(error.code!=='ENOENT')throw error;
+  if(!process.env.PORTAL_RECOVERY_KEY_FILE||!process.env.PORTAL_RECOVERY_CODE_FILE)throw Error('Portable recovery key and separate code files required');
+  return (await decryptArtifact(join(backup,'summary.json.enc'),process.env.PORTAL_RECOVERY_KEY_FILE)).toString('utf8');
+});
+const summary=JSON.parse(summaryText);
 for(const file of summary.files){const bytes=await readFile(join(backup,file.name));if(createHash('sha256').update(bytes).digest('hex')!==file.sha256)throw new Error('Backup checksum mismatch');}
 const archive=await decryptArtifact(join(backup,'database.dump.enc'),process.env.PORTAL_RECOVERY_KEY_FILE||join(dirname(backup),'keys','recipient-private.dpapi'));
 const directory=await mkdtemp(join(process.env.PORTAL_DRILL_ROOT,'restore-'));

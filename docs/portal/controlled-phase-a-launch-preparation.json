@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-13",
+  "baselineCommit": "6dc0c15d67f465f40f0ec0c5bc7f7bf3e5125d88",
+  "baselinePolicy": "Preserve the verified handoff, DNS adapter, database protections and tests. No domain-assignment or TXT acceptance rerun. No application implementation changed in this launch-preparation session.",
+  "offsitePackage": {
+    "path": "C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/stackendbox-offsite-2026-10-13.zip",
+    "sha256": "a31326bdcf962498fb283fd64d081ffdaf7c70ac98e2ccaf9d88a0112dbe6020",
+    "contents": "Two dated encrypted backup generations, summaries, existing restore evidence, and portable encrypted recovery key. No recovery code or machine-bound private key.",
+    "verification": "All four packaged encrypted backup artifacts match original SHA256 values. Current generation original hashes also match summary.json. Archive ACL restricted to current Windows user and SYSTEM.",
+    "destination": "Uploaded to owner-only Google Drive folder StackEndBox/Encrypted-Backups, ID 1myfe2U3XTBILqOVp77dTbSMDGwRkUj7m. Downloaded Drive copy matched original SHA256. See independent-backup-recovery.json.",
+    "codeCustody": "Owner must keep recovery code separately in a trusted vault or sealed offline location. Code was not opened or printed."
+  },
+  "firstDnsAction": {
+    "domain": "stackendbox.com",
+    "proposal": "Disable automatically managed Spaceship DNSSEC to remove the old registry DS, after inspecting the correct company account's actual control and receiving explicit owner approval.",
+    "ds": {
+      "keyTag": 23596,
+      "algorithm": 13,
+      "digestType": 2,
+      "digest": "9e75d2d538a3a452396704694a53c6f4b1ad7fb08b147c87f3b86c47550211ab"
+    },
+    "currentObservation": "Google DNS-over-HTTPS returned authenticated DS response with TTL 21600 seconds. This recursive observation is not a claim of direct parent-authoritative querying.",
+    "risk": "Temporary loss of DNSSEC validation protection. Nameservers, all eleven DNS records and existing website routing remain unchanged during this stage.",
+    "afterApproval": "Record execution time, query parent-authoritative DS directly, verify absence, and retain Spaceship delegation through at least the observed six-hour old-DS cache lifetime from confirmed parent removal. Verify old website and email DNS remain healthy. Do not schedule delegation automatically.",
+    "nextApproval": "Only after the DS-removal/cache stage passes, request separate delegation approval for hugh.ns.cloudflare.com and jillian.ns.cloudflare.com. Preserve eleven-record parity and existing Vercel website targets before separate Worker custom-domain approval.",
+    "approved": true,
+    "executed": true,
+    "providerResult": "Spaceship UI shows DNSSEC Disabled. No nameserver or DNS record change made.",
+    "parentVerification": "Direct authoritative NOERROR negative DS answers from a.gtld-servers.net at 2026-10-13T18:07:40.852Z and b.gtld-servers.net at 2026-10-13T18:07:41.057Z. Authority section SOA com, TTL 900. Confirmed DS absent.",
+    "earliestOldDsCacheExpiry": "The earlier six-hour recursive-TTL estimate is superseded and must not be used for delegation. Recovery parent DS has authoritative TTL 86400 seconds. Any subsequent reviewed DS-removal sequence must measure the then-current parent TTL and preserve old-zone signing for that full lifetime. Scheduled 5:08 AM follow-up is a read-only recovery-health check, not a delegation gate.",
+    "transitionProblem": "After disabling, Google DNS normal www A queries return status 2 and explicit DNSSEC validation failure. Checking-disabled query returns expected Vercel CNAME/IPs. Cloudflare DNS returns normal expected answers. Google DNSKEY query returns no DNSKEY. Evidence supports stale DS caches conflicting with provider removal of old-zone signing. Do not describe website health as universally passed.",
+    "recoveryApproval": "Founder explicitly approved DNSSEC recovery. Clicked Enable at approximately 2026-10-13T18:20:38Z. UI now DNSSEC Enabled, generated new DS key tag 38997, algorithm 13, digest type 2, digest 90de957dae2de4145e548a4172e6a11ef5016c0094383e53c6a1934177bb6d77. Both .com parent authorities publish the new DS, TTL 86400, verified at 18:21:30Z. Google DNS returns current DS, DNSKEY and normal www A answers again. Existing Vercel website HTTPS returns 200 with normal certificate validation when using public resolver IPs. Local built-in browser still reports DNS name resolution failure, so browser recovery is not claimed passed. Some other old-DS caches may still reject the regenerated key until expiry. No delegation approval requested."
+  },
+  "accountHandoff": "Browser was signed into client-domains account luqman777. Signed out that browser session only and left Spaceship login open for owner authentication to company-domain account previously identified as Ibrahim123. No API credentials or registrar permissions changed.",
+  "laterStages": "Use main-domain-cutover-plan.json and company-zone-comparison.json. Final Worker cutover, Supabase origin changes, production schedules, main-domain browser acceptance and Cloudflare DNSSEC re-enablement remain staged and unexecuted.",
+  "guardrails": "Only explicitly approved Spaceship DNSSEC disable/automatic DS removal performed. No nameserver, DNS-record, Worker-routing, live charge, renewal, ownership or unrelated registrar change. Vercel rollback preserved."
+}

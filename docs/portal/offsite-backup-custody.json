@@ -1,5 +1,6 @@
 {
-  "status":"RESTORE_VERIFIED_OFFSITE_CUSTODY_PENDING",
+  "status":"RESTORE_VERIFIED_OFFSITE_PACKAGE_VERIFIED_SEPARATE_CODE_CUSTODY_OWNER_MANAGED",
+  "verifiedOffsitePackage":"https://drive.google.com/drive/folders/1myfe2U3XTBILqOVp77dTbSMDGwRkUj7m, StackEndBox/Encrypted-Backups, sole owner mabdullah.built@gmail.com, Restricted. Two encrypted generations and encrypted portable key uploaded as stackendbox-offsite-2026-10-13.zip. Downloaded package SHA256 matches a31326bdcf962498fb283fd64d081ffdaf7c70ac98e2ccaf9d88a0112dbe6020. Recovery code was not uploaded or opened.",
   "existingEvidence":"Fresh encrypted backup from 2026-10-13T15-09-46-145Z, 426845 bytes. Portable-key restore passed migration validation, RLS, integrity and persistence after restart in isolated local PostgreSQL. Do not repeat this completed drill or describe it as a full hosted Supabase restore.",
   "backupDirectory":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/2026-10-13T15-09-46-145Z",
   "latestAdditionalGeneration":"C:/Users/hp/Documents/Codex/2026-10-10/g/work/stackendbox-backups/2026-10-13T17-28-43-681Z, 431435 encrypted bytes, includes the real test123.buzz assignment and migration 202610130009. Copy this generation as well, checking its own summary.json hashes. The earlier restore evidence is retained, not claimed as a fresh restore of this generation.",
@@ -15,6 +16,6 @@
     "For recovery on another computer, install the official PostgreSQL/runtime tools, obtain the encrypted key and code separately, and run an isolated restore before any production database writes. Do not overwrite the live project as a drill.",
     "A hosted disaster recovery also needs provider-secret recovery, Supabase Auth configuration, redirect allowlist, project/storage policy restoration and any storage object payloads. These are separate from the completed local SQL/data drill."
   ],
-  "constraints":"No offsite upload destination is assumed or authorized by this document. Use existing storage with restricted access. Do not buy backup services or expose recovery material.",
-  "readyWhen":"Owner confirms independent custody and copied encrypted-file integrity. Current key and code remain locally ACL protected, so computer-independent custody is not yet complete."
+  "constraints":"Owner explicitly authorized their existing private Google Drive for encrypted backup/key custody. No public links, shared access or paid services. Separate recovery-code custody remains the owner's personal responsibility. Future automatic Drive access requires distinct offline OAuth authorization.",
+  "readyWhen":"Encrypted offsite files and integrity are verified. Owner must keep recovery code independently, as committed. Prepared automatic cloud backup job must pass a real authorized hosted run before claiming unattended backups active."
 }

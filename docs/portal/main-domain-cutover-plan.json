@@ -17,14 +17,14 @@
     "Existing Brevo verification TXT must be copied unchanged from the authoritative zone.",
     "Full 11-record company-account inventory is now saved separately, including DKIM, DMARC, SRV and all TTLs. No CAA is present.",
     "Company-domain browser account Ibrahim123 is distinct from the dedicated integration account. Its loaded domain list contains stackendbox.com. Initial loading placeholders must not be interpreted as final inventory.",
-    "DNSSEC is enabled. Current parent DS key tag 23596 has observed TTL 21600 seconds. No DS change is authorized.",
+    "On explicit founder approval, DS 23596 was disabled, then separately approved DNSSEC recovery regenerated DS 38997 after Google DNS validation failure. New authoritative parent DS TTL is 86400 seconds. The earlier recursive 21600-second estimate is insufficient for delegation. Current DS and old-zone signing must be handled together in a fresh reviewed transition.",
     "Cloudflare assigned hugh.ns.cloudflare.com and jillian.ns.cloudflare.com. The Free zone is staged but not delegated."
   ],
   "sequence": [
     "Read/export the complete existing stackendbox.com zone from its controlling account, including TTLs and DNSSEC state.",
     "Prepare the existing Cloudflare account's Free zone with exact record parity. Keep current website targets. Keep mail/service records DNS-only and do not enable Email Routing.",
     "Record the actual assigned Cloudflare nameserver pair and present the complete before/after record diff for founder approval.",
-    "Only after explicit DNSSEC-transition and exact delegation approval, remove the old DS, verify parent absence and expiry of old cached DS, then change registrar nameservers to the assigned pair. Verify the existing Vercel website and Spacemail remain functional before any application cutover. Re-enable signing using actual Cloudflare DS and confirm validation.",
+    "Before another DS change, obtain a supported method that removes the registrar DS while retaining old-zone DNSKEY and signatures during the measured parent DS TTL. Ordinary Spaceship Disable removed DNSKEY and produced validating-resolver failure, so it is not a verified safe zero-downtime sequence. After separate approval of the supported method, verify authoritative parent DS absence, wait the full measured prior parent TTL, verify website/mail across independent resolvers, then request exact delegation approval. Recovery DS 38997 currently has parent TTL 86400 seconds. Do not re-disable or delegate under the earlier approval. Re-enable Cloudflare signing only with actual new DS and appropriate approval after verified delegation.",
     "Only after final release approval, replace the conflicting www Vercel CNAME and apex Vercel A with production Worker custom-domain associations using wrangler.main-domain.jsonc. Both hostnames must reach the same Worker. The owned apex responds with uncached HTTP 307 to canonical https://www.stackendbox.com, preserving path/query and method. Verify both TLS certificates and the public homepage immediately.",
     "Build final static assets without --candidate, remove the temporary production origin override, and update Supabase Site URL only when company-domain authentication routes are accessible and verified.",
     "Verify public contact delivery, normal client login/recovery, existing administrator MFA, tenant isolation, support and saved records on the actual company domain. Keep live checkout and all registrar writes disabled."
@@ -41,5 +41,5 @@
     "https://developers.cloudflare.com/workers/configuration/routing/custom-domains/",
     "https://developers.cloudflare.com/dns/zone-setups/partial-setup/"
   ],
-  "changesPerformed": "Created the authorized pending Cloudflare Free zone and imported exact DNS-only staging records. None to active production DNS, registrar nameservers, ownership, DNSSEC, email services or the existing Vercel production deployment."
+  "changesPerformed": "Pending Free zone/staging preserved. Explicitly approved Spaceship DNSSEC disable was followed by separately approved recovery, regenerating DS 38997. No active DNS-record, nameserver, ownership, email-service, Worker-routing or Vercel deployment changes. See controlled-phase-a-launch-preparation.json for actual transition evidence and cache-validation failure."
 }

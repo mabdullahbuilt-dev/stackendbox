@@ -19,9 +19,9 @@
   "absent":"No CAA or additional mail-service records are present in the complete source UI inventory. No replacement records invented.",
   "delegationProposal":{"before":["launch1.spaceship.net","launch2.spaceship.net"],"after":["hugh.ns.cloudflare.com","jillian.ns.cloudflare.com"],"approved":false,"executed":false},
   "dnssecProposal":{
-    "current":"Enabled, Spaceship key tag 23596, algorithm 13, digest type 2, parent DS TTL observed 21600 seconds.",
-    "requiredApproval":"Separate explicit approval for temporary DNSSEC/DS removal, delegation and subsequent Cloudflare DNSSEC/registrar DS setup. None performed.",
-    "sequence":"With approval, remove the old registrar DS using Spaceship's DNSSEC workflow. Verify absence at the parent and allow the previous DS cache lifetime to expire before switching delegation. Keep Spaceship DNS working during that interval. After Cloudflare is active, enable Cloudflare signing, register only its actual DS and verify validation. Never copy the old Spaceship DS to the new zone.",
+    "current":"Enabled after separately approved recovery. Spaceship regenerated key tag 38997, algorithm 13, digest type 2, digest 90de957dae2de4145e548a4172e6a11ef5016c0094383e53c6a1934177bb6d77. Direct parent authoritative DS TTL 86400 seconds. Original source inventory retained key 23596 and recursive TTL 21600 as historical evidence, not a current migration gate.",
+    "requiredApproval":"Founder approved DNSSEC disable only, then separately approved DNSSEC recovery after validating-resolver failure. No delegation or Cloudflare DNSSEC change approved. A future transition needs a new exact approval and supported preservation of old-zone signing through full parent DS cache lifetime.",
+    "sequence":"Do not repeat ordinary Spaceship Disable as a proven zero-downtime method. It removed the zone DNSKEY and caused Google DNSSEC validation failure. Require supported DS-only removal with old-zone signing preserved through the current parent TTL, then authoritative DS absence and independent resolver/website/mail verification before separately approving delegation. After Cloudflare is active, enable Cloudflare signing and register only its actual DS with approval. Never carry a Spaceship DS to the new zone.",
     "risk":"A nameserver change with the stale old DS can break validating resolvers. No claim of instant DNS rollback.",
     "documentation":"https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/"
   },

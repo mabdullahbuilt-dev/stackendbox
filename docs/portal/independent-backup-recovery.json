@@ -1,0 +1,55 @@
+{
+  "status": "EXISTING_OFFSITE_CUSTODY_VERIFIED_AUTOMATED_JOB_PREPARED_NOT_AUTHORIZED_OR_RUN",
+  "verifiedCustody": {
+    "owner": "mabdullah.built@gmail.com",
+    "folder": "https://drive.google.com/drive/folders/1myfe2U3XTBILqOVp77dTbSMDGwRkUj7m",
+    "parentFolder": "https://drive.google.com/drive/folders/1PXMihTq0P9MT7NuxM9nkZGvNdWDp8hp0",
+    "file": "https://drive.google.com/file/d/1so6JBaaM9lswWe5lp-9Svj9XHsBvB5g5/view",
+    "name": "stackendbox-offsite-2026-10-13.zip",
+    "sha256": "a31326bdcf962498fb283fd64d081ffdaf7c70ac98e2ccaf9d88a0112dbe6020",
+    "bytes": 863186,
+    "verification": "Normal signed-in browser upload completed. Uploaded archive was downloaded through the browser and SHA256 matched original. Sharing dialogs for archive and Encrypted-Backups folder showed sole owner Muhammad Abdullah, Restricted, no other people or groups.",
+    "generations": ["2026-10-13T15-09-46-145Z", "2026-10-13T17-28-43-681Z"],
+    "contains": "Encrypted database/Auth dumps, encrypted metadata manifests, non-secret checksum summaries and prior restore evidence, encrypted portable recovery key.",
+    "excluded": "Recovery code, unencrypted private keys, machine-bound key, plaintext database dumps and provider credentials.",
+    "separateCodeCustody": "Owner has committed to keeping the recovery code in their separate password manager or offline location. Its actual independent placement has not been observed and is not claimed verified."
+  },
+  "automaticJob": {
+    "workflow": ".github/workflows/encrypted-backup.yml",
+    "runner": "Existing public GitHub repository, standard Ubuntu runner. No laptop, Codex automation or paid service required for execution once enabled. No PR-triggered secret access, write-token permission or public backup artifacts.",
+    "schedule": "21:23 UTC daily, 02:23 Asia/Karachi next day. GitHub schedules can be delayed, run only from the default branch, and public repository schedules can be disabled after 60 days of inactivity. Monitor newest verified generation age and workflow failures. This is a scheduled logical backup, not guaranteed point-in-time recovery.",
+    "gate": "STACKENDBOX_BACKUPS_ENABLED repository variable must be explicitly true. Currently not set. Workflow has not run remotely.",
+    "encryption": "Existing RSA-4096 recipient public key only is provided to runner. AES-256-GCM encrypts streams before disk or upload, RSA-OAEP-SHA256 wraps fresh per-artifact key. Recovery key and recovery code never enter runner secrets or logs.",
+    "database": "Verified existing server PostgreSQL 17.11. Official postgres:17 Docker client exports public, auth, storage and supabase_migrations schemas as encrypted custom-format dump. Session-pooler connection uses verified TLS and must be scoped to existing project irzjkdxxfvobtabwkqmz. No password reset or new database role performed.",
+    "storage": "Walk all current Storage API buckets and nested object pages. Download each object privately and encrypt before upload. Object path/bucket mappings are in encrypted manifest. Storage metadata alone does not recover payloads. Concurrent object changes during export may require consistency reconciliation during recovery.",
+    "drive": "Offline OAuth for this exact owner and folder required. Prefer drive.file with explicit folder selection through Google Picker. Do not grant broad Drive access or share folder with a service account merely to bypass authorization. Refresh token and OAuth app secrets must be in encrypted GitHub secrets, not chat or source.",
+    "integrity": "Every uploaded encrypted file is downloaded and SHA256 compared before marking generation complete. Failed or ambiguous uploads remain incomplete and never retire verified generations.",
+    "retention": "Keep latest fourteen complete app-owned daily generations, at least two. Move older app-owned generations to recoverable Trash only after a new verified completion. Never alter the manually uploaded custody archive. Trash still counts toward Drive quota, so permanent purge requires explicit owner-approved retention and cannot be claimed automatically solved. Monitor actual storage and backup age.",
+    "remainingAuthorization": "Offline Drive OAuth and secure provision of existing backup database/Storage credentials into GitHub secret storage. No existing integration keys rotated or copied into GitHub. Google Cloud credentials page initially failed to load JavaScript from www.gstatic.com, then reloaded into existing My First Project focal-maker-509915-r9. No OAuth client or persistent access created.",
+    "activationAcceptance": "After owner authorization, configure secrets without disclosure, run one workflow_dispatch on reviewed code, verify remote Drive checksums/privacy, inspect success/failure notification behavior, then enable the schedule in main without altering the tested portal contract. Do not report automatic protection active until this run passes."
+  },
+  "restoreOnNewComputer": [
+    "Download private custody archive from the verified folder, verify archive SHA256 above, and unpack into a restricted local directory. Select a complete dated generation. Obtain the recovery code separately and store it in a temporary restricted file personally. Never share it in chat or logs.",
+    "Install official Node.js and PostgreSQL 17 or compatible newer restore tools. Clone the existing repository at baseline 6dc0c15 plus the reviewed backup tooling commit. No dependence on the original Windows identity is needed when using the portable encrypted key.",
+    "On a new Windows computer, set POSTGRES_BIN to installed PostgreSQL bin, PORTAL_DRILL_ROOT to an isolated local work directory, PORTAL_RECOVERY_KEY_FILE to the downloaded portable-recovery-key.pem, and PORTAL_RECOVERY_CODE_FILE to the personally created separate code file. Run node scripts/portal-restore-drill.mjs followed by the selected generation directory. The drill restores only a fresh local database, never the live project.",
+    "New automated generations contain summary.json.enc. The updated drill decrypts it in memory, verifies the encrypted artifacts, decrypts database archive and checks RLS/integrity/persistence in the isolated local database. Existing manually uploaded generations retain their ordinary non-secret summary.json. Windows is the currently supported drill host. Linux/macOS full restore needs an equivalent reviewed script, not an invented claim of cross-platform acceptance.",
+    "Before disaster production restore, follow Supabase's current supported new-project migration instructions. Restore application records, Auth identities and hashes, memberships, assignments, RLS and migration history without overwriting existing production as a drill. Validate MFA and encrypted database material against the restored project's encryption configuration. The completed local SQL drill is not proof of a hosted Auth service disaster restore.",
+    "Restore storage buckets, access policies and actual object payloads using encrypted manifest bucket/path mappings. Verify checksums, access controls and client isolation. Current custody generation has zero payloads. Never claim future uploaded files are backed up before a successful object-inclusive generation exists.",
+    "Restore provider configuration separately, test public/client email separation, normal password recovery, administrator MFA, assigned domains and file access on an isolated hostname. Only then approve production DNS routing. Keep registrar writes and live payments disabled throughout recovery."
+  ],
+  "configurationAndSecretRecoverySeparate": [
+    "Maintain private owner account-recovery methods for Supabase, Google Drive, GitHub, Cloudflare, Spaceship, Whop and Brevo, including MFA recovery custody. Do not store account recovery codes in the backup folder.",
+    "Record Supabase region, Auth Site URL/redirect allowlist, MFA policy, storage bucket/policy definitions, project encryption root material where applicable, custom-role credentials, extensions/publications, scheduled jobs and restore order. SQL records do not replace Auth service configuration or encryption-root recovery. Use Supabase's supported key migration process when encrypted Vault/column material is present.",
+    "Keep provider secret values in an owner-controlled separate trusted vault, never GitHub source or this report. Preserve distinct public BREVO_API_KEY and portal BREVO_CLIENT_API_KEY, primary Spaceship credentials, Sandbox Whop key/signing secret, Turnstile secret, backend bridge and scheduler credentials. Non-exportable hosted secrets need independently saved owner copies for disaster recovery.",
+    "Keep company-zone-before.json, company-zone-comparison.json, current DNSSEC transition state, Vercel deployment rollback ID, Worker routing/build profile and all eleven DNS values available. Public DNS keys and records are not the private recovery code.",
+    "No provider secrets, production DNS, live payments, registrar settings or customer records changed by the offsite custody upload or prepared automation."
+  ],
+  "officialSources": [
+    "https://supabase.com/docs/guides/deployment/ci/backups",
+    "https://supabase.com/docs/guides/platform/backups",
+    "https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore",
+    "https://developers.google.com/workspace/drive/api/guides/api-specific-auth",
+    "https://developers.google.com/workspace/drive/api/guides/manage-uploads",
+    "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule"
+  ]
+}
