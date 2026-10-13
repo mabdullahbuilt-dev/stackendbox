@@ -97,7 +97,7 @@ export async function api(path: string, body?: unknown, signal?: AbortSignal) {
     cache: "no-store",
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(25000)]) : AbortSignal.timeout(25000),
   });
-  const data = await r.json();
+  const data = await r.json().catch(() => { throw new Error("The service returned an unreadable response. Refresh to check whether your action was saved before retrying."); });
   if (!r.ok) throw new Error(errors[data.error] || label(data.error));
   return data;
 }
@@ -105,24 +105,32 @@ function Form({
   children,
   onSubmit,
   button = "Save",
+  idempotent = false,
 }: {
   children: ReactNode;
   onSubmit: (data: Record<string, FormDataEntryValue>) => Promise<unknown>;
   button?: string;
+  idempotent?: boolean;
 }) {
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [failed, setFailed] = useState(false);
+  const [requestKey,setRequestKey]=useState<string|null>(null);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if(busy)return;
+    const form=e.currentTarget;
+    const key=requestKey||crypto.randomUUID();
+    if(idempotent)setRequestKey(key);
     setBusy(true);
     setMessage("");
     try {
       const result = (await onSubmit(
-        Object.fromEntries(new FormData(e.currentTarget)),
+        {...Object.fromEntries(new FormData(form)),...(idempotent?{idempotency_key:key}:{})},
       )) as { message?: string } | undefined;
       setFailed(false);
       setMessage(result?.message || "Saved.");
+      if(idempotent){setRequestKey(null);form.reset();}
     } catch (e) {
       setFailed(true);
       setMessage(e instanceof Error ? e.message : "Request failed.");
@@ -187,15 +195,17 @@ const nav = [
   ["settings", "Account Settings", Settings],
 ] as const;
 
-export function Portal({ path, userId = "" }: { path: string[]; userId?: string }) {
+export function Portal({ path, userId = "", initialData }: { path: string[]; userId?: string; initialData?: Data }) {
   const { cache, save } = usePortalCache();
   const router = useRouter();
   const section = path[0],
     page = path.join("/"),
     domainDetail = section === "domains" ? path[1] : undefined;
-  const [data, setData] = useState<Data | null>(() => cache?.userId === userId && cache.section === page ? cache.data : null),
+  const bootstrap=initialData?.account.user_id===userId?initialData:undefined;
+  const firstLoad=useRef(true);
+  const [data, setData] = useState<Data | null>(() => bootstrap || (cache?.userId === userId && cache.section === page ? cache.data : null)),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(() => cache?.userId !== userId || cache.section !== page),
+    [busy, setBusy] = useState(() => !bootstrap && (cache?.userId !== userId || cache.section !== page)),
     [open, setOpen] = useState(false);
   const [token, setToken] = useState(""),
     [tokenKey, setTokenKey] = useState(0);
@@ -218,8 +228,12 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
   }, [save, userId, page, section, domainDetail]);
   useEffect(() => {
     if (publicPage) return;
+    // Static bootstrap already obtained this page through the normal server
+    // identity and RLS checks. Skip only its duplicate mount request, never
+    // later refreshes, focus checks or another page's authorization.
+    if(firstLoad.current){firstLoad.current=false;if(bootstrap)return;}
     void reload();
-  }, [publicPage, page, reload]);
+  }, [publicPage, page, reload, bootstrap]);
   useEffect(() => {
     if (publicPage || section === "reset-password") return;
     let last=Date.now();
@@ -230,7 +244,7 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
   if (publicPage)
     return (
       <main id="main" className="portal-auth">
-        <Link href="/" className="portal-brand">
+        <Link href="/client-portal" className="portal-brand">
           StackEndBox<span>CLIENT PORTAL</span>
         </Link>
         <div className="portal-auth-grid">
@@ -317,7 +331,7 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
       </main>
     );
   if (section === "reset-password") return <main id="main" className="portal-auth">
-    <Link href="/" className="portal-brand">StackEndBox<span>CLIENT PORTAL</span></Link>
+    <Link href="/client-portal" className="portal-brand">StackEndBox<span>CLIENT PORTAL</span></Link>
     <div className="portal-auth-grid">
       <section><span className="portal-eyebrow">PRIVATE CLIENT ACCESS</span><h1>Set your StackEndBox password</h1><p>Your domains, website and service records stay securely linked to your approved account.</p></section>
       <section className="portal-panel">
@@ -329,7 +343,7 @@ export function Portal({ path, userId = "" }: { path: string[]; userId?: string 
   return (
     <div className="portal-shell">
       <aside className={open ? "portal-sidebar is-open" : "portal-sidebar"}>
-        <Link href="/" className="portal-brand">
+        <Link href="/client-portal" className="portal-brand">
           StackEndBox<span>CLIENT PORTAL</span>
         </Link>
         <nav aria-label="Client portal">
@@ -630,6 +644,7 @@ export function PortalContent({
           <h2>Start a request</h2>
           <Form
             button="Submit request"
+            idempotent
             onSubmit={async (f) => {
               const r = await api("requests", f);
               await reload();
@@ -652,10 +667,10 @@ export function PortalContent({
                 ))}
               </select>
             </label>
-            <label>Subject<input name="subject" required maxLength={200} defaultValue={requestedDomain ? `Domain quote: ${requestedDomain}` : ""} /></label>
+            <label>Subject<input name="subject" required maxLength={160} defaultValue={requestedDomain ? `Domain quote: ${requestedDomain}` : ""} /></label>
             <label>
               Description
-              <textarea name="description" required maxLength={5000} rows={5} defaultValue={requestedDomain ? `Please provide a verified registration quote for ${requestedDomain}.` : ""} />
+              <textarea name="description" required maxLength={5000} rows={5} defaultValue={requestedDomain ? `Please provide a verified renewal quote for my assigned domain ${requestedDomain}.` : ""} />
             </label>
           </Form>
         </section>
@@ -687,6 +702,7 @@ export function PortalContent({
               </div>
               <Form
                 button="Send reply"
+                idempotent
                 onSubmit={async (f) => {
                   const result = await api(`requests/${r.id}/messages`, f);
                   await reload();
@@ -1352,13 +1368,6 @@ function Admin({
   reload: () => Promise<void>;
   clientSelect: ReactNode;
 }) {
-  const [admin, setAdmin] = useState<Record<string, Row[]> | null>(null),
-    [error, setError] = useState("");
-  useEffect(() => {
-    api("admin/data")
-      .then(setAdmin)
-      .catch((e) => setError(e.message));
-  }, []);
   if (data.account.role !== "super_admin")
     return <Empty>Administrator access is required.</Empty>;
   return (
@@ -1367,12 +1376,6 @@ function Admin({
         title="Administration"
         description="Manage client access, assigned assets, supplier quotes, and operational exceptions."
       />
-      {error && (
-        <p className="portal-error" role="alert">
-          {error}{" "}
-          <Link href="/client-portal/settings">Open account security</Link>
-        </p>
-      )}
       <section className="portal-panel">
         <h2>Domain inventory</h2>
         <Action title="Process queued work" run={() => api("admin/jobs", {})} />
@@ -1391,7 +1394,7 @@ function Admin({
           change DNS, renewal settings, or domain ownership.
         </p>
       </section>
-      <p><Link className="portal-button" href="/admin/domains">Open domain acquisition, import, and assignment</Link></p>
+      <p><Link className="portal-button" href="/admin/domains">Open domain import and assignment</Link></p>
       <DomainList domains={rows(data, "domains")} admin />
       <div className="portal-columns">
         <section className="portal-panel">
@@ -1511,64 +1514,7 @@ function Admin({
         </section>
       </div>
       <section className="portal-panel"><h2>Annual renewal policy</h2><p>Customer pricing uses verified supplier cost and the agreed 30% markup. Supplier fees must be verified. Processor costs are accounted for in the agency margin. Domains are purchased manually outside StackEndBox, with no first-year checkout here.</p><p>Live customer payments and supplier renewals remain disabled until acceptance and explicit approval.</p></section>
-      {admin && (
-        <>
-          <section className="portal-panel">
-            <h2>Account access</h2>
-            {admin.accounts?.map((a) => (
-              <div key={str(a.user_id)}>
-                <p>
-                  {str(a.name)} · {str(a.approved_email)} · {str(a.role)}
-                </p>
-                <Action
-                  title={a.active ? "Suspend access" : "Restore access"}
-                  run={() =>
-                    api("admin/account-status", {
-                      user_id: a.user_id,
-                      active: !a.active,
-                    })
-                  }
-                />
-              </div>
-            ))}
-          </section>
-          {(["ledger", "events", "jobs", "email_outbox", "audit"] as const).map(
-            (name) => (
-              <section key={name} className="portal-panel">
-                <h2>{label(name)}</h2>
-                {admin[name]?.length ? (
-                  <div className="portal-table-wrap">
-                    <table>
-                      <thead>
-                        <tr>
-                          {Object.keys(admin[name][0]).map((k) => (
-                            <th key={k}>{label(k)}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {admin[name].map((r, i) => (
-                          <tr key={i}>
-                            {Object.values(r).map((v, j) => (
-                              <td key={j}>
-                                {typeof v === "object"
-                                  ? JSON.stringify(v)
-                                  : str(v)}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <Empty>No records yet.</Empty>
-                )}
-              </section>
-            ),
-          )}
-        </>
-      )}
+      <p><Link href="/admin/clients">Client access and profiles</Link> · <Link href="/admin/health">Integration and backup health</Link></p>
     </>
   );
 }

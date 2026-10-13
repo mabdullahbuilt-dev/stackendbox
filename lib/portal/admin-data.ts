@@ -1,5 +1,7 @@
 import "server-only";
 import { adminDb, checkDb } from "./server";
+import { z } from "zod";
+import {PortalError} from "./rules";
 export async function clientOptions(){
   const result=await adminDb().from("portal_memberships").select("client_id,portal_clients!inner(name,business_name,status),portal_accounts!inner(approved_email,active,role)").eq("portal_clients.status","active").eq("portal_accounts.active",true).eq("portal_accounts.role","client").limit(500);
   checkDb(result.error);
@@ -8,16 +10,36 @@ export async function clientOptions(){
     return {client_id:row.client_id,name:client.name,business_name:client.business_name,email:account.approved_email};
   }).sort((a,b)=>a.name.localeCompare(b.name))};
 }
-export async function clientDirectory(after?: string) {
+export async function clientDirectory(after?: string, search = "", clientId?: string) {
   const db=adminDb();
   let query=db.from("portal_clients").select("*,portal_memberships(user_id),portal_domain_assignments(domain_id,holder_arrangement,legal_holder,portal_domains(name,lifecycle_status)),portal_websites(id,name,url)").order("id").limit(51);
+  if(clientId) query=query.eq("id",z.uuid().parse(clientId));
+  // Escape PostgREST filter punctuation and SQL wildcard characters. Search is
+  // performed across persisted data, never live registrar calls or Auth scans.
+  const term=z.string().trim().max(100).parse(search);
+  if(term){
+    const pattern=`%${term.replace(/[\\%_]/g,"\\$&")}%`;
+    const quoted=JSON.stringify(pattern);
+    const [names,emails,domains]=await Promise.all([
+      db.from("portal_clients").select("id").or(`name.ilike.${quoted},business_name.ilike.${quoted}`).limit(501),
+      db.from("portal_memberships").select("client_id,portal_accounts!inner(approved_email)").ilike("portal_accounts.approved_email",pattern).limit(501),
+      db.from("portal_domain_assignments").select("client_id,portal_domains!inner(name)").ilike("portal_domains.name",pattern).limit(501),
+    ]);
+    [names,emails,domains].forEach(r=>checkDb(r.error));
+    // Fail explicitly instead of silently hiding matches beyond the search cap.
+    if([names,emails,domains].some(r=>(r.data?.length||0)>500)) throw new PortalError("client_search_too_broad",422);
+    const ids=[...new Set([...(names.data||[]).map(r=>r.id),...(emails.data||[]).map(r=>r.client_id),...(domains.data||[]).map(r=>r.client_id)])];
+    query=query.in("id",ids.length?ids:["00000000-0000-0000-0000-000000000000"]);
+  }
   if(after) query=query.gt("id",after);
   const result=await query; checkDb(result.error);
   const clients=(result.data||[]).slice(0,50);
   const ids=[...new Set(clients.flatMap(c=>(c.portal_memberships||[]).map((m:{user_id:string})=>m.user_id)))];
   const identities=ids.length?await db.from("portal_admin_identities").select("*").in("user_id",ids):{data:[],error:null};
   checkDb(identities.error);
-  const incomplete=await db.from("portal_provisioning").select("id,email,input,state,client_id,auth_user_id,last_error,created_at").neq("state","invited").order("created_at",{ascending:false}).limit(50);
+  let pending=db.from("portal_provisioning").select("id,email,input,state,client_id,auth_user_id,last_error,created_at").neq("state","invited").order("created_at",{ascending:false}).limit(50);
+  if(clientId) pending=pending.eq("client_id",clientId);
+  const incomplete=await pending;
   checkDb(incomplete.error);
   return {clients,identities:identities.data,provisioning:incomplete.data,next:(result.data?.length||0)>50?clients.at(-1)?.id:null};
 }

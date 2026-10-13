@@ -3,6 +3,7 @@ import Link from "next/link";
 import { superAdmin } from "@/lib/portal/server";
 import { PortalError } from "@/lib/portal/rules";
 import {PrivateAdminPortal} from "@/components/portal/PrivatePortal";
+import {portalPageRoute} from "@/lib/portal/page-route";
 export const dynamic = "force-dynamic";
 export default async function AdminPage({
   params,
@@ -11,23 +12,7 @@ export default async function AdminPage({
 }) {
   const { path = [] } = await params;
   const section = path[0] || "operations";
-  if (
-    (path.length > 1 &&
-      !(
-        path.length === 2 &&
-        ((section === "clients" && path[1] === "new") || section === "domains")
-      )) ||
-    ![
-      "operations",
-      "domains",
-      "clients",
-      "health",
-      "support",
-      "billing",
-      "security",
-    ].includes(section)
-  )
-    notFound();
+  if (!portalPageRoute(`/admin/${path.join("/")}`)) notFound();
   try {
     await superAdmin();
   } catch (error) {
@@ -54,6 +39,7 @@ export default async function AdminPage({
     <PrivateAdminPortal
       section={section}
       createClient={section === "clients" && path[1] === "new"}
+      clientId={section === "clients" && path[1] !== "new" ? path[1] : undefined}
       domain={section === "domains" ? path[1] : undefined}
     />
   );

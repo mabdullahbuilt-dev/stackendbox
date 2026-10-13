@@ -17,9 +17,9 @@ function clean(record: RecordRow) {
 export function DomainControls({ name, panel, admin = false }: { name: string; panel: "dns" | "nameservers" | "privacy"; admin?:boolean }) {
   const [state, setState] = useState<State | null>(null), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
   const [type, setType] = useState("A"), [editing, setEditing] = useState<RecordRow | null>(null);
-  async function load() { setBusy(true); setMessage(""); try { const next = await api(`${admin ? "admin/" : ""}domains/${name}/manage`); setState(admin ? {...next,changesEnabled:false} : next); } catch(e) { setMessage((e as Error).message); } finally { setBusy(false); } }
+  async function load() { setBusy(true); setMessage(""); try { const next = await api(`${admin ? "admin/" : ""}domains/${name}/manage`); setState(admin ? {...next,changesEnabled:false} : next); } catch(e) { setState(previous=>previous?{...previous,changesEnabled:false}:null); setMessage(`Provider refresh failed. Previously displayed values may be stale. ${(e as Error).message}`); } finally { setBusy(false); } }
   async function change(value: unknown) {
-    if (!state) return;
+    if (!state || !state.changesEnabled || busy) return;
     if (!window.confirm(`Confirm this change to ${name}. It may interrupt your website, email, or expose public registration details. Continue?`)) return;
     setBusy(true); setMessage("");
     try { const response = await api(`domains/${name}/manage`, { idempotency_key: crypto.randomUUID(), expected_version: state.version, confirmed: true, change: value }); setMessage(response.message || response.status); setState(null); setEditing(null); }
@@ -33,10 +33,11 @@ export function DomainControls({ name, panel, admin = false }: { name: string; p
   }
   return <section>
     {state && <p>Spaceship status: {state.detail.lifecycleStatus || "Not reported"}. Provider expiration: {state.detail.expirationDate ? new Date(state.detail.expirationDate).toLocaleDateString() : "Not reported"}. Auto-renew: {state.detail.autoRenew === undefined ? "Not reported" : state.detail.autoRenew ? "On, administrator review required" : "Off"}.</p>}
+    {state?.checked_at&&<p>Last successful provider read: {new Date(state.checked_at).toLocaleString()}.</p>}
     <button className="portal-button" disabled={busy} onClick={() => void load()}>{busy ? "Checking provider…" : "Refresh verified settings"}</button>
     {message && <p role="status" className="portal-notice">{message}</p>}
     {state && <>
-      {!state.changesEnabled && <p>Live changes are disabled in this Preview. Settings below are read from the registrar.</p>}
+      {!state.changesEnabled && <p>Live changes are unavailable in this environment or require a fresh verified state. Displayed values are from the last successful registrar read.</p>}
       {panel === "dns" && (!state.managed ? <p>Spaceship authoritative DNS could not be confirmed. Manage active DNS with your authoritative provider, or allow a recent nameserver change to propagate.</p> : <>
         <div className="portal-table-wrap"><table><thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th>Source</th><th /></tr></thead><tbody>{state.dns.items.map((record,i) => <tr key={i}><td>{record.type}</td><td>{record.name}</td><td>{(fields[record.type] || []).map(k => `${k}: ${String(record[k] ?? "")}`).join(" · ")}</td><td>{String(record.ttl ?? "Not reported")}</td><td>{record.group.type}</td><td>{state.changesEnabled && record.group.type === "custom" && fields[record.type] && <><button disabled={busy} onClick={() => { setEditing(record); setType(record.type); }}>Edit</button><button disabled={busy} onClick={() => void change({kind: "dns", action: "delete", before: clean(record)})}>Delete</button></>}</td></tr>)}</tbody></table></div>
         {!state.dns.items.length && <p>No DNS records reported.</p>}

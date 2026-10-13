@@ -1,0 +1,59 @@
+{
+  "status": "ACCEPTANCE_DEPLOYED_NOT_MAIN_DOMAIN_RELEASED",
+  "branch": "feature/cloudflare-workers-proof",
+  "baselinePreserved": "6dc0c15",
+  "deployment": {
+    "url": "https://stackendbox-static-acceptance.stackendbox.workers.dev/client-portal",
+    "workerVersion": "da403b7a-8982-46d9-9d27-d1a001fb3238",
+    "backend": "Existing stackendbox-acceptance Supabase Edge Function deployed successfully. Existing secrets preserved.",
+    "publicWebsite": "No public homepage, styles, contact handlers, assets, Vercel configuration or production DNS changed this session. Main remains a00db027ac60d22e22e19c1846055e692e5f3514. Its difference from original website commit 3595d8046851ff180e7577855b599589722e3928 consists of six backup-related files only. Feature-branch historical configuration is not a claim about deployed main.",
+    "mainDomainPortals": "Not launched. No production rewrite or Cloudflare ingress activated."
+  },
+  "completedImplementation": [
+    "Shared page-route contract supports support/account aliases and individual administrator client profiles. Unknown routes and removed purchase page return 404.",
+    "Client directory searches persisted names, approved emails and assigned domains with bounded results and explicit overflow errors. Profile links open scoped billing/support without changing passwords.",
+    "Administrator operations endpoint provides exact saved-data counts, expiry windows, domain freshness, quotes, payment/registrar follow-ups, notification history and audit metadata. No registrar requests on dashboard refresh.",
+    "Removed broad raw administrative table loading from the overview. Sensitive provider payloads and email bodies are excluded from the new operations read model.",
+    "Support creation and replies accept stable request identifiers. Duplicate retries reuse existing database records, conflicting content is rejected and staff email dedupe uses the saved message ID. Form keys survive an in-page failed request, not a full browser restart.",
+    "Renewal quotes now require matching provider domain identity, valid future expiry, registered lifecycle and explicitly false provider auto-renew. DNS pagination rejects inconsistent totals and overfull pages.",
+    "Failed DNS refresh preserves last visible data while disabling edits and showing stale state.",
+    "Static client bootstrap consumes the authorized scoped data response directly, removing the serial identity request and duplicate initial data request. Focus/session refresh checks remain enabled.",
+    "Backend-only build avoids rebuilding the original public website. Browser dependency evidence rejects server/provider and obsolete framework imports.",
+    "Isolated selective-ingress proof tests exact prefixes, public response preservation, portal-cookie separation, redirect pass-through and origin loop rejection. No real-host route deployed."
+  ],
+  "verification": {
+    "automated": "48 test files, 299 tests passed. TypeScript and modified-surface ESLint passed. Portal-only and Edge-only builds passed. Git diff whitespace check passed.",
+    "actualDatabase": "Read-only operations and directory code executed against existing Supabase. Approved email/domain search, exact profile and no-match cases passed. Active clients 1, assigned domains 1, registered domains 1, open support 1. No new customer records or registrar calls.",
+    "actualBrowser": "Existing client session restored on deployed websites/account/support pages. One clearly labelled authorized reply saved, form cleared and persisted after navigation. Client denied /admin. Mobile 390x844 viewport had document width and scroll width both 390, and navigation expanded correctly.",
+    "hostedRoutes": "Public root and /api/contact intentionally 404 on portal-only origin. Login and callback 200 with frame denial and no-store. Unknown client/admin routes 404. Anonymous admin operations 401.",
+    "adminUiLimit": "Fresh administrator MFA was not available during unattended work. New admin read models were executed read-only and authorization tested, but fresh-MFA browser acceptance of the new admin screens remains required.",
+    "performance": "Actual operations read model measured 2264ms from the development computer. One pre-optimization hosted websites navigation measured 3266ms. Browser locator timing failed on the post-change run despite eventual visible success, so no quantified speedup is claimed. Regional network/database latency remains.",
+    "dependencyRisk": "npm production audit still reports seven high-severity entries in the obsolete vinext dependency chain. Build dependency checks exclude that chain from deployed static/Edge bundles. This is not a clean repository-wide dependency audit.",
+    "notRepeated": "No 400-client benchmark, real TXT mutation, domain assignment mutation or genuine Whop Sandbox payment repeated. Prior accepted evidence preserved."
+  },
+  "automation": {
+    "backup": "Actual GitHub event=schedule run 38473431604 succeeded, completed 2026-10-13T21:50:30Z. Three encrypted files, checksum readback verified, offsite true, zero Storage objects. Prior isolated SQL recovery and failure-email evidence retained. No new recovery-key exposure.",
+    "backupRun": "https://github.com/mabdullahbuilt-dev/stackendbox/actions/runs/38473431604",
+    "emailJob": "Actual acceptance */10 cron observed: outcome ok, CPU 0ms, wall 2509ms, no exceptions, completion log present.",
+    "reminders": "Existing midnight schedule retained. A midnight event was not observed in this session.",
+    "limitations": "Monitor backup age, Drive quota and GitHub schedule inactivity. Full hosted Auth/MFA disaster recovery and nonempty Storage restore remain unverified. Owner must retain recovery code independently."
+  },
+  "dns": {
+    "checkedAt": "2026-10-13T22:21:23Z",
+    "authoritative": "Both launch1/launch2 publish recovery KSK 38997 matching the previously verified parent DS digest. All 11 website/mail records preserved.",
+    "independentResolvers": "Google and Cloudflare resolve apex and www with status 0. Apex authenticated. Existing Vercel targets unchanged.",
+    "remaining": "Default resolver still returns old DS 23596, TTL 44305 seconds. Full recovery is not declared.",
+    "action": "None. Keep DNSSEC enabled and continue existing read-only monitoring. Diagnose after stale lifetime if failure remains."
+  },
+  "disabledAndIncomplete": [
+    "Live customer charges, supplier renewals, ownership changes, registrar transfers and unapproved DNS writes remain disabled.",
+    "Prior Sandbox checkout/signature/persistence evidence is preserved. Full authorized live payment-to-registrar renewal, new expiry confirmation and failure/refund acceptance are not complete.",
+    "A controlled proxy proof does not verify production TLS, canonical redirects, cookie origin or actual company-domain callbacks.",
+    "No verified commercially compliant exact-path solution satisfies the retained Vercel Hobby origin and all current no-cost/no-routing-change constraints. See portal-routing-options.json."
+  ],
+  "minimumFounderActions": [
+    "Fresh existing administrator login and MFA for final browser acceptance of the new operations/profile screens. No password or OTP in chat.",
+    "Resolve the existing hosting eligibility constraint and explicitly approve an exact production routing change before exposing company-domain portal paths. No upgrade, exception request or migration is performed automatically.",
+    "Separate later authorization and provider acceptance are required for real-money annual renewal. They do not need to block safe portal-only Phase A engineering."
+  ]
+}

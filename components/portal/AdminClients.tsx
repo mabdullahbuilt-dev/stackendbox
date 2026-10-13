@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { api, type Data } from "./Portal";
 import { generateTemporaryPassword, validatePassword } from "@/lib/portal/password-policy";
 type Client = {
@@ -39,7 +39,7 @@ type Directory = {
   provisioning: Pending[];
   next: string | null;
 };
-export function AdminClients({ create = false }: { create?: boolean }) {
+export function AdminClients({ create = false, clientId }: { create?: boolean; clientId?: string }) {
   const [data, setData] = useState<Directory | null>(null),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
@@ -52,14 +52,23 @@ export function AdminClients({ create = false }: { create?: boolean }) {
   const createForm=useRef<HTMLFormElement>(null);
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
   const [assets,setAssets] = useState<Data|null>(null),[domainId,setDomainId]=useState("");
+  const [search,setSearch]=useState("");
+  const activeSearch=useRef("");
+  const loadVersion=useRef(0);
   useEffect(() => {
     setRequestId(crypto.randomUUID());
   }, []);
-  async function load(after?: string) {
+  const load=useCallback(async (after?: string) => {
+    const version=++loadVersion.current;
     try {
+      const params=new URLSearchParams();
+      if(after) params.set("after",after);
+      if(activeSearch.current) params.set("q",activeSearch.current);
+      if(clientId) params.set("client_id",clientId);
       const result = (await api(
-        `admin/clients${after ? `?after=${encodeURIComponent(after)}` : ""}`,
+        `admin/clients?${params}`,
       )) as Directory;
+      if(version!==loadVersion.current)return;
       setData((previous) =>
         after && previous
           ? {
@@ -71,13 +80,13 @@ export function AdminClients({ create = false }: { create?: boolean }) {
       );
       setError("");
     } catch (e) {
-      setError((e as Error).message);
+      if(version===loadVersion.current)setError((e as Error).message);
     }
-  }
+  },[clientId]);
   useEffect(() => {
     if (!create) void load();
     else void api("admin/workspace").then(setAssets).catch(e=>setError(e.message));
-  }, [create]);
+  }, [create,load]);
   async function provision(input: Record<string, unknown>) {
     setBusy(true);
     setError("");
@@ -212,8 +221,9 @@ export function AdminClients({ create = false }: { create?: boolean }) {
     );
   return (
     <>
-      <h1>Clients</h1>
+      <h1>{clientId?"Client profile":"Clients"}</h1>
       <p>Saved PostgreSQL records, linked to Supabase Auth identities.</p>
+      {clientId?<p><Link href="/admin/clients">All clients</Link></p>:<form className="portal-form" onSubmit={e=>{e.preventDefault();activeSearch.current=search.trim();void load();}}><label>Search by name, approved email or domain<input value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/></label><button>Search clients</button></form>}
       <p>
         <Link className="portal-button" href="/admin/clients/new">
           Create client
@@ -233,11 +243,11 @@ export function AdminClients({ create = false }: { create?: boolean }) {
       ) : (
         <>
           {!data.clients.length && (
-            <p>No client accounts have been provisioned.</p>
+            <p>{clientId?"Client not found.":activeSearch.current?"No matching clients.":"No client accounts have been provisioned."}</p>
           )}
           {data.clients.map((c) => (
             <section className="portal-panel" key={c.id}>
-              <h2>{c.business_name}</h2>
+              <h2>{clientId?c.business_name:<Link href={`/admin/clients/${c.id}`}>{c.business_name}</Link>}</h2>
               <p>
                 {c.name} · {c.status}
               </p>
@@ -303,8 +313,8 @@ export function AdminClients({ create = false }: { create?: boolean }) {
                 <p>No websites assigned.</p>
               )}
               <p>
-                <Link href="/admin/billing">Client billing</Link> ·{" "}
-                <Link href="/admin/support">Support records</Link>
+                <Link href={`/admin/billing?client_id=${c.id}`}>Client billing</Link> ·{" "}
+                <Link href={`/admin/support?client_id=${c.id}`}>Support records</Link>
               </p>
             </section>
           ))}

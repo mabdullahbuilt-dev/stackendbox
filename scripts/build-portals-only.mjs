@@ -11,7 +11,11 @@ const aliases={name:'portal-only-adapters',setup(b){
   b.onLoad({filter:/.*/,namespace:'portal-next'},a=>({contents:a.path==='next/link'?`export {Link as default} from ${JSON.stringify(navigation)}`:a.path==='next/image'?`export {Image as default} from ${JSON.stringify(navigation)}`:`export {useRouter,useSearchParams} from ${JSON.stringify(navigation)}`,resolveDir:root}));
   b.onLoad({filter:/platform[\\/]static[\\/]fonts\.css$/},async a=>({contents:(await readFile(a.path,'utf8')).replaceAll('/fonts/','/client-portal/_assets/fonts/'),loader:'css',resolveDir:root}));
 }};
-await build({entryPoints:['platform/static/portal.tsx'],outfile:`${output}/portal.js`,bundle:true,platform:'browser',format:'esm',target:'es2022',minify:true,plugins:[aliases],define:{'process.env':'{}','process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY':JSON.stringify(siteKey),'process.env.NEXT_PUBLIC_PORTAL_API_BASE':'"/client-portal/api"'}});
+const built=await build({entryPoints:['platform/static/portal.tsx'],outfile:`${output}/portal.js`,bundle:true,platform:'browser',format:'esm',target:'es2022',minify:true,metafile:true,plugins:[aliases],define:{'process.env':'{}','process.env.NODE_ENV':'"production"','process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY':JSON.stringify(siteKey),'process.env.NEXT_PUBLIC_PORTAL_API_BASE':'"/client-portal/api"'}});
+const inputs=Object.keys(built.metafile.inputs);
+if(inputs.some(p=>/lib\/portal\/(server|spaceship|whop|services|auth-email)\.ts$|node_modules\/(vinext|braces|micromatch)\//.test(p)))throw Error('server_or_legacy_dependency_in_browser');
+await mkdir('dist/portal-evidence',{recursive:true});
+await writeFile('dist/portal-evidence/browser-dependencies.json',JSON.stringify({serverModulesIncluded:false,legacyFrameworkIncluded:false,inputs},null,2));
 await cp('node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2',`${output}/fonts/geist.woff2`);
 await cp('node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2',`${output}/fonts/geist-mono.woff2`);
 await writeFile(`${output}/portal.html`,'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>StackEndBox Portal</title><link rel="stylesheet" href="/client-portal/_assets/portal.css"></head><body><div id="root"></div><script type="module" src="/client-portal/_assets/portal.js"></script></body></html>');

@@ -5,7 +5,7 @@ const env={ASSETS:{fetch:assets},EDGE_BACKEND_URL:"https://project.supabase.co/f
 afterEach(()=>{vi.unstubAllGlobals();vi.clearAllMocks();});
 it("cannot intercept the original homepage, contact form or public assets",async()=>{
   const backend=vi.fn();vi.stubGlobal("fetch",backend);
-  for(const path of ["/","/api/brief","/api/portal/auth/identity","/site.css","/brand/mark.png","/administrator","/client-portals"])
+  for(const path of ["/","/api/brief","/api/portal/auth/identity","/site.css","/brand/mark.png","/administrator","/client-portals","/client-portal/unknown","/client-portal/domains/buy"])
     expect((await portals.fetch(new Request(`https://portal.example${path}`),env)).status).toBe(404);
   expect(assets).not.toHaveBeenCalled();expect(backend).not.toHaveBeenCalled();
 });
@@ -17,6 +17,9 @@ it("serves both portal shells and only their namespaced assets",async()=>{
   await portals.fetch(new Request("https://portal.example/client-portal/_assets/fonts/geist.woff2"),env);
   expect(new URL(assets.mock.calls.at(-1)![0].url).pathname).toBe("/fonts/geist.woff2");
   expect((await portals.fetch(new Request("https://portal.example/client-portal/_assets/not-present"),env)).status).toBe(404);
+  const shell=await portals.fetch(new Request("https://portal.example/client-portal/account"),env);
+  expect(shell.headers.get("x-frame-options")).toBe("DENY");
+  expect(shell.headers.get("referrer-policy")).toBe("no-referrer");
 });
 it("preserves POST bodies, origin and cookies through the private API prefix",async()=>{
   const backend=vi.fn(async(target:URL,init:RequestInit)=>{

@@ -17,6 +17,6 @@ export function clientTables(section: ClientSection, domainDetail=false): readon
 }
 
 export function adminTables(section: ClientSection): readonly PortalTable[] {
-  if (section === "dashboard") return portalTables;
+  if (section === "dashboard") return ["clients","domains","domain_assignments"];
   return clientTables(section, section === "domains");
 }

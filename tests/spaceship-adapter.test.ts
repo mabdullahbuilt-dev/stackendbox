@@ -68,6 +68,13 @@ describe("registrar adapter mutation boundaries", () => {
     await expect(spaceship.dns("example.com")).rejects.toThrow("spaceship_incomplete_dns");
   });
   const inventoryDomain = (name:string) => ({name,autoRenew:false,isPremium:false,lifecycleStatus:"registered"});
+  it("rejects changing DNS totals and overfull responses",async()=>{
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:Array.from({length:500},(_,i)=>({name:`fixture${i}`})),total:501})))
+      .mockResolvedValueOnce(new Response(JSON.stringify({items:[{name:"last"}],total:502})));
+    await expect(spaceship.dns("example.com")).rejects.toThrow("spaceship_dns_changed_retry");
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:[{name:"extra"}],total:0})));
+    await expect(spaceship.dns("example.com")).rejects.toThrow("spaceship_incomplete_dns");
+  });
   it("reads all domain pages with the documented take and skip parameters", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({items:Array.from({length:100},(_,i)=>inventoryDomain(`fixture${i}.invalid`)),total:101})))
       .mockResolvedValueOnce(new Response(JSON.stringify({items:[inventoryDomain("last.invalid")],total:101})));

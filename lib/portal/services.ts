@@ -10,7 +10,7 @@ import {
   sandboxCheckoutEnabled,
 } from "./rules";
 import { domainSchema, spaceship } from "./spaceship";
-import {requireVerifiedExpiration} from "./domain-snapshot";
+import {requireVerifiedExpiration,verifiedRenewalExpiration} from "./domain-snapshot";
 
 export async function saveVerifiedDomain(d: z.infer<typeof domainSchema>) {
   const name = domainName(d.name);
@@ -121,15 +121,8 @@ export async function createQuote(
     checkDb(ae);
     if (!a) throw new PortalError("access_denied", 403);
     const current = await spaceship.detail(name);
-    if (
-      current.autoRenew ||
-      current.lifecycleStatus !== "registered" ||
-      !current.expirationDate ||
-      Date.parse(current.expirationDate) <= Date.now()
-    )
-      throw new PortalError("renewal_requires_administrator_review", 409);
     domainId = d.id;
-    expiration = current.expirationDate;
+    expiration = verifiedRenewalExpiration(name,current);
   } else {
     const a = await availability(name);
     if (a.result !== "available" || a.premium)
@@ -261,15 +254,7 @@ export async function validateQuote(quoteId: string) {
     const d = a.portal_domains as unknown as { protected: boolean };
     assertCustomerDomain(q.domain, d.protected);
     const current = await spaceship.detail(q.domain);
-    if (
-      current.autoRenew ||
-      current.lifecycleStatus !== "registered" ||
-      !current.expirationDate ||
-      Date.parse(current.expirationDate) !==
-        Date.parse(q.expiration_snapshot) ||
-      Date.parse(current.expirationDate) <= Date.now()
-    )
-      throw new PortalError("renewal_requires_administrator_review", 409);
+    verifiedRenewalExpiration(q.domain,current,q.expiration_snapshot);
   }
   return q;
 }

@@ -1,35 +1,39 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, PortalContent, type Data } from "./Portal";
 import { AdminClients } from "./AdminClients";
 import { AdminHealth } from "./AdminHealth";
 import { AdminDomains } from "./AdminDomains";
+import { AdminOperations } from "./AdminOperations";
 export function AdminPortal({
   section,
   createClient = false,
   domain,
+  clientId,
 }: {
   section: string;
   createClient?: boolean;
   domain?: string;
+  clientId?: string;
 }) {
   const router = useRouter();
+  const scopedClient=useSearchParams().get("client_id");
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const reload = useCallback(async () => {
     try {
       const scope = ({operations:"dashboard",domains:"domains",support:"requests",billing:"billing",security:"settings"} as Record<string,string>)[section] || "dashboard";
-      setData(await api(`admin/workspace?section=${scope}`));
+      setData(await api(`admin/workspace?section=${scope}${scopedClient?`&client_id=${encodeURIComponent(scopedClient)}`:""}`));
       setError("");
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Unable to load administration.",
       );
     }
-  }, [section]);
+  }, [section,scopedClient]);
   useEffect(() => {
     if (!["clients", "health"].includes(section)) void reload();
   }, [reload, section]);
@@ -88,14 +92,14 @@ export function AdminPortal({
           <button className="portal-menu" onClick={() => setOpen(!open)}>
             Menu
           </button>
-          <span>Private administration</span>
+          <span>Private administration{scopedClient?" · Selected client records":""}</span>
         </header>
         <main id="main" className="portal-main">
           <p className="portal-sandbox">
           Online payments and live registrar changes are disabled pending acceptance.
           </p>
           {section === "clients" ? (
-            <AdminClients key={String(createClient)} create={createClient} />
+            <AdminClients key={`${createClient}:${clientId||""}`} create={createClient} clientId={clientId} />
           ) : section === "health" ? (
             <AdminHealth />
           ) : error ? (
@@ -107,13 +111,13 @@ export function AdminPortal({
             section === "domains" ? (
               <AdminDomains data={data} reload={reload} domain={domain} />
             ) : (
-              <PortalContent
+              <>{section === "operations" && <AdminOperations />}<PortalContent
                 section={content}
                 path={[content]}
                 data={data}
                 reload={reload}
                 adminMode
-              />
+              /></>
             )
           ) : (
             <p role="status">Loading administration…</p>

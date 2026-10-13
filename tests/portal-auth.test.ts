@@ -18,7 +18,8 @@ vi.mock("@/lib/portal/domain-operations", () => ({ authorizedDomain: vi.fn(), ch
 vi.mock("@/lib/portal/auth-email", () => ({ sendAuthEmail: vi.fn() }));
 
 import { GET, POST } from "@/app/api/portal/[...path]/route";
-import { identity, sessionDb, superAdmin, turnstile } from "@/lib/portal/server";
+import { adminDb, identity, sessionDb, superAdmin, turnstile } from "@/lib/portal/server";
+import {notifyClient} from "@/lib/portal/services";
 import { PortalError } from "@/lib/portal/rules";
 import { adminTables, clientTables } from "@/lib/portal/data-scope";
 
@@ -130,6 +131,24 @@ describe("page-scoped client queries", () => {
 });
 
 describe("page-scoped administrator queries", () => {
+  it("filters staff billing to the selected client after the MFA gate",async()=>{
+    const id="aaaaaaaa-0000-4000-8000-000000000011",filters:unknown[]=[];
+    const from=vi.fn((table:string)=>{
+      const builder={select:()=>builder,limit:()=>builder,in:(column:string,value:unknown)=>{filters.push([table,column,value]);return builder;},then:(resolve:(value:unknown)=>unknown)=>Promise.resolve({data:[],error:null}).then(resolve)};
+      return builder;
+    });
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture"},account:{role:"super_admin"},db:{from,auth:{mfa:{listFactors:async()=>({data:{totp:[]},error:null})}}}} as unknown as Awaited<ReturnType<typeof identity>>);
+    vi.mocked(superAdmin).mockResolvedValue(undefined as never);
+    const response=await GET(new NextRequest(`https://portal.example/api/portal/admin/workspace?section=billing&client_id=${id}`),{params:Promise.resolve({path:["admin","workspace"]})});
+    expect(response.status).toBe(200);
+    for(const table of adminTables("billing"))expect(filters).toContainEqual([`portal_${table}`,table==="clients"?"id":"client_id",[id]]);
+  });
+  it.each(["admin/operations","admin/clients"])("rejects non-admin read models at %s",async route=>{
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture"},account:{role:"client"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>);
+    vi.mocked(superAdmin).mockRejectedValueOnce(new PortalError("administrator_required",403));
+    const response=await GET(new NextRequest(`https://portal.example/api/portal/${route}`),{params:Promise.resolve({path:route.split("/")})});
+    expect(response.status).toBe(403);
+  });
   it.each(["domains", "billing", "requests", "settings"] as const)("fetches only %s records without a tenant membership lookup", async section => {
     const queried: string[] = [];
     const from = vi.fn((table: string) => {
@@ -145,4 +164,24 @@ describe("page-scoped administrator queries", () => {
     expect(queried).toEqual(adminTables(section).map(t => `portal_${t}`));
     expect(queried).not.toContain("portal_memberships");
   });
+});
+
+it("deduplicates support replies and uses the saved message ID for notification retries",async()=>{
+  const requestId="11111111-1111-4111-8111-111111111111",messageId="22222222-2222-4222-8222-222222222222";
+  let stored:Record<string,unknown>|undefined;
+  const from=(table:string)=>{
+    const result=()=>({data:table==="portal_requests"?{id:requestId,client_id:"client-fixture"}:stored,error:null});
+    const builder={select:()=>builder,eq:()=>builder,lt:()=>builder,update:()=>builder,upsert:(value:Record<string,unknown>)=>{stored||={...value,created_at:"2026-10-14T00:00:00Z"};return builder;},single:async()=>result(),then:(resolve:(value:unknown)=>unknown)=>Promise.resolve(result()).then(resolve)};
+    return builder;
+  };
+  vi.mocked(adminDb).mockReturnValue({from} as unknown as ReturnType<typeof adminDb>);
+  vi.mocked(identity).mockResolvedValue({user:{id:"staff-fixture"},account:{role:"super_admin"},db:{from}} as unknown as Awaited<ReturnType<typeof identity>>);
+  vi.mocked(notifyClient).mockClear();
+  const submit=(body:string)=>POST(new NextRequest(`https://portal.example/api/portal/requests/${requestId}/messages`,{method:"POST",body:JSON.stringify({body,idempotency_key:messageId})}),{params:Promise.resolve({path:["requests",requestId,"messages"]})});
+  expect((await submit("safe fixture reply")).status).toBe(200);
+  expect((await submit("safe fixture reply")).status).toBe(200);
+  expect(stored?.id).toBe(messageId);
+  expect(vi.mocked(notifyClient).mock.calls.map(call=>call[3])).toEqual([`reply:${requestId}:${messageId}`,`reply:${requestId}:${messageId}`]);
+  expect((await submit("different reply")).status).toBe(409);
+  expect(stored?.body).toBe("safe fixture reply");
 });

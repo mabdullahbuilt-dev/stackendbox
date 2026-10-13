@@ -1,5 +1,6 @@
 {
-  "status": "HOSTED_BACKUP_AND_ISOLATED_RECOVERY_VERIFIED_LONG_LIVED_AUTHORIZATION_PENDING",
+  "status": "HOSTED_SCHEDULED_BACKUP_UPLOAD_INTEGRITY_AND_PRIOR_ISOLATED_RECOVERY_VERIFIED",
+  "scheduledExecution": {"run": "https://github.com/mabdullahbuilt-dev/stackendbox/actions/runs/38473431604", "event": "schedule", "createdAt": "2026-10-13T21:49:20Z", "completedAt": "2026-10-13T21:50:30Z", "generation": "2026-10-13T21-49-34-734Z", "conclusion": "success", "encryptedFiles": 3, "storageObjects": 0, "checksumReadbackVerified": true, "retired": 0, "laptopRequired": false},
   "baselinePreserved": "6dc0c15",
   "google": {
     "project": "stackendbox-backups",
@@ -11,9 +12,9 @@
     "apiSetup": "Drive and Picker appear in enabled-API selection. Picker activation completed in Google notifications. Dedicated Picker key created with only Google Picker API and website restrictions http://127.0.0.1:8765/* and https://docs.google.com/*.",
     "credentialCustody": "New client secret and restricted Picker key saved outside the repository in the owner-restricted keys directory, without emitting their values.",
     "driveScope": "drive.file only. Exact account and existing private folder enforced in helper and hosted runner. No full-Drive scope.",
-    "mode": "Dedicated External app now verified In production after explicit owner approval. Google test-user allowlist no longer applies. Application code continues enforcing the exact owner, private folder and drive.file scope. New owner reauthorization opened, long-lived refresh behavior not yet verified.",
-    "personalConsent": "Owner completed Google consent. Google Picker selected the exact existing folder. Helper verified account and sole-owner folder permissions and saved offline credentials outside source. Google reported refresh_token_expires_in 604799 seconds. Credentials sealed into the restricted GitHub environment without output.",
-    "publishing": "Owner explicitly approved publication. Dedicated Branding saved with verified HTTPS information/privacy URLs and account Worker authorized domain. Only drive.file declared under non-sensitive scopes, sensitive and restricted lists empty. Audience verified In production. Portfolio untouched. Personal Production reauthorization now open.",
+    "mode": "Dedicated External app verified In production after explicit owner approval. Google test-user allowlist no longer applies. Application code enforces the exact owner, private folder and drive.file scope. Production personal reauthorization completed, token refreshed successfully, no seven-day lifetime reported. Revocation and provider policy can still invalidate authorization.",
+    "personalConsent": "Owner completed fresh Production Google consent and selected the exact existing private folder. New offline credentials sealed into restricted main-only GitHub environment. Actual refresh returned drive.file and 3599-second access token, exact owner and sole-owner folder verified. Private recovery key and code remain excluded.",
+    "publishing": "Owner explicitly approved publication. Dedicated Branding saved with verified HTTPS information/privacy URLs and account Worker authorized domain. Only drive.file declared under non-sensitive scopes, sensitive and restricted lists empty. Audience verified In production and personal reauthorization complete. Portfolio untouched.",
     "portfolio": "Existing Portfolio project, branding, Desktop client and credentials unchanged.",
     "billing": "Not enabled. Free-trial activation not selected."
   },
@@ -24,10 +25,10 @@
     "branchProtection": "main protected with required pull requests, no force pushes or deletion, and administrator enforcement. Sole writer is owner, so no unavailable independent reviewer is claimed.",
     "environmentSecretsVerified": ["STACKENDBOX_BACKUP_DATABASE_URL", "STACKENDBOX_BACKUP_EXPORT_TOKEN", "STACKENDBOX_BACKUP_PUBLIC_KEY", "STACKENDBOX_BACKUP_DRIVE_CLIENT_ID", "STACKENDBOX_BACKUP_DRIVE_CLIENT_SECRET", "STACKENDBOX_BACKUP_DRIVE_REFRESH_TOKEN"],
     "excludedSecrets": "Supabase privileged server key, private recovery key, recovery code and provider integration secrets not sent to GitHub.",
-    "job": "Backup-only PR 11 passed Vercel build, merged into main as 09ee3886605306f034604b937cdedfc8496f01be. Five added backup files only, existing application code unchanged. No PR event and no uploaded Actions artifacts. Protected main manual dispatch allowed, scheduled execution still gated by the unset enable variable.",
+    "job": "Backup-only PR 11 passed Vercel build and merged into main. Existing application code unchanged. Actions enabled, workflow active on default main, restricted environment main-only, enable variable true. Owner merged cleanup PR 13 at 2026-10-13T20:54:26Z, removing the temporary trigger. Daily cron 23 21 * * * produced successful scheduled run 38473431604, completed 2026-10-13T21:50:30Z. No PR event or Actions artifacts. No scheduling changes during the website incident investigation.",
     "hostedRun": "https://github.com/mabdullahbuilt-dev/stackendbox/actions/runs/38462750028",
     "execution": "SUCCESS. Started 2026-10-13T20:25:54Z, finished 20:26:56Z. Hosted generation 2026-10-13T20-26-05-689Z contained three encrypted files, zero Storage payloads, no retired generations. Each upload downloaded and SHA256 verified before completion.",
-    "failureNotifications": "Signed-in GitHub notification settings verified Actions on GitHub and Email, Failed workflows only, default email mabdullah.built@gmail.com. No settings change needed. Actual failure-email receipt not artificially exercised."
+    "failureNotifications": "Actual harmless owner-only manual notification test run 38467511495 failed intentionally without secrets, environment or provider calls. Correct owner inbox received GitHub failure email at 2026-10-14 02:02 Asia/Karachi. Run https://github.com/mabdullahbuilt-dev/stackendbox/actions/runs/38467511495. Temporary test workflow slated for cleanup. Actual backup run remains successful."
   },
   "supabase": {
     "project": "irzjkdxxfvobtabwkqmz",
@@ -48,12 +49,12 @@
     },
     "restore": "2026-10-13T20:29:04Z, downloaded hosted dump restored into a new loopback-only PostgreSQL cluster using the encrypted portable recovery key and separate protected code file, without displaying them. Restored 2 accounts, 2 Auth users, 1 client. Migration validation, RLS, integrity and database restart persistence passed. Temporary local cluster stopped and removed. No capacity benchmark repeated. This is isolated SQL recovery, not complete hosted Supabase Auth/MFA/encryption-root disaster recovery. Zero Storage payloads existed, so object payload recovery isn't claimed.",
     "informationPages": "Approved backup-authorization.html and backup-privacy.html published on existing stackendbox-production.stackendbox.workers.dev. No keys, recovery code, backup contents, project identifiers, folder identifiers or infrastructure credentials in pages. Cloudflare uploaded only those two assets, Worker version 3291377b-147b-4f44-899b-7e2f160c4372. Existing homepage/site/portal hashes still match and anonymous backend identity remains 401. No backend deployment, provider-secret rotation, custom-domain route, production DNS or billing change. A failed Vercel public-settings read was stopped and not used to guess values or rebuild the website.",
-    "remaining": "Fresh long-lived owner authorization, replacement of the expiring refresh-token environment secret without rotating existing provider credentials, enable daily schedule and observe an actual scheduled execution. Do not call ongoing unattended protection complete before these pass."
+    "remaining": "Actual scheduled success and readback integrity are now verified by scheduledExecution above. Owner must retain recovery code separately and monitor Drive quota and backup age. Full hosted Supabase Auth/MFA disaster recovery and nonempty Storage payload restore remain outside the completed SQL recovery drill. Harmless alert-test workflow cleanup is optional and has not changed main."
   },
   "dns": {
-    "checkedAt": "2026-10-13T20:14:28Z",
+    "checkedAt": "2026-10-13T21:25:50Z",
     "publicResolvers": "Google and Cloudflare status 0 for apex and www. Both apex responses authenticated. Existing Vercel routing preserved.",
-    "localResolver": "Still returns original DS key 23596 with TTL 51916 seconds, about 14.4 hours. Parent recovery key previously verified 38997. Ordinary www curl still fails DNS resolution here.",
-    "action": "No DS/DNSKEY/nameserver/record/production-routing changes. Migration remains paused until ordinary resolution is stable."
+    "localResolver": "Still returns original DS key 23596 with TTL 47638 seconds, about 13.2 hours. Both .com parent authorities publish recovery DS 38997 TTL 86400. Both Spaceship authoritative DNSKEY SHA256 digests match that DS. Ordinary www browser still fails resolution. All 11 source records verified on both authoritative nameservers.",
+    "action": "Founder answered Keep DNSSEC enabled and wait for recovery to the exact DS 38997 removal request. No DNS changes will be made. Preserve authoritative recovery key and signing while stale recursive DS expires. Delegation and Worker cutover remain separately unapproved."
   }
 }

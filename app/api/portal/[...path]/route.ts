@@ -217,6 +217,7 @@ async function handle(req: NextRequest, context: Context) {
     if (["data", "admin/workspace"].includes(route) && req.method === "GET") {
       const adminMode = route === "admin/workspace";
       if (adminMode) await superAdmin(auth);
+      const scopedClient = adminMode && req.nextUrl.searchParams.has("client_id") ? uuid.parse(req.nextUrl.searchParams.get("client_id")) : undefined;
       const section = z.enum(clientSections).parse(req.nextUrl.searchParams.get("section") || "dashboard");
       const selected = new Set(adminMode ? adminTables(section) : clientTables(section,req.nextUrl.searchParams.has("domain")));
       const [{ data: memberships, error: membershipError }, { data: factors, error: factorsError }] = await Promise.all([
@@ -225,8 +226,8 @@ async function handle(req: NextRequest, context: Context) {
       ]);
       checkDb(membershipError);
       checkDb(factorsError);
-      const clientIds = (memberships || []).map((m) => m.client_id);
-      const { data: assigned, error: assignmentError } = adminMode || !clientIds.length || !selected.has("domains") ? { data: [], error: null } : await auth.db.from("portal_domain_assignments").select("domain_id").in("client_id", clientIds);
+      const clientIds = scopedClient ? [scopedClient] : (memberships || []).map((m) => m.client_id);
+      const { data: assigned, error: assignmentError } = (adminMode && !scopedClient) || !clientIds.length || !selected.has("domains") ? { data: [], error: null } : await auth.db.from("portal_domain_assignments").select("domain_id").in("client_id", clientIds);
       checkDb(assignmentError);
       const tables = portalTables;
       const results = await Promise.all(
@@ -235,7 +236,7 @@ async function handle(req: NextRequest, context: Context) {
           if (!selected.has(t)) return {data:[],error:null};
           if (!adminMode && !clientIds.length) return { data: [], error: null };
           let query = auth.db.from(`portal_${t}`).select(t === "external_payments" ? "id,client_id,acquisition_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at" : "*").limit(500);
-          if (!adminMode) {
+          if (!adminMode || scopedClient) {
             if (t === "domains") query = query.in("id", (assigned || []).map((a) => a.domain_id));
             else if (t === "clients") query = query.in("id", clientIds);
             else if (t === "memberships") query = query.eq("user_id", auth.user.id);
@@ -398,6 +399,7 @@ async function handle(req: NextRequest, context: Context) {
           client_id: uuid,
           subject: text.max(160),
           description: text,
+          idempotency_key: uuid.optional(),
           category: z.enum([
             "Website update",
             "Bug fix",
@@ -409,12 +411,17 @@ async function handle(req: NextRequest, context: Context) {
         })
         .parse(body);
       await clientAccess(input.client_id, auth);
+      const {idempotency_key,...fields}=input;
+      const requestId=idempotency_key||crypto.randomUUID();
+      const saved=await adminDb().from("portal_requests").upsert({id:requestId,...fields,created_by:auth.user.id},{onConflict:"id",ignoreDuplicates:true});
+      checkDb(saved.error);
       const { data, error } = await adminDb()
         .from("portal_requests")
-        .insert({ ...input, created_by: auth.user.id })
         .select("*")
+        .eq("id",requestId)
         .single();
       checkDb(error);
+      if(!data||data.created_by!==auth.user.id||data.client_id!==input.client_id||data.subject!==input.subject||data.description!==input.description||data.category!==input.category)throw new PortalError("idempotency_conflict",409);
       await audit(auth.user.id, "support_request_created", data.id);
       return reply(data);
     }
@@ -431,24 +438,31 @@ async function handle(req: NextRequest, context: Context) {
       checkDb(error);
       if (!r) throw new PortalError("request_not_found", 404);
       await clientAccess(r.client_id, auth);
+      const messageInput=z.object({body:text,idempotency_key:uuid.optional()}).parse(body);
+      const messageId=messageInput.idempotency_key||crypto.randomUUID();
       checkDb(
         (
           await adminDb()
             .from("portal_messages")
-            .insert({
+            .upsert({
+              id:messageId,
               request_id: r.id,
               client_id: r.client_id,
               author_id: auth.user.id,
-              body: text.parse(body.body),
-            })
+              body: messageInput.body,
+            },{onConflict:"id",ignoreDuplicates:true})
         ).error,
       );
+      const message=await adminDb().from("portal_messages").select("id,request_id,author_id,body,created_at").eq("id",messageId).single();
+      checkDb(message.error);
+      if(!message.data||message.data.request_id!==r.id||message.data.author_id!==auth.user.id||message.data.body!==messageInput.body)throw new PortalError("idempotency_conflict",409);
       checkDb(
         (
           await adminDb()
             .from("portal_requests")
-            .update({ updated_at: new Date().toISOString() })
+            .update({ updated_at: message.data.created_at })
             .eq("id", r.id)
+            .lt("updated_at",message.data.created_at)
         ).error,
       );
       if (auth.account.role !== "client")
@@ -456,7 +470,7 @@ async function handle(req: NextRequest, context: Context) {
           r.client_id,
           `Support update: ${r.subject}`,
           `A member of StackEndBox replied to your request. Read the reply securely at ${portalOrigin()}/client-portal/requests.`,
-          `reply:${r.id}:${crypto.randomUUID()}`,
+          `reply:${r.id}:${messageId}`,
         );
       return reply({ message: "Reply saved." });
     }
@@ -478,7 +492,8 @@ async function handle(req: NextRequest, context: Context) {
       const admin = await superAdmin(auth),
         db = adminDb();
       if (route === "admin/clients" && req.method === "GET")
-        return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined));
+        return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined));
+      if (route === "admin/operations" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsData());
       if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions());
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));

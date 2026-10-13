@@ -10,6 +10,8 @@ export default async function PortalPage({
   params: Promise<{ path?: string[] }>;
 }) {
   const { path = [] } = await params;
+  if (path.length===1 && path[0]==="support") redirect("/client-portal/requests");
+  if (path.length===1 && path[0]==="account") redirect("/client-portal/settings");
   if (!path.length) redirect("/client-portal/dashboard");
   if (path[0] === "admin") redirect("/admin");
   if (path[0] === "domains" && path[1] === "buy") notFound();

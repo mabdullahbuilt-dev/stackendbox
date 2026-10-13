@@ -8,6 +8,7 @@ import { materializePublicAssets } from './cloudflare-public-assets.ts';
 const root = process.cwd();
 const productionBuild = process.argv.includes('--production');
 const candidateBuild = process.argv.includes('--candidate');
+const backendOnly = process.argv.includes('--backend-only');
 const runtime = resolve(root, 'platform/edge/next-runtime.ts');
 const navigation = resolve(root, 'platform/static/navigation.tsx');
 const localConfiguration = process.env.PORTAL_PRIVATE_ENV ? parseEnv(await readFile(process.env.PORTAL_PRIVATE_ENV,'utf8')) : {};
@@ -32,6 +33,10 @@ globalThis.STACKENDBOX_RUNTIME_ENV = ${productionBuild?'productionConfiguration'
 const {handleEdge} = await import("./handler.mjs");
 Deno.serve(req => handleEdge(req, p => EdgeRuntime.waitUntil(p)));
 `);
+if (backendOnly) {
+  console.log(JSON.stringify({edgeBundleBytes:(await stat('dist/edge/handler.mjs')).size,homepageBuilt:false,scope:'existing Edge backend only'}));
+  process.exit(0);
+}
 const frontendAliases = { name: 'static-navigation', setup(b) {
   b.onResolve({ filter: /^\// }, a => a.kind === 'url-token' ? { path:a.path, external:true } : null);
   b.onResolve({ filter: /^next\/(link|image|navigation)$/ }, a => ({ path: a.path, namespace: 'static-next' }));

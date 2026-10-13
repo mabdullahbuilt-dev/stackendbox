@@ -168,11 +168,15 @@ export function createSpaceship(account: "primary" | "test") {
   },
   async dns(name: string) {
     const items: Record<string, unknown>[] = [];
+    let expectedTotal: number | undefined;
     for (let skip = 0; skip < 10000; skip += 500) {
-      const page = z.object({ items: z.array(z.record(z.string(), z.unknown())), total: z.number().int().nonnegative() }).parse(await request(`/dns/records/${encodeURIComponent(domainName(name))}?take=500&skip=${skip}`));
+      const page = z.object({ items: z.array(z.record(z.string(), z.unknown())).max(500), total: z.number().int().nonnegative() }).parse(await request(`/dns/records/${encodeURIComponent(domainName(name))}?take=500&skip=${skip}`));
+      if(expectedTotal!==undefined&&page.total!==expectedTotal) throw new PortalError("spaceship_dns_changed_retry",409);
+      expectedTotal=page.total;
       items.push(...page.items);
-      if (items.length >= page.total) return { items, total: page.total };
-      if (!page.items.length) throw new PortalError("spaceship_incomplete_dns", 502);
+      if(items.length>page.total)throw new PortalError("spaceship_incomplete_dns",502);
+      if (items.length === page.total) return { items, total: page.total };
+      if (page.items.length!==500) throw new PortalError("spaceship_incomplete_dns", 502);
     }
     throw new PortalError("spaceship_dns_limit", 502);
   },

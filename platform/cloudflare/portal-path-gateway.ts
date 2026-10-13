@@ -1,4 +1,5 @@
 import gateway from "./gateway";
+import {portalPageRoute} from "../../lib/portal/page-route";
 type Env = Parameters<typeof gateway.fetch>[1];
 const assetPaths = new Map([
   ["/client-portal/_assets/portal.js", "/portal.js"],
@@ -33,12 +34,15 @@ const portalPathGateway = {
     if (!["GET", "HEAD"].includes(req.method)) return new Response(null, {status:405,headers:{Allow:"GET, HEAD"}});
     const asset = assetPaths.get(url.pathname);
     if (url.pathname.startsWith("/client-portal/_assets/") && !asset) return missing();
+    if(!asset&&!portalPageRoute(url.pathname))return missing();
     url.pathname = asset || "/portal.html";
     url.search = "";
     const response = await env.ASSETS.fetch(new Request(url, req));
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "no-store");
     headers.set("X-Content-Type-Options", "nosniff");
+    headers.set("X-Frame-Options", "DENY");
+    headers.set("Referrer-Policy", "no-referrer");
     return new Response(response.body, {status:response.status,headers});
   },
 };
