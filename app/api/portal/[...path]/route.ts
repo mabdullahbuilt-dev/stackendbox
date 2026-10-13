@@ -38,7 +38,7 @@ import { provisionClient } from "@/lib/portal/provisioning";
 import { clientDirectory, operationalHealth } from "@/lib/portal/admin-data";
 import { saveAcquisition, saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
-import { clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
+import { adminTables, clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 import { checkPassword } from "@/lib/portal/password-check";
 import { readRegistrant, verifyPortalAssignment } from "@/lib/portal/registrant";
 import { registrarAcceptance } from "@/lib/portal/registrar-acceptance";
@@ -214,9 +214,9 @@ async function handle(req: NextRequest, context: Context) {
       const adminMode = route === "admin/workspace";
       if (adminMode) await superAdmin(auth);
       const section = z.enum(clientSections).parse(req.nextUrl.searchParams.get("section") || "dashboard");
-      const selected = new Set(adminMode ? portalTables : clientTables(section,req.nextUrl.searchParams.has("domain")));
+      const selected = new Set(adminMode ? adminTables(section) : clientTables(section,req.nextUrl.searchParams.has("domain")));
       const [{ data: memberships, error: membershipError }, { data: factors, error: factorsError }] = await Promise.all([
-        auth.db.from("portal_memberships").select("client_id").eq("user_id", auth.user.id),
+        adminMode ? { data: [], error: null } : auth.db.from("portal_memberships").select("client_id").eq("user_id", auth.user.id),
         adminMode || section === "settings" ? auth.db.auth.mfa.listFactors() : {data:{totp:[]},error:null},
       ]);
       checkDb(membershipError);

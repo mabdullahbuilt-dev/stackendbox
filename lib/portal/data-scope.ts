@@ -15,3 +15,8 @@ export function clientTables(section: ClientSection, domainDetail=false): readon
     case "reset-password": return [];
   }
 }
+
+export function adminTables(section: ClientSection): readonly PortalTable[] {
+  if (section === "dashboard") return portalTables;
+  return clientTables(section, section === "domains");
+}

@@ -21,14 +21,15 @@ export function AdminPortal({
   const [open, setOpen] = useState(false);
   const reload = useCallback(async () => {
     try {
-      setData(await api("admin/workspace"));
+      const scope = ({operations:"dashboard",domains:"domains",support:"requests",billing:"billing",security:"settings"} as Record<string,string>)[section] || "dashboard";
+      setData(await api(`admin/workspace?section=${scope}`));
       setError("");
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Unable to load administration.",
       );
     }
-  }, []);
+  }, [section]);
   useEffect(() => {
     if (!["clients", "health"].includes(section)) void reload();
   }, [reload, section]);

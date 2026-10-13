@@ -20,7 +20,7 @@ vi.mock("@/lib/portal/auth-email", () => ({ sendAuthEmail: vi.fn() }));
 import { GET, POST } from "@/app/api/portal/[...path]/route";
 import { identity, sessionDb, superAdmin, turnstile } from "@/lib/portal/server";
 import { PortalError } from "@/lib/portal/rules";
-import { clientTables } from "@/lib/portal/data-scope";
+import { adminTables, clientTables } from "@/lib/portal/data-scope";
 
 describe("mandatory temporary password replacement", () => {
   it("denies tenant data before querying client tables", async () => {
@@ -109,5 +109,23 @@ describe("page-scoped client queries", () => {
       expect(clientTables(section)).not.toContain("memberships");
       expect(clientTables(section)).not.toContain("acquisition_requests");
     }
+  });
+});
+
+describe("page-scoped administrator queries", () => {
+  it.each(["domains", "billing", "requests", "settings"] as const)("fetches only %s records without a tenant membership lookup", async section => {
+    const queried: string[] = [];
+    const from = vi.fn((table: string) => {
+      queried.push(table);
+      const result = { data: [], error: null };
+      const builder = { select: vi.fn(() => builder), limit: vi.fn(() => builder), then: (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve) };
+      return builder;
+    });
+    vi.mocked(identity).mockResolvedValue({ user: { id: "fixture" }, account: { role: "super_admin" }, db: { from, auth: { mfa: { listFactors: async () => ({ data: { totp: [] }, error: null }) } } } } as unknown as Awaited<ReturnType<typeof identity>>);
+    vi.mocked(superAdmin).mockResolvedValue(undefined as never);
+    const response = await GET(new NextRequest(`https://portal.example/api/portal/admin/workspace?section=${section}`), { params: Promise.resolve({ path: ["admin", "workspace"] }) });
+    expect(response.status).toBe(200);
+    expect(queried).toEqual(adminTables(section).map(t => `portal_${t}`));
+    expect(queried).not.toContain("portal_memberships");
   });
 });
