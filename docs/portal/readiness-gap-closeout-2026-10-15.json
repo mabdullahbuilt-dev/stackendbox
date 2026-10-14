@@ -1,0 +1,107 @@
+{
+  "status": "CANDIDATE_ACCEPTANCE_COMPLETE_WITH_EXPLICIT_RELEASE_GATES",
+  "applicationCommit": "2180f402074092bb138d2b9e05bd889115e02d0f",
+  "branch": "feature/cloudflare-workers-proof",
+  "deployments": {
+    "productionCandidate": {
+      "origin": "https://stackendbox-production.stackendbox.workers.dev",
+      "workerVersion": "5a2dfa5e-cc45-4e89-8874-5b7c17b7f3a1"
+    },
+    "acceptance": {
+      "origin": "https://stackendbox-static-acceptance.stackendbox.workers.dev",
+      "workerVersion": "ecbd5b5d-99eb-4c24-8166-c7c298d2d087"
+    },
+    "latestReadOnlyCheck": "Both served release manifests and private API release headers match applicationCommit. Anonymous customer data requests return 401.",
+    "publicArtifactPreservation": "Portal-only deployment verified 28 nonportal artifacts unchanged. Existing Vercel production source, configuration and website remain untouched."
+  },
+  "completedChanges": [
+    "Customers versus test-account selection persists from Overview into Clients, Domains, Billing, Support and Renewals",
+    "Scoped queries filter related records and memberships consistently",
+    "Customer account and membership reads share one authenticated query, without bypassing getUser or RLS",
+    "Client search exposes loading state and prevents duplicate pending searches",
+    "Website actions wrap with consistent spacing",
+    "Read-only domain handoff review uses existing AAL2 authorization, while durable activation still requires fresh administrator MFA",
+    "Prepared company-domain cutover retains the dedicated backup OAuth information and privacy URLs"
+  ],
+  "hostedAcceptance": {
+    "administrator": [
+      "Founder personally completed password login and existing authenticator verification",
+      "Overview Customers shows zero real customers and Test accounts only shows one labelled test client",
+      "Scoped links, domain search, empty search, client profile and existing-client handoff entry work",
+      "Existing password remains unchanged and cannot be edited through existing-client handoff",
+      "Registrar-backed test123.buzz preview shows its real expiration",
+      "Review reports the already assigned domain and offers no duplicate activation",
+      "New-client initial-password and invitation controls show their respective fields without submitting another account",
+      "Billing, support conversation, renewal filters, Operations and backup Health show durable records",
+      "Mobile and desktop layouts fit their tested viewport widths"
+    ],
+    "customer": [
+      "Existing authorized test-client session persists after deployment",
+      "Assigned test123.buzz, verified expiry and auto-renew state are visible",
+      "Live read-only DNS refresh, websites, support history, Account Settings and receipt download work",
+      "Unassigned real domain and administrator access are denied",
+      "Customer responses omit supplier prices, registrar account identifiers and staff-only metadata",
+      "Mobile navigation and Account Settings link work"
+    ],
+    "scope": "One existing authorized hosted test tenant and the founder administrator. No real customer pairing or registrar mutation was executed. Earlier accepted password login, invitation, recovery, cross-tab logout, Sandbox payment and TXT add/remove evidence was preserved rather than repeated.",
+    "evidence": [
+      "dist/portal-evidence/customer-contract-final.json",
+      "dist/portal-evidence/gap-release-admin-desktop.png",
+      "dist/portal-evidence/candidate-worker-requests.json"
+    ]
+  },
+  "isolatedAcceptance": {
+    "runtime": "Official Supabase native Linux runtime inside local WSL, real Auth, REST and PostgreSQL",
+    "distinctTenantRuns": [10, 25, 50],
+    "failures": 0,
+    "optimized50TenantDataRequests": 300,
+    "optimized50TenantDataLatencyMs": {"p50": 1496, "p95": 3592, "p99": 4617},
+    "checks": ["Password authentication", "Refresh", "Cookie sessions", "Cross-tenant RLS", "Invoice authorization", "AAL1 denial and AAL2 administrator access", "Logout denial", "Duplicate support retry", "Changed retry conflict", "Invalid input", "Provider failure preserves stored expiry", "Real expired access token with revoked refresh token returns 401 after initial 200"],
+    "expiredSession": {"checkedAtUtc": "2026-10-14T20:12:51.103Z", "initialStatus": 200, "expiredStatus": 401, "sharedDatabaseChanged": false, "disposableFixtureRemoved": true},
+    "limits": "Simulated distinct ingress IPs, local HTTP runtime and synthetic tenants. This is not hosted 50-tenant load, browser password/Turnstile concurrency, or proof of 400 simultaneous users.",
+    "sharedDatabaseSeeded": false,
+    "evidence": ["dist/portal-evidence/isolated-auth-load-baseline.json", "dist/portal-evidence/isolated-auth-load-optimized-50.json", "dist/portal-evidence/isolated-auth-load.json", "dist/portal-evidence/isolated-admin-scope.json", "dist/portal-evidence/expired-session.json"]
+  },
+  "performance": {
+    "hostedDataMedianMs": 641,
+    "hostedDataMaximumMs": 2418,
+    "sample": "Eight read-only section requests for one authorized fixture, SDK email-token session, not a password-login load test",
+    "outlier": "The 2418 ms request reported 590.1 ms inside the instrumented backend. The remaining delay is not conclusively attributed. Occasional hosted latency remains.",
+    "workerCpu": "Nine observed hosted private API invocations reported at most 1 ms CPU",
+    "localQueryPlan": "Assignment lookup used existing client-ID and domain primary-key indexes, 0.12 ms execution. No speculative index added."
+  },
+  "usageSnapshots": {
+    "scope": "Observed provider totals during acceptance, not costs attributable solely to this test. Supabase meters can lag.",
+    "supabase": {"edgeInvocations": 757, "edgeMonthlyAllowance": 500000, "databaseMB": 28.12, "egressGB": 0.009, "monthlyActiveUsers": 5},
+    "cloudflareCandidate24Hours": {"workerInvocations": 657, "subrequests": 646, "assetRequests": 464, "assetCacheHitPercent": 90.30, "workerErrors": 0, "cpuExceededErrors": 0}
+  },
+  "operations": {
+    "productionPortalJobs": "DISABLED. Activation plan is prepared separately, not executed.",
+    "codexDnsMonitor": "PAUSED at founder request. No new recurring task is created.",
+    "backup": "Existing protected GitHub Actions hosted backup schedule remains separate and unchanged. Scheduled run 38473431604 succeeded, and prior encrypted offsite readback and isolated restore evidence is preserved.",
+    "failureAlerts": "Proactive founder alert delivery is not fully verified. Do not claim complete automatic failure notification.",
+    "liveFinancialAndRegistrarActions": "DISABLED. Actual payment-to-supplier renewal, verified new expiry and separate supplier settlement acceptance remain Phase B gates.",
+    "schedulingPlan": "production-scheduler-activation.json"
+  },
+  "dns": {
+    "checkedAtUtc": "2026-10-14T20:10:58.954Z",
+    "parentDs": "Both checked .com parent authorities return authoritative absence",
+    "authoritativeRecords": "All 11 match at launch1.spaceship.net and launch2.spaceship.net",
+    "cloudflareResolver": "All queried record types succeed",
+    "googleResolver": "DNSSEC SERVFAIL persists for apex A, www A, MX and DMARC in this sample",
+    "localResolver": "Still returned cached DS 38997 with TTL 63103 seconds. Ordinary apex and www HTTPS could not resolve.",
+    "vercelFallback": "https://stackendbox.vercel.app returned HTTPS 200 with normal certificate verification",
+    "recovered": false,
+    "changesPerformed": "None",
+    "minimumReviewGateUtc": "2026-10-15T19:00:10.186Z",
+    "minimumReviewGatePakistan": "2026-10-16T00:00:10.186+05:00"
+  },
+  "mainDomainLaunch": {
+    "published": false,
+    "candidate": "Ready for controlled Phase A release review, not a claim of completed main-domain acceptance",
+    "remaining": ["Wait for the minimum gate and fresh healthy validating DNS checks", "Reconfirm all staged records and actual assigned Cloudflare nameservers", "Separate exact nameserver approval while retaining Vercel website targets", "Website and mail validation after delegation", "Separate Worker company-domain binding approval", "Final company-domain TLS, callback/origin, login/MFA, public form and customer smoke checks", "Separate authorized notification activation if desired"],
+    "plan": "launch-gates-current.json",
+    "realCustomerHandoff": "Founder enters the actual approved customer identity in the secured admin form, reviews dubaicarrecovery.site and personally confirms management access with fresh MFA. Legal registrant/custody changes remain separate."
+  },
+  "nextFounderAction": "No routine coding or MFA repetition is needed. At or after October 16, 2026 00:00:10 Pakistan time, request a fresh manual gate review. Exact delegation approval can then be requested only if current safety checks pass."
+}
