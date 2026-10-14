@@ -9,6 +9,7 @@ import { AdminDomains } from "./AdminDomains";
 import { AdminOperations } from "./AdminOperations";
 import {AdminRenewals} from "./AdminRenewals";
 import {AdminOverview} from "./AdminOverview";
+import {customerScope} from "@/lib/portal/customer-scope";
 export function AdminPortal({
   section,
   createClient = false,
@@ -22,20 +23,21 @@ export function AdminPortal({
 }) {
   const router = useRouter();
   const scopedClient=useSearchParams().get("client_id");
+  const scope=customerScope(useSearchParams().get("scope"));
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const reload = useCallback(async () => {
     try {
-      const scope = ({operations:"dashboard",domains:"domains",support:"requests",billing:"billing",security:"settings"} as Record<string,string>)[section] || "dashboard";
-      setData(await api(`admin/workspace?section=${scope}${scopedClient?`&client_id=${encodeURIComponent(scopedClient)}`:""}`));
+      const dataSection = ({operations:"dashboard",domains:"domains",support:"requests",billing:"billing",security:"settings"} as Record<string,string>)[section] || "dashboard";
+      setData(await api(`admin/workspace?section=${dataSection}${scopedClient?`&client_id=${encodeURIComponent(scopedClient)}`:""}${scope?`&scope=${scope}`:""}`));
       setError("");
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Unable to load administration.",
       );
     }
-  }, [section,scopedClient]);
+  }, [section,scopedClient,scope]);
   useEffect(() => {
     if (!["overview", "clients", "health", "renewals"].includes(section)) void reload();
   }, [reload, section]);
@@ -100,6 +102,7 @@ export function AdminPortal({
           <p className="portal-sandbox">
           Live payments and registrar changes are unavailable.
           </p>
+          {scope&&!["overview","clients"].includes(section)&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href={`/admin/${section}`}>Show all records</Link></p>}
           {["billing","renewals"].includes(section)&&<nav className="portal-tabs" aria-label="Billing sections"><Link href="/admin/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/admin/renewals" aria-current={section==="renewals"?"page":undefined}>Renewals</Link></nav>}
           {section === "overview" ? <AdminOverview/> : section === "clients" ? (
             <AdminClients key={`${createClient}:${clientId||""}`} create={createClient} clientId={clientId} />

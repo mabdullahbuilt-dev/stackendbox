@@ -19,6 +19,6 @@ export function AdminOverview(){
       ["expires_30_days","Assigned domains expiring in 30 days","/admin/renewals"],
       ["unpaid_invoices","Unpaid invoices","/admin/billing"],
       ["open_support","Open support","/admin/support"],
-    ] as const).map(([key,label,href])=><Link className="portal-panel" key={key} href={href}><span>{label}</span><strong>{data.counts[key]??"Unavailable"}</strong></Link>)}</div><small>Saved records as of {new Date(data.checked_at).toLocaleString()}. {data.scope==="test"?"Only accounts labelled TEST ONLY are counted.":"Accounts labelled TEST ONLY are excluded."}</small></>}
+    ] as const).map(([key,label,href])=><Link className="portal-panel" key={key} href={`${href}?scope=${scope}`}><span>{label}</span><strong>{data.counts[key]??"Unavailable"}</strong></Link>)}</div><small>Saved records as of {new Date(data.checked_at).toLocaleString()}. {data.scope==="test"?"Only accounts labelled TEST ONLY are counted.":"Accounts labelled TEST ONLY are excluded."}</small></>}
   </section>;
 }

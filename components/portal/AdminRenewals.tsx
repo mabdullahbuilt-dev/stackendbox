@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
-import {useEffect,useRef,useState} from "react";
+import {useSearchParams} from "next/navigation";
+import {customerScope} from "@/lib/portal/customer-scope";
+import {useCallback,useEffect,useRef,useState} from "react";
 import {api} from "./Portal";
 import {customerMoney,renewalBuckets,renewalWindow} from "@/lib/portal/renewal-view";
 type Assignment={client_id:string;portal_clients:{name:string;business_name:string}};
@@ -8,10 +10,16 @@ type Domain={id:string;name:string;expiration_date:string|null;auto_renew:boolea
 type Snapshot={checked_at:string;domains:Domain[];contacts:{client_id:string;portal_accounts:{approved_email:string;active:boolean}}[];quotes:{domain_id:string;retail_minor:number;currency:string;valid_until:string}[];orders:{id:string;client_id:string;domain:string;status:string;environment:string}[];reminders:{id:string;client_id:string;domain:string;status:string;created_at:string}[];operations:{id:string;domain_id:string;kind:string;status:string}[];next:string|null;history_limited:boolean};
 const assignments=(d:Domain)=>Array.isArray(d.portal_domain_assignments)?d.portal_domain_assignments:d.portal_domain_assignments?[d.portal_domain_assignments]:[];
 export function AdminRenewals(){
+  const scope=customerScope(useSearchParams().get("scope"));
   const [data,setData]=useState<Snapshot|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[search,setSearch]=useState(""),[bucket,setBucket]=useState("All");
-  const pending=useRef(false);
-  async function load(after?:string){if(pending.current)return;pending.current=true;setBusy(true);try{const next=await api(`admin/renewals${after?`?after=${encodeURIComponent(after)}`:""}`) as Snapshot;setData(old=>after&&old?{...next,domains:[...old.domains,...next.domains],contacts:[...old.contacts,...next.contacts],quotes:[...old.quotes,...next.quotes],orders:[...old.orders,...next.orders],reminders:[...old.reminders,...next.reminders],operations:[...old.operations,...next.operations],history_limited:old.history_limited||next.history_limited}:next);setError("");}catch(e){setError((e as Error).message);}finally{pending.current=false;setBusy(false);}}
-  useEffect(()=>{void load();},[]);
+  const loadVersion=useRef(0);
+  const load=useCallback(async(after?:string,signal?:AbortSignal)=>{
+    const version=++loadVersion.current;setBusy(true);
+    try{const params=new URLSearchParams();if(after)params.set("after",after);if(scope)params.set("scope",scope);const next=await api(`admin/renewals?${params}`,undefined,signal) as Snapshot;if(version!==loadVersion.current||signal?.aborted)return;setData(old=>after&&old?{...next,domains:[...old.domains,...next.domains],contacts:[...old.contacts,...next.contacts],quotes:[...old.quotes,...next.quotes],orders:[...old.orders,...next.orders],reminders:[...old.reminders,...next.reminders],operations:[...old.operations,...next.operations],history_limited:old.history_limited||next.history_limited}:next);setError("");}
+    catch(e){if(version===loadVersion.current&&!signal?.aborted)setError((e as Error).message);}
+    finally{if(version===loadVersion.current&&!signal?.aborted)setBusy(false);}
+  },[scope]);
+  useEffect(()=>{const controller=new AbortController();void load(undefined,controller.signal);return()=>controller.abort();},[load]);
   const now=data?Date.parse(data.checked_at):0;
   const contacts=data?.contacts.filter((c,i,all)=>all.findIndex(other=>other.client_id===c.client_id&&other.portal_accounts.approved_email===c.portal_accounts.approved_email)===i)||[];
   const filtered=data?.domains.filter(d=>{

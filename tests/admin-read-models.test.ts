@@ -30,6 +30,15 @@ it("counts labelled test accounts separately instead of mixing them into custome
   expect((await operationsSummary("test")).scope).toBe("test");
   expect(state.calls.filter(call=>call.method==="ilike"&&call.args[1]==="TEST ONLY %")).toHaveLength(5);
 });
+it("keeps customer and test scopes on directory and renewal drill-down queries",async()=>{
+  await clientDirectory(undefined,"",undefined,"customers");
+  expect(state.calls).toContainEqual({table:"portal_clients",method:"not",args:["business_name","ilike","TEST ONLY %"]});
+  expect(state.calls).toContainEqual({table:"portal_provisioning",method:"not",args:["input->>business_name","ilike","TEST ONLY %"]});
+  state.calls=[];
+  await renewalMonitor(undefined,"test");
+  expect(state.calls).toContainEqual({table:"portal_domains",method:"ilike",args:["portal_domain_assignments.portal_clients.business_name","TEST ONLY %"]});
+  expect(state.calls.find(call=>call.table==="portal_domains"&&call.method==="select")?.args[0]).toContain("portal_domain_assignments!inner");
+});
 it("paginates renewal domains and scopes saved history without exposing email payloads",async()=>{
   state.results.portal_domains=Array.from({length:51},(_,i)=>({id:String(i),name:`fixture${i}.invalid`,portal_domain_assignments:[{client_id:"client"}]}));
   state.results.portal_email_outbox=[{id:"mail",dedupe_key:"renewal:fixture0.invalid:expiry:30:private@example.invalid",status:"accepted"}];

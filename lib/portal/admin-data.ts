@@ -2,6 +2,7 @@ import "server-only";
 import { adminDb, checkDb } from "./server";
 import { z } from "zod";
 import {PortalError} from "./rules";
+import {filterCustomerScope,type CustomerScope} from "./customer-scope";
 export async function clientOptions(clientId?:string){
   let query=adminDb().from("portal_memberships").select("client_id,portal_clients!inner(name,business_name,status),portal_accounts!inner(approved_email,active,role)").eq("portal_clients.status","active").eq("portal_accounts.active",true).eq("portal_accounts.role","client").limit(500);
   if(clientId)query=query.eq("client_id",z.uuid().parse(clientId));
@@ -12,9 +13,10 @@ export async function clientOptions(clientId?:string){
     return {client_id:row.client_id,name:client.name,business_name:client.business_name,email:account.approved_email};
   }).sort((a,b)=>a.name.localeCompare(b.name))};
 }
-export async function clientDirectory(after?: string, search = "", clientId?: string) {
+export async function clientDirectory(after?: string, search = "", clientId?: string, scope?:CustomerScope) {
   const db=adminDb();
   let query=db.from("portal_clients").select("*,portal_memberships(user_id),portal_domain_assignments(domain_id,holder_arrangement,legal_holder,portal_domains(name,lifecycle_status)),portal_websites(id,name,url)").order("id").limit(51);
+  query=filterCustomerScope(query,scope);
   if(clientId) query=query.eq("id",z.uuid().parse(clientId));
   // Escape PostgREST filter punctuation and SQL wildcard characters. Search is
   // performed across persisted data, never live registrar calls or Auth scans.
@@ -40,6 +42,7 @@ export async function clientDirectory(after?: string, search = "", clientId?: st
   const identities=ids.length?await db.from("portal_admin_identities").select("*").in("user_id",ids):{data:[],error:null};
   checkDb(identities.error);
   let pending=db.from("portal_provisioning").select("id,email,input,state,client_id,auth_user_id,last_error,created_at").neq("state","invited").order("created_at",{ascending:false}).limit(50);
+  pending=filterCustomerScope(pending,scope,"input->>business_name");
   if(clientId) pending=pending.eq("client_id",clientId);
   const incomplete=await pending;
   checkDb(incomplete.error);

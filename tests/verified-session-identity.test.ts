@@ -3,7 +3,7 @@ vi.mock("server-only",()=>({}));
 const state=vi.hoisted(()=>({getUser:vi.fn(),account:vi.fn()}));
 vi.mock("next/headers",()=>({cookies:async()=>({getAll:()=>[],set:vi.fn()})}));
 vi.mock("@supabase/ssr",()=>({createServerClient:()=>db}));
-const db={auth:{getUser:state.getUser},from:()=>({select:()=>({eq:()=>({maybeSingle:state.account})})})};
+const db={auth:{getUser:state.getUser},from:()=>({select:()=>({eq:()=>({returns:()=>({maybeSingle:state.account})})})})};
 import {identity} from "@/lib/portal/server";
 const user={id:"user",email:"approved@example.test"};
 afterEach(()=>vi.unstubAllEnvs());
@@ -19,6 +19,17 @@ describe("server-verified session authorization",()=>{
   });
   it("still verifies the user on ordinary authenticated requests",async()=>{
     await identity();expect(state.getUser).toHaveBeenCalledOnce();
+  });
+  it("loads validated memberships with the account without leaking the join in the account response",async()=>{
+    const client_id="11111111-1111-4111-8111-111111111111";
+    state.account.mockResolvedValueOnce({data:{user_id:user.id,approved_email:user.email,active:true,role:"client",portal_memberships:[{client_id}]},error:null});
+    const result=await identity(undefined,true);
+    expect(result.memberships).toEqual([{client_id}]);expect(result.account).not.toHaveProperty("portal_memberships");
+    expect(state.getUser).toHaveBeenCalledOnce();expect(state.account).toHaveBeenCalledOnce();
+  });
+  it("fails closed if the database returns a malformed membership join",async()=>{
+    state.account.mockResolvedValueOnce({data:{user_id:user.id,approved_email:user.email,active:true,role:"client",portal_memberships:[{client_id:"malformed"}]},error:null});
+    await expect(identity(undefined,true)).rejects.toThrow();
   });
   it("rejects suspended or mismatched approved identities despite provider authentication",async()=>{
     for(const account of [{active:false,approved_email:user.email},{active:true,approved_email:"other@example.test"}]){

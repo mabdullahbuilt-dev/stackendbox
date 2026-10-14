@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import {useSearchParams} from "next/navigation";
+import {customerScope} from "@/lib/portal/customer-scope";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { api } from "./Portal";
 import { generateTemporaryPassword, validatePassword } from "@/lib/portal/password-policy";
@@ -40,6 +42,7 @@ type Directory = {
   next: string | null;
 };
 export function AdminClients({ create = false, clientId }: { create?: boolean; clientId?: string }) {
+  const scope=customerScope(useSearchParams().get("scope"));
   const [data, setData] = useState<Directory | null>(null),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
@@ -64,6 +67,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
       if(after) params.set("after",after);
       if(activeSearch.current) params.set("q",activeSearch.current);
       if(clientId) params.set("client_id",clientId);
+      if(scope)params.set("scope",scope);
       const result = (await api(
         `admin/clients?${params}`,
       )) as Directory;
@@ -81,7 +85,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
     } catch (e) {
       if(version===loadVersion.current)setError((e as Error).message);
     }
-  },[clientId]);
+  },[clientId,scope]);
   useEffect(() => {
     if (!create) void load();
   }, [create,load]);
@@ -213,6 +217,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   return (
     <>
       <h1>{clientId?"Client profile":"Clients"}</h1>
+      {scope&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href="/admin/clients">Show all clients</Link></p>}
       <p>Saved PostgreSQL records, linked to Supabase Auth identities.</p>
       {clientId?<p><Link href="/admin/clients">All clients</Link></p>:<form className="portal-form" onSubmit={e=>{e.preventDefault();activeSearch.current=search.trim();void load();}}><label>Search by name, approved email or domain<input value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/></label><button>Search clients</button></form>}
       <p>

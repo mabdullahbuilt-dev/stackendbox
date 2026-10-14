@@ -1,0 +1,31 @@
+{
+  "state": "WAITING_FOR_SEPARATE_DNS_APPROVALS_AND_FINAL_HOSTED_ACCEPTANCE",
+  "publicWebsite": "Preserve the original public source and generated assets. The Vercel deployment remains the fallback.",
+  "dsRemovalVerifiedUtc": "2026-10-14T17:00:10.186Z",
+  "minimumReviewGateUtc": "2026-10-15T19:00:10.186Z",
+  "minimumReviewGatePakistan": "2026-10-16T00:00:10.186+05:00",
+  "delegation": {
+    "current": ["launch1.spaceship.net", "launch2.spaceship.net"],
+    "proposedReconfirmBeforeApproval": ["hugh.ns.cloudflare.com", "jillian.ns.cloudflare.com"],
+    "approval": "Fresh exact nameserver approval after the time gate, parent DS absence, validating resolver health and all eleven staging records pass",
+    "initialWebsiteTargets": {"apexA": "216.198.79.1", "wwwCname": "4a78646662027dfa.vercel-dns-017.com"},
+    "email": "Keep every MX, SPF, DKIM, DMARC, Brevo verification and autodiscover record from company-zone-before.json unchanged",
+    "rollback": "Before a Worker cutover, Cloudflare must retain the Vercel targets. If delegation itself fails, review the current parent DS and signing state before separately approving a return to the old authoritative nameservers. Cached delegation prevents an instant universal rollback."
+  },
+  "workerCutover": {
+    "approval": "Separate approval after delegation and existing website/email validation",
+    "preparedConfig": "wrangler.main-domain.jsonc",
+    "bindings": ["www.stackendbox.com", "stackendbox.com"],
+    "canonical": "Temporary uncached 307 apex-to-www during rollout. Preserve path and query. Verify the old Vercel www-to-apex redirect is no longer in the active path.",
+    "backendOrigin": "Set the production test-origin override aside so the production profile uses https://www.stackendbox.com. Keep the gateway and all provider secrets unchanged.",
+    "supabase": "Confirm both production auth callback redirects and the Site URL before sending company-domain invitations or resets",
+    "turnstile": "Confirm the existing company hostnames remain allowed and verify server-side challenges on the final domain",
+    "seo": "Remove candidate noindex only from approved public site metadata and robots. Keep private portal shells noindex.",
+    "checks": ["TLS at apex and www", "Original homepage assets and animations", "Mobile layout", "Authorized public contact email", "Client password login", "Existing administrator MFA", "Assigned domain and expiry", "Invoice download", "Support history", "Tenant-denial checks", "Cross-tab logout"],
+    "rollback": "Remove only the newly approved Worker custom-domain bindings, restore the preserved Vercel A/CNAME targets, verify HTTPS and mail resolution, and restore the candidate backend test origin if required. Do not erase customer data or rotate provider secrets. DNS caches and TLS provisioning may delay global recovery."
+  },
+  "notificationActivation": "Separate approval and evidence described in production-scheduler-activation.json",
+  "cloudflareDnssec": "After stable delegation and application verification, obtain Cloudflare's exact new DS and show it for separate registrar approval. Never reuse Spaceship's old DS. Verify DNSKEY and parent DS before declaring signed resolution healthy.",
+  "livePhaseB": "Live charges, renewals, transfers and DNS mutations remain disabled pending separately authorized real payment-to-registrar acceptance.",
+  "customerHandoff": "The founder enters the real approved customer identity securely, reviews dubaicarrecovery.site and confirms portal access with fresh MFA. No pairing is hardcoded or assigned by this release preparation."
+}

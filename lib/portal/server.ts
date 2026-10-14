@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { PortalError } from "./rules";
 import { observeLatency } from "./latency";
 import type {User} from "@supabase/supabase-js";
+import {z} from "zod";
 
 export function env(name: string) {
   const value = process.env[name];
@@ -53,7 +54,7 @@ export type Account = {
   role: "super_admin" | "staff" | "client";
   active: boolean;
 };
-export async function identity(verified?:{db:Awaited<ReturnType<typeof sessionDb>>;user:User}) {
+export async function identity(verified?:{db:Awaited<ReturnType<typeof sessionDb>>;user:User},includeMemberships=false) {
   const db = verified?.db || await sessionDb();
   // Only server-held responses from Supabase password/session validation may
   // supply this identity. Normal requests still perform getUser verification.
@@ -64,8 +65,9 @@ export async function identity(verified?:{db:Awaited<ReturnType<typeof sessionDb
   if (error || !user) throw new PortalError("sign_in_required", 401);
   const { data: account, error: accountError } = await observeLatency("account", () => db
     .from("portal_accounts")
-    .select("*")
+    .select(includeMemberships ? "*,portal_memberships(client_id)" : "*")
     .eq("user_id", user.id)
+    .returns<(Account & {portal_memberships?:{client_id:string}[]})[]>()
     .maybeSingle());
   if (accountError) throw new PortalError("portal_database_unavailable", 503);
   if (
@@ -74,7 +76,10 @@ export async function identity(verified?:{db:Awaited<ReturnType<typeof sessionDb
     account.approved_email !== user.email?.toLowerCase()
   )
     throw new PortalError("account_not_authorized", 403);
-  return { db, user, account: account as Account };
+  const memberships=includeMemberships?z.array(z.object({client_id:z.uuid()})).parse(account.portal_memberships):undefined;
+  const {portal_memberships:internalMemberships,...accountFields}=account;
+  void internalMemberships;
+  return { db, user, account: accountFields as Account, memberships };
 }
 export async function superAdmin(existing?: Awaited<ReturnType<typeof identity>>, requireFreshMfa=false) {
   const auth = existing || await identity();

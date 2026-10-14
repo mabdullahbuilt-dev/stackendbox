@@ -45,6 +45,7 @@ import { registrarAcceptance } from "@/lib/portal/registrar-acceptance";
 import {editClient,sendClientAccess} from "@/lib/portal/client-operations";
 import {createServiceInvoice,transitionServiceInvoice} from "@/lib/portal/invoices";
 import {boundedText} from "@/lib/portal/request-body";
+import {customerScope,filterCustomerScope} from "@/lib/portal/customer-scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -151,7 +152,7 @@ async function handle(req: NextRequest, context: Context) {
       }
       return reply({ redirect: "/client-portal/reset-password" });
     }
-    const auth = await identity();
+    const auth = await identity(undefined,route === "data" && req.method === "GET");
     if (route === "auth/identity" && req.method === "GET") {
       if (req.nextUrl.searchParams.get("admin") === "1") await superAdmin(auth);
       return reply({ user_id: auth.user.id, role: auth.account.role, password_change_required: auth.user.app_metadata?.portal_password_change_required === true });
@@ -220,28 +221,36 @@ async function handle(req: NextRequest, context: Context) {
       const adminMode = route === "admin/workspace";
       if (adminMode) await superAdmin(auth);
       const scopedClient = adminMode && req.nextUrl.searchParams.has("client_id") ? uuid.parse(req.nextUrl.searchParams.get("client_id")) : undefined;
+      const scope = adminMode ? customerScope(req.nextUrl.searchParams.get("scope")) : undefined;
       const section = z.enum(clientSections).parse(req.nextUrl.searchParams.get("section") || "dashboard");
       const selected = new Set(adminMode ? adminTables(section) : clientTables(section,req.nextUrl.searchParams.has("domain")));
       const [{ data: memberships, error: membershipError }, { data: factors, error: factorsError }] = await Promise.all([
-        adminMode ? { data: [], error: null } : auth.db.from("portal_memberships").select("client_id").eq("user_id", auth.user.id),
+        adminMode ? { data: [], error: null } : auth.memberships ? {data:auth.memberships,error:null} : auth.db.from("portal_memberships").select("client_id").eq("user_id", auth.user.id),
         adminMode || section === "settings" ? auth.db.auth.mfa.listFactors() : {data:{totp:[]},error:null},
       ]);
       checkDb(membershipError);
       checkDb(factorsError);
-      const clientIds = scopedClient ? [scopedClient] : (memberships || []).map((m) => m.client_id);
+      let clientIds = scopedClient ? [scopedClient] : (memberships || []).map((m) => m.client_id);
+      if(scope){
+        let scopeQuery=filterCustomerScope(auth.db.from("portal_clients").select("id").limit(501),scope);
+        if(scopedClient)scopeQuery=scopeQuery.eq("id",scopedClient);
+        const scoped=await scopeQuery;checkDb(scoped.error);
+        if((scoped.data?.length||0)>500)throw new PortalError("client_search_too_broad",422);
+        clientIds=(scoped.data||[]).map(client=>client.id);
+      }
       const tables = portalTables;
       const results = await Promise.all(
         tables.map((t) => {
           if (!adminMode && t === "memberships") return {data:memberships||[],error:null};
           if (!selected.has(t)) return {data:[],error:null};
-          if (!adminMode && !clientIds.length) return { data: [], error: null };
+          if ((!adminMode || scope || scopedClient) && !clientIds.length) return { data: [], error: null };
           const columns = adminMode ? (t === "external_payments" ? "id,client_id,acquisition_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at" : "*") : clientColumns(t);
-          const scopedDomains=t==="domains"&&(!adminMode||!!scopedClient);
+          const scopedDomains=t==="domains"&&(!adminMode||!!scopedClient||!!scope);
           let query = auth.db.from(`portal_${t}`).select(columns+(scopedDomains?",portal_domain_assignments!inner(client_id)":"")).limit(500);
-          if (!adminMode || scopedClient) {
+          if (!adminMode || scopedClient || scope) {
             if (t === "domains") query = query.in("portal_domain_assignments.client_id", clientIds);
             else if (t === "clients") query = query.in("id", clientIds);
-            else if (t === "memberships") query = query.eq("user_id", auth.user.id);
+            else if (t === "memberships") query = adminMode ? query.in("client_id",clientIds) : query.eq("user_id", auth.user.id);
             else query = query.in("client_id", clientIds);
           }
           return query;
@@ -501,13 +510,13 @@ async function handle(req: NextRequest, context: Context) {
       const admin = await superAdmin(auth,["admin/activate-domain-client","admin/domain-handoff-review"].includes(route) && req.method === "POST"),
         db = adminDb();
       if (route === "admin/clients" && req.method === "GET")
-        return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined));
+        return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined,customerScope(req.nextUrl.searchParams.get("scope"))));
       if (route === "admin/operations" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsData());
       if (route === "admin/summary" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsSummary(z.enum(["customers","test"]).parse(req.nextUrl.searchParams.get("scope")||"customers")));
       if(route === "admin/ownership-tasks" && req.method === "GET") return reply(await (await import("@/lib/portal/ownership-tasks")).ownershipTasks());
       if(route === "admin/ownership-tasks" && req.method === "POST") return reply(await (await import("@/lib/portal/ownership-tasks")).createOwnershipTask(admin.user.id,body));
       if(route === "admin/ownership-progress" && req.method === "POST") return reply(await (await import("@/lib/portal/ownership-tasks")).progressOwnershipTask(admin.user.id,body));
-      if (route === "admin/renewals" && req.method === "GET") return reply(await (await import("@/lib/portal/renewal-monitor")).renewalMonitor(req.nextUrl.searchParams.get("after")||undefined));
+      if (route === "admin/renewals" && req.method === "GET") return reply(await (await import("@/lib/portal/renewal-monitor")).renewalMonitor(req.nextUrl.searchParams.get("after")||undefined,customerScope(req.nextUrl.searchParams.get("scope"))));
       if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions(req.nextUrl.searchParams.get("client_id")||undefined));
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));

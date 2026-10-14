@@ -1,0 +1,61 @@
+{
+  "state": "PREPARED_NOT_ENABLED",
+  "approvalRequired": "Separate approval after company-domain authentication, contacts and customer notification scope pass launch acceptance",
+  "worker": "stackendbox-production",
+  "backend": "stackendbox-production",
+  "scheduleUtc": ["*/10 * * * *", "0 0 * * *"],
+  "request": {
+    "path": "/api/portal-jobs",
+    "method": "GET",
+    "authentication": ["Existing private Worker bridge header", "Dedicated production CRON_SECRET bearer token, at least 32 characters"],
+    "dailyReminderFlag": "true only for 0 0 * * *",
+    "otherRunsReminderFlag": "false"
+  },
+  "configuration": {
+    "worker.PORTAL_JOBS_ENABLED": "true only after approval",
+    "edge.STACKENDBOX_PRODUCTION_PORTAL_JOBS_ENABLED": "true only after approval",
+    "edge.STACKENDBOX_PRODUCTION_CRON_SECRET": "Secure value shared only with the production Worker CRON_SECRET",
+    "edge.STACKENDBOX_PRODUCTION_PORTAL_JOB_CLIENT_ALLOWLIST": "Explicit approved client UUIDs for the initial rollout. Expand only after reviewing dispatch evidence.",
+    "origin": "https://www.stackendbox.com",
+    "candidateProtection": "productionConfiguration forces jobs disabled on the workers.dev candidate even if its switch is accidentally set"
+  },
+  "allowedActions": [
+    "Read registrar details for up to four already assigned domains per run",
+    "Save independently verified snapshots without erasing previous records on provider failure",
+    "Queue reminder stages at 60, 30, 14, 7 and 1 days",
+    "Dispatch up to four authorized client emails from the existing dedicated portal Brevo integration",
+    "Save job, reconciliation and notification audit events"
+  ],
+  "forbiddenActions": ["Registrar purchase", "Registrar renewal", "DNS or nameserver write", "Contact or custody transfer", "Charge, refund or checkout creation", "Change a provider-confirmed expiration based on payment alone", "Use the public website Brevo key"],
+  "deduplication": {
+    "reminders": "Unique outbox key includes domain, verified expiry, reminder stage and recipient",
+    "dispatch": "Atomic claim with FOR UPDATE SKIP LOCKED",
+    "recipient": "Claim checks active client membership and approved email",
+    "staleClaims": "Reviewed claim recovery runs before dispatch",
+    "ambiguousProviderSend": "review_required. Never blindly resend after a timeout or missing confirmation.",
+    "knownPredispatchFailure": "Existing narrow recovery RPC only covers the verified missing-sender failure. Other cases require provider evidence."
+  },
+  "capacityBounds": {
+    "workerEventsPer30Days": 4350,
+    "queuedEmailsPerDayMaximum": 580,
+    "worstCase400QueuedEmailsDrainHoursApprox": 16.7,
+    "note": "Four-message batches suit staged onboarding and advance reminders. This is not an instant-delivery guarantee for a simultaneous 400-message burst. Verify actual usage after activation."
+  },
+  "failureHandling": {
+    "worker": "Throws on disabled, failed, malformed or timed-out backend execution. Observe existing Worker errors.",
+    "backend": "Keeps per-email review status, provider reconciliation flags and immutable audit events visible in Admin Operations/Health.",
+    "providerRetry": "Failed read reconciliation becomes eligible after one hour, while successful reads are due after 24 hours.",
+    "alerts": "Worker errors and Admin Operations provide operational evidence. A proactive founder alert channel must be selected and tested before claiming automatic notification of failures.",
+    "backup": "Independent GitHub Actions schedule and protected backup environment remain active. Preserve completed generations and verify account-level GitHub Actions failure notifications separately."
+  },
+  "activationChecks": [
+    "Confirm approved client scope, portal sender and company-domain callback URLs",
+    "Set the dedicated matching job secret through secure provider tools",
+    "Enable only the approved production profile and proposed cron entries",
+    "Observe a real scheduled run and its database audit",
+    "Verify one authorized dispatch and duplicate-run behavior",
+    "Verify a controlled failure alert with no real registrar mutation",
+    "Keep all financial and registrar execution flags false"
+  ],
+  "rollback": "Remove production cron entries and set both job switches false. Preserve outbox, audit and reconciliation history. Never delete queued or accepted customer notifications to roll back scheduling."
+}

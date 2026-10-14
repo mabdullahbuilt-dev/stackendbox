@@ -1,0 +1,25 @@
+project_id = "stackendbox-disposable-auth"
+
+[experimental]
+stack = true
+
+[auth]
+site_url = "http://localhost:55480"
+enable_signup = false
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.rate_limit]
+token_refresh = 10000
+sign_in_sign_ups = 10000
+
+[db]
+major_version = 17
+health_timeout = "120s"

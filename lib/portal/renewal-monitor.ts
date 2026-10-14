@@ -1,11 +1,14 @@
 import "server-only";
 import {z} from "zod";
 import {adminDb,checkDb} from "./server";
+import {filterCustomerScope,type CustomerScope} from "./customer-scope";
 
 /** Called behind the admin MFA boundary. Paginated saved data, never registrar writes. */
-export async function renewalMonitor(after?:string) {
+export async function renewalMonitor(after?:string,scope?:CustomerScope) {
   const db=adminDb(),at=new Date().toISOString();
-  let query=db.from("portal_domains").select("id,name,lifecycle_status,expiration_date,auto_renew,last_synced_at,reconciliation_required,portal_domain_assignments(client_id,portal_clients(name,business_name))").eq("protected",false).order("id").limit(51);
+  const assignment=scope?"portal_domain_assignments!inner(client_id,portal_clients!inner(name,business_name))":"portal_domain_assignments(client_id,portal_clients(name,business_name))";
+  let query=db.from("portal_domains").select(`id,name,lifecycle_status,expiration_date,auto_renew,last_synced_at,reconciliation_required,${assignment}`).eq("protected",false).order("id").limit(51);
+  query=filterCustomerScope(query,scope,"portal_domain_assignments.portal_clients.business_name");
   if(after)query=query.gt("id",z.uuid().parse(after));
   const result=await query;checkDb(result.error);
   const domains=(result.data||[]).slice(0,50),ids=domains.map(d=>d.id),names=domains.map(d=>d.name);
