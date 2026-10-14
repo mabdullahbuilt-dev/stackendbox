@@ -4,7 +4,10 @@
   "name": "stackendbox-production",
   "main": "platform/cloudflare/full-site-gateway.ts",
   "compatibility_date": "2026-10-13",
-  "workers_dev": false,
+  // The approved Google backup consent app links to this existing hostname's
+  // public privacy/information pages. Preserve it until those URLs are migrated.
+  // Customer invitations and authentication still use the company-domain origin.
+  "workers_dev": true,
   "preview_urls": false,
   "routes": [{ "pattern": "www.stackendbox.com", "custom_domain": true }, { "pattern": "stackendbox.com", "custom_domain": true }],
   "assets": {

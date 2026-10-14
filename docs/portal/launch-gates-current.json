@@ -16,6 +16,7 @@
     "approval": "Separate approval after delegation and existing website/email validation",
     "preparedConfig": "wrangler.main-domain.jsonc",
     "bindings": ["www.stackendbox.com", "stackendbox.com"],
+    "backupOAuthNotices": "Keep the existing workers.dev hostname enabled so the dedicated backup Google consent app's approved information/privacy URLs remain reachable. Customer authentication and invitations use the company-domain origin. Retire the alias only after updating and verifying those dedicated consent URLs. Portfolio is unchanged.",
     "canonical": "Temporary uncached 307 apex-to-www during rollout. Preserve path and query. Verify the old Vercel www-to-apex redirect is no longer in the active path.",
     "backendOrigin": "Set the production test-origin override aside so the production profile uses https://www.stackendbox.com. Keep the gateway and all provider secrets unchanged.",
     "supabase": "Confirm both production auth callback redirects and the Site URL before sending company-domain invitations or resets",
