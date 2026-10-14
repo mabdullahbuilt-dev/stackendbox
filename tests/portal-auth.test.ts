@@ -24,11 +24,11 @@ import { PortalError } from "@/lib/portal/rules";
 import { adminTables, clientTables } from "@/lib/portal/data-scope";
 
 describe("reviewed domain handoff gate",()=>{
-  it("requests fresh MFA before executing activation",async()=>{
+  it.each(["activate-domain-client","domain-handoff-review"])("requests fresh MFA before %s",async operation=>{
     const auth={user:{id:"fixture",app_metadata:{}},account:{role:"super_admin"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>;
     vi.mocked(identity).mockResolvedValue(auth);
     vi.mocked(superAdmin).mockRejectedValueOnce(new PortalError("administrator_fresh_mfa_required",403));
-    const response=await POST(new NextRequest("https://portal.example/api/portal/admin/activate-domain-client",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}),{params:Promise.resolve({path:["admin","activate-domain-client"]})});
+    const response=await POST(new NextRequest(`https://portal.example/api/portal/admin/${operation}`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}),{params:Promise.resolve({path:["admin",operation]})});
     expect(response.status).toBe(403);
     expect(vi.mocked(superAdmin).mock.lastCall).toEqual([auth,true]);
   });

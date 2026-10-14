@@ -1,5 +1,6 @@
 {
-  "state": "PREPARED_NOT_APPLIED",
+  "state": "SUPERSEDED_BY_PROJECT_CDN_RULES_NOT_APPLIED",
+  "replacement": "docs/portal/project-cdn-release-review-2026-10-14.json. No website-code configuration change or new Vercel deployment is needed for the revised routing plan.",
   "observed": {
     "wwwClientPortal": 404,
     "wwwAdmin": 404,

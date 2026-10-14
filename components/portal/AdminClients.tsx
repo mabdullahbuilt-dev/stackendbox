@@ -285,7 +285,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
                 );
               })}
               <h3>Domains</h3>
-              <p><Link className="portal-button" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain to this client</Link></p>
+              <p><Link className="portal-button" href={`/admin/domains?assign_email=${encodeURIComponent(data.identities.find(identity=>c.portal_memberships.some(member=>member.user_id===identity.user_id)&&identity.role==="client"&&identity.active&&identity.email_consistent)?.approved_email||"")}#domain-handoff`}>Assign domain to this client</Link></p>
               {c.portal_domain_assignments.length ? (
                 c.portal_domain_assignments.map((d) => (
                   <p key={d.domain_id}>

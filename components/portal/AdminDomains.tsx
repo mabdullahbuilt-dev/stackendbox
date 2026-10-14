@@ -93,10 +93,6 @@ export function AdminDomains({
   return (
     <>
       <h1>Domains</h1>
-      <p>
-        Assign domains already purchased manually in the dedicated Spaceship account.
-        Initial domain purchases and first-year checkout aren’t available here. Live renewal and DNS changes remain disabled.
-      </p>
       {error && (
         <p role="alert" className="portal-error">
           {error}
@@ -108,6 +104,7 @@ export function AdminDomains({
         </p>
       )}
       <DomainHandoff reload={reload} domains={inventory.filter(d=>!d.protected&&!d.reconciliation_required&&d.lifecycle_status==="registered"&&!assignments.some(a=>a.domain_id===d.id)).map(d=>text(d.name))}/>
+      <details className="portal-panel"><summary>Advanced registrar tools</summary>
       <details className="portal-panel"><summary>Verify a purchased domain without assigning it</summary><form onSubmit={e=>{e.preventDefault();setLookup(String(new FormData(e.currentTarget).get("domain")||"").trim().toLowerCase());}}><label>Domain to check<input name="domain" required maxLength={253}/></label><button>Open read-only verification</button></form>{lookup&&<RegistrantCheck key={lookup} name={lookup}/>}</details>
       <section className="portal-panel">
         <h2>Client-domain registrar inventory</h2>
@@ -206,6 +203,7 @@ export function AdminDomains({
           </div>
         )}
       </section>
+      </details>
     </>
   );
 }

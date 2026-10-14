@@ -1,13 +1,13 @@
 import "server-only";
 import {z} from "zod";
-import {adminDb,audit,checkDb} from "./server";
+import {adminDb,audit,checkDb,portalOrigin} from "./server";
 import {assertCustomerDomain,domainName,PortalError} from "./rules";
 import {importDomain,notifyClient} from "./services";
 import {readRegistrant,verifyPortalAssignment} from "./registrant";
 import {provisionClient} from "./provisioning";
 
 const accountSelection={account_mode:z.enum(["existing","new"]).optional(),client_id:z.uuid().optional(),credential_mode:z.enum(["initial_password","invitation"]).optional()};
-export const handoffSchema=z.object({idempotency_key:z.uuid(),domain:z.string().max(253),email:z.email().max(254),name:z.string().trim().min(1).max(100),business_name:z.string().trim().max(150).optional(),initial_password:z.string().min(8).max(128).optional(),holder_arrangement:z.enum(["client_owned","licensed"]),rights_confirmed:z.literal(true),...accountSelection}).strict();
+export const handoffSchema=z.object({idempotency_key:z.uuid(),domain:z.string().max(253),email:z.email().max(254),name:z.string().trim().min(1).max(100).optional(),business_name:z.string().trim().max(150).optional(),initial_password:z.string().max(128).optional(),holder_arrangement:z.enum(["client_owned","licensed"]).default("licensed"),rights_confirmed:z.literal(true),...accountSelection}).strict();
 export async function inspectDomainHandoff(raw:string){
   const name=domainName(raw);assertCustomerDomain(name);
   const db=adminDb();
@@ -22,7 +22,8 @@ async function resolveClient(db:ReturnType<typeof adminDb>,email:string,mode?:"e
   if(!account.data){if(mode==="existing"||selected)throw new PortalError("existing_client_required",409);return undefined;}
   if(mode==="new")throw new PortalError("client_email_already_exists_select_existing",409);
   if(account.data.role!=="client"||!account.data.active)throw new PortalError("existing_account_requires_review",409);
-  const membership=await db.from("portal_memberships").select("client_id,portal_clients(status)").eq("user_id",account.data.user_id).single();checkDb(membership.error);
+  const membership=await db.from("portal_memberships").select("client_id,portal_clients(status)").eq("user_id",account.data.user_id).single();
+  if(membership.error?.code==="PGRST116")throw new PortalError("existing_client_requires_review",409);checkDb(membership.error);
   if(!membership.data||(membership.data.portal_clients as unknown as {status:string})?.status!=="active")throw new PortalError("existing_client_requires_review",409);
   if(selected&&selected!==membership.data.client_id)throw new PortalError("client_selection_changed",409);
   return membership.data.client_id as string;
@@ -47,8 +48,12 @@ export async function activateDomainClient(actor:string,raw:unknown){
     throw new PortalError("domain_registration_unverified",409);
   const db=adminDb();
   const credentialMode=input.credential_mode||"initial_password";
-  const provision=()=>provisionClient(actor,{idempotency_key:input.idempotency_key,name:input.name,business_name:input.business_name||input.name,email,status:"active",credential_mode:credentialMode,...(credentialMode==="initial_password"?{temporary_password:input.initial_password}:{}),domain_id:domain.id,holder_arrangement:input.holder_arrangement,rights_confirmed:true});
-  if(input.account_mode==="new"){
+  const initialName=input.name||email.slice(0,100);
+  const provision=async()=>{
+    const result=await provisionClient(actor,{idempotency_key:input.idempotency_key,name:initialName,business_name:input.business_name||initialName,email,status:"active",credential_mode:credentialMode,...(credentialMode==="initial_password"?{temporary_password:input.initial_password}:{}),domain_id:domain.id,holder_arrangement:input.holder_arrangement,rights_confirmed:true});
+    return {...result,domain:name,email,portal_url:`${portalOrigin()}/client-portal/login`,password_preserved:false};
+  };
+  if(input.account_mode!=="existing"){
     const prior=await db.from("portal_provisioning").select("actor_id,email,input").eq("id",input.idempotency_key).maybeSingle();checkDb(prior.error);
     if(prior.data){
       if(prior.data.actor_id!==actor||prior.data.email!==email||prior.data.input?.domain_id!==domain.id)throw new PortalError("idempotency_conflict",409);
@@ -64,7 +69,7 @@ export async function activateDomainClient(actor:string,raw:unknown){
     checkDb((await db.rpc("portal_commit_domain_handoff",{p_id:input.idempotency_key,p_domain:domain.id,p_client:clientId,p_email:email,p_holder:holder.holder,p_arrangement:input.holder_arrangement,p_actor:actor})).error);
     await audit(actor,"existing_client_domain_handoff",domain.id,{client_id:clientId,contact_id:holder.contact_id,verification_status:holder.verification_status,checked_at:holder.checked_at,registered_holder_unchanged:true,registrar_custody_unchanged:true,password_unchanged:true});
     await notifyClient(clientId,"Your domain is available in StackEndBox",`${name} is assigned to your StackEndBox account for authorized management. Your existing password is unchanged. This does not change the registered holder or registrar account.`,`domain-assigned:${domain.id}:${clientId}`);
-    return {request_id:input.idempotency_key,status:"committed",client_id:clientId,domain_id:domain.id,message:"Verified domain assigned to the existing client. Their password and registrar ownership are unchanged."};
+    return {request_id:input.idempotency_key,status:"committed",client_id:clientId,domain_id:domain.id,domain:name,email,portal_url:`${portalOrigin()}/client-portal/login`,password_preserved:true,message:"Domain assigned. Existing credentials are unchanged. The account notification is queued, not yet confirmed delivered."};
   }
   if(credentialMode==="initial_password"&&!input.initial_password)throw new PortalError("initial_password_required",422);
   // Existing durable provisioning owns Auth creation, membership, unique

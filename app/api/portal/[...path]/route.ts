@@ -489,7 +489,7 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ url: data?.signedUrl });
     }
     if (path[0] === "admin") {
-      const admin = await superAdmin(auth,route === "admin/activate-domain-client" && req.method === "POST"),
+      const admin = await superAdmin(auth,["admin/activate-domain-client","admin/domain-handoff-review"].includes(route) && req.method === "POST"),
         db = adminDb();
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined));
@@ -503,6 +503,7 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
       if (route === "admin/domain-handoff-preview" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).previewDomainHandoff(body));
+      if (route === "admin/domain-handoff-review" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).previewDomainHandoff(body));
       if(path[1]==="domains"&&path[2]&&path[3]==="dns-acceptance"&&path.length===4){
         const acceptance=await import("@/lib/portal/dns-acceptance");
         if(req.method==="GET")return reply(await acceptance.readDnsAcceptance(domainName(path[2]),admin.user.id));

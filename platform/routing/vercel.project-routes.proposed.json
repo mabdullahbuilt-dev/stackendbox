@@ -1,0 +1,40 @@
+{
+  "state": "LOCAL_PROPOSAL_NOT_STAGED_OR_PUBLISHED",
+  "teamSlug": "portfolio-ab4e",
+  "projectName": "stackendbox",
+  "origin": "https://stackendbox-production.stackendbox.workers.dev",
+  "requests": [
+    {
+      "route": {
+        "name": "StackEndBox client portal",
+        "description": "Only www client-portal paths. Public website and public API remain unchanged.",
+        "enabled": true,
+        "srcSyntax": "regex",
+        "route": {
+          "src": "^(/client-portal(?:/.*)?)$",
+          "dest": "https://stackendbox-production.stackendbox.workers.dev$1",
+          "caseSensitive": true,
+          "has": [{"type":"host","value":"www.stackendbox.com"}],
+          "headers": {"Cache-Control":"private, no-store","CDN-Cache-Control":"no-store","Vercel-CDN-Cache-Control":"no-store","x-vercel-enable-rewrite-caching":"0"},
+          "respectOriginCacheControl": true
+        }
+      }
+    },
+    {
+      "route": {
+        "name": "StackEndBox administrator portal",
+        "description": "Only www admin paths. Authentication remains enforced by the private backend.",
+        "enabled": true,
+        "srcSyntax": "regex",
+        "route": {
+          "src": "^(/admin(?:/.*)?)$",
+          "dest": "https://stackendbox-production.stackendbox.workers.dev$1",
+          "caseSensitive": true,
+          "has": [{"type":"host","value":"www.stackendbox.com"}],
+          "headers": {"Cache-Control":"private, no-store","CDN-Cache-Control":"no-store","Vercel-CDN-Cache-Control":"no-store","x-vercel-enable-rewrite-caching":"0"},
+          "respectOriginCacheControl": true
+        }
+      }
+    }
+  ]
+}

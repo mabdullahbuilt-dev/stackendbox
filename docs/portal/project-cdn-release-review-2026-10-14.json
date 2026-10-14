@@ -1,0 +1,37 @@
+{
+  "state":"PREPARED_NOT_PUBLISHED",
+  "controllingScope":"Public website stays on Vercel. No portal subdomain or whole-domain migration. No website code, deployment source, DNS, DNSSEC, email or nameserver changes.",
+  "readOnlyProjectInspection":{
+    "team":"portfolio-ab4e",
+    "project":"stackendbox",
+    "plan":"Hobby",
+    "productionDeployment":"BfgYxRfYe7hjivyHNDSdMtA7iTda",
+    "productionSourceCommit":"a00db027ac60d22e22e19c1846055e692e5f3514",
+    "productionBranch":"main",
+    "routingUsage":"0 of 100",
+    "routingHistory":"No Version History",
+    "changesMade":false
+  },
+  "rules":"platform/routing/vercel.project-routes.proposed.json",
+  "exactMatchScope":"Only Host www.stackendbox.com and exact /client-portal or /admin prefixes bounded by slash/end. Their nested assets, callbacks and private APIs retain their full path and query.",
+  "portalOrigin":"https://stackendbox-production.stackendbox.workers.dev",
+  "originDefectFound":"Old full-site candidate returned HTML for /client-portal/api/auth/identity and release.json. It must be updated to the portals-only gateway and matching backend before rules can be published.",
+  "stagingAndTestPlan":[
+    "After explicit approval and commercial eligibility, record GET project routes and routing version history. Preserve the exact current empty baseline and IDs returned by subsequent staging.",
+    "Stage only the two proposed routes. They apply project-wide, so retain the exact www Host condition to exclude Preview and other aliases. Do not publish while reviewing.",
+    "Use Dashboard Test Rules for both exact paths and every nested asset/callback/private-API/download path, with realistic query strings. Verify homepage, /api/brief, /api/contact, /_next assets and near-match prefixes do not match.",
+    "Before publication, verify the isolated production origin has matching frontend/backend commit, JSON auth errors rather than SPA fallback, secure cookies and no-store responses. Keep its candidate origin override while testing.",
+    "Use controlled transport fixtures to verify Origin, Cookie, POST body, query, Set-Cookie, redirect and invoice/document response headers survive the gateway. Do not treat these as a genuine Vercel CDN authenticated test.",
+    "On approved activation only, set production backend origin to https://www.stackendbox.com, verify Turnstile hostname and Supabase callback allowlist, then publish the reviewed staged CDN version. Never use acceptance origin as production destination.",
+    "Verify actual main-domain login/MFA, activation callback, tenant records, invoice/document downloads and private API POSTs after publication. Validate ordinary public homepage/contact routes remain on the recorded original deployment. Stop and roll back for any failed critical check."
+  ],
+  "rollback":{
+    "mechanism":"Project routing History restore of the recorded known-good version, or remove/disable only the two portal rules and publish the restored empty ruleset.",
+    "initialHistoryCaveat":"This project currently has no saved routing versions. Do not promise an existing one-click restore target. Capture/establish the approved empty-rules baseline before first publication.",
+    "timing":"Vercel documents immediate application after publication. No website rebuild or DNS cache wait is required, but network propagation and in-flight requests prevent a guaranteed zero-time rollback claim.",
+    "verification":"Confirm main-domain portal paths return to their previous behavior while /, public assets and contact routes continue using the unchanged Vercel deployment. Keep customer database records and the isolated portal origin."
+  },
+  "commercialEligibility":"Actual team remains Hobby. Feature availability on all plans is confirmed, but current commercial-use policy requires Pro/Enterprise or an actual provider-approved agreement. None was verified. No purchase, written exception or commercial permission is assumed, and production rules remain unpublished.",
+  "unverifiedBeforeApproval":["Actual Vercel Test Rules execution against staged rules", "Hosted authenticated requests through company-domain CDN rewrites", "Actual production routing restore"],
+  "sources":["https://vercel.com/changelog/vercels-cdn-now-supports-updating-routing-rules-without-a-new-deployment","https://vercel.com/docs/routing/project-routing-rules","https://vercel.com/docs/rest-api/project-routes/add-a-routing-rule","https://vercel.com/docs/limits/fair-use-guidelines"]
+}

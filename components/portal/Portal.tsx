@@ -66,6 +66,10 @@ const date = (value: unknown) =>
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 const errors: Record<string, string> = {
+  existing_account_requires_review:"This email has an unavailable or non-client account. Review its access in Clients before assigning a domain.",
+  existing_client_requires_review:"This email doesn't have one active client membership. Review it in Clients before assigning a domain.",
+  domain_already_assigned:"This domain is already assigned to another customer. Its existing access has been preserved.",
+  initial_password_required:"Enter an initial password for this new client account.",
   ownership_task_already_open:"This domain already has an open task for that operation. Refresh tasks and update the existing task.",
   ownership_task_changed:"This task changed in another session. Refresh tasks and review its current stage before updating.",
   ownership_stage_invalid:"That stage transition isn't available. Refresh the task and choose a valid next stage.",
