@@ -515,7 +515,7 @@ export function PortalContent({
                   <p>Last verified {date(w.last_verified_at)}</p>
                 )}
                 {rows(data,"service_entitlements").filter(s=>s.client_id===w.client_id && (!s.website_id || s.website_id===w.id)).map(s=><p key={str(s.id)}>{str(s.service)}: {str(s.description)} · {label(s.status)}</p>)}
-                <a
+                <div className="portal-actions"><a
                   className="portal-button"
                   href={str(w.url)}
                   target="_blank"
@@ -523,7 +523,7 @@ export function PortalContent({
                 >
                   Open website <ArrowUpRight size={16} />
                 </a>
-                <Link href="/client-portal/requests">Request an update</Link>
+                <Link href="/client-portal/requests">Request an update</Link></div>
               </section>
             ))}
           </div>

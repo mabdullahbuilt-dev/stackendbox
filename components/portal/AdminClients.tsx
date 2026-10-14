@@ -55,6 +55,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   const createForm=useRef<HTMLFormElement>(null);
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
   const [search,setSearch]=useState("");
+  const [loading,setLoading]=useState(false);
   const activeSearch=useRef("");
   const loadVersion=useRef(0);
   useEffect(() => {
@@ -62,6 +63,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   }, []);
   const load=useCallback(async (after?: string) => {
     const version=++loadVersion.current;
+    setLoading(true);
     try {
       const params=new URLSearchParams();
       if(after) params.set("after",after);
@@ -84,6 +86,8 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
       setError("");
     } catch (e) {
       if(version===loadVersion.current)setError((e as Error).message);
+    } finally {
+      if(version===loadVersion.current)setLoading(false);
     }
   },[clientId,scope]);
   useEffect(() => {
@@ -219,12 +223,12 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
       <h1>{clientId?"Client profile":"Clients"}</h1>
       {scope&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href="/admin/clients">Show all clients</Link></p>}
       <p>Saved PostgreSQL records, linked to Supabase Auth identities.</p>
-      {clientId?<p><Link href="/admin/clients">All clients</Link></p>:<form className="portal-form" onSubmit={e=>{e.preventDefault();activeSearch.current=search.trim();void load();}}><label>Search by name, approved email or domain<input value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/></label><button>Search clients</button></form>}
+      {clientId?<p><Link href="/admin/clients">All clients</Link></p>:<form className="portal-form" onSubmit={e=>{e.preventDefault();if(loading)return;activeSearch.current=search.trim();void load();}}><label>Search by name, approved email or domain<input value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/></label><button disabled={loading}>{loading?"Searching…":"Search clients"}</button></form>}
       <p>
         <Link className="portal-button" href="/admin/clients/new">
           Create client
         </Link>{" "}
-        <button disabled={busy} onClick={() => void load()}>
+        <button disabled={busy||loading} onClick={() => void load()}>
           Refresh saved records
         </button>
       </p>
@@ -234,6 +238,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
         </p>
       )}
       {message && <p role="status">{message}</p>}
+      {data&&loading&&<p role="status">Updating client records…</p>}
       {!data ? (
         <p role="status">Loading clients…</p>
       ) : (
@@ -317,7 +322,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
             </section>
           ))}
           {data.next && (
-            <button onClick={() => void load(data.next!)}>
+            <button disabled={loading} onClick={() => void load(data.next!)}>
               Load more clients
             </button>
           )}
