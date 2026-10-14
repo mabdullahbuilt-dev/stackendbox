@@ -26,7 +26,7 @@ export function acceptanceConfiguration(base: Record<string, string>, get: (name
   if (!usable(config.BREVO_CLIENT_REPLY_TO) && usable(config.BREVO_CLIENT_SENDER_EMAIL))
     config.BREVO_CLIENT_REPLY_TO = config.BREVO_CLIENT_SENDER_EMAIL;
   // These safeguards cannot be lifted by the credential-entry path.
-  return Object.freeze({ ...config, WHOP_MODE: "sandbox", DOMAIN_LIVE_PURCHASES_ENABLED: "false",
+  return Object.freeze({ ...config, NODE_ENV:"production", WHOP_MODE: "sandbox", DOMAIN_LIVE_PURCHASES_ENABLED: "false",
     DOMAIN_LIVE_RENEWALS_ENABLED: "false", DOMAIN_LIVE_MUTATIONS_ENABLED: "false", DOMAIN_MUTATION_ALLOWLIST: "" });
 }
 

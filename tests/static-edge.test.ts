@@ -5,6 +5,10 @@ import { acceptanceConfiguration, productionConfiguration } from "../platform/ed
 
 afterEach(() => vi.unstubAllGlobals());
 describe("static frontend server boundary", () => {
+  it("forces the HTTPS cookie profile even when optional stored configuration omits or weakens NODE_ENV",()=>{
+    expect(acceptanceConfiguration({},()=>undefined).NODE_ENV).toBe("production");
+    expect(productionConfiguration({NODE_ENV:"development"},()=>undefined).NODE_ENV).toBe("production");
+  });
   it("canonicalizes only the owned apex without caching a rollback redirect loop",async()=>{
     const backend=vi.fn();vi.stubGlobal("fetch",backend);
     const assets=vi.fn(async()=>new Response("static"));
