@@ -39,3 +39,10 @@ it("keeps legacy callback session exchange inside the portal prefix",async()=>{
   expect(await response.text()).toContain("'/client-portal/api/auth/session'");
   expect(response.headers.get("cache-control")).toBe("private, no-store");
 });
+it("preserves approved backup OAuth notices only on the isolated production origin",async()=>{
+  for(const file of ["backup-privacy.html","backup-authorization.html"]){
+    expect((await portals.fetch(new Request(`https://stackendbox-production.stackendbox.workers.dev/${file}`),env)).status).toBe(200);
+    expect((await portals.fetch(new Request(`https://www.stackendbox.com/${file}`),env)).status).toBe(404);
+    expect((await portals.fetch(new Request(`https://portal.example/${file}`),env)).status).toBe(404);
+  }
+});

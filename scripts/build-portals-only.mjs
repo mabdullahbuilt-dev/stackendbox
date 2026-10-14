@@ -20,11 +20,14 @@ await mkdir('dist/portal-evidence',{recursive:true});
 await writeFile('dist/portal-evidence/browser-dependencies.json',JSON.stringify({serverModulesIncluded:false,legacyFrameworkIncluded:false,inputs},null,2));
 await cp('node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2',`${output}/fonts/geist.woff2`);
 await cp('node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2',`${output}/fonts/geist-mono.woff2`);
+// Preserve the already approved OAuth notices only on the isolated production
+// origin. These are not the public website or company-domain routing targets.
+for(const file of ['backup-authorization.html','backup-privacy.html'])await cp(`public/${file}`,`${output}/${file}`);
 const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
 const branch=execFileSync('git',['branch','--show-current'],{encoding:'utf8',windowsHide:true}).trim();
-const sourcePaths=['components/portal','lib/portal','app/admin','app/api/portal','app/client-portal/auth','platform/edge','platform/static/portal.tsx','platform/static/navigation.tsx','platform/cloudflare/portal-path-gateway.ts','scripts/build-portals-only.mjs','scripts/build-static-edge.mjs'];
+const sourcePaths=['components/portal','lib/portal','app/admin','app/api/portal','app/client-portal/auth','platform/edge','platform/static/portal.tsx','platform/static/navigation.tsx','platform/cloudflare/portal-path-gateway.ts','scripts/build-portals-only.mjs','scripts/build-static-edge.mjs','public/backup-authorization.html','public/backup-privacy.html'];
 const uncommittedInputs=execFileSync('git',['status','--porcelain','--',...sourcePaths],{encoding:'utf8',windowsHide:true}).trim().split(/\r?\n/).filter(Boolean).map(row=>row.slice(3));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 await writeFile(`${output}/release.json`,JSON.stringify({commit,branch,uncommittedInputs,browserSha256:sha(await readFile(`${output}/portal.js`)),stylesSha256:sha(await readFile(`${output}/portal.css`)),scope:'portal-only'},null,2));
 await writeFile(`${output}/portal.html`,'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>StackEndBox Portal</title><link rel="stylesheet" href="/client-portal/_assets/portal.css"></head><body><div id="root"></div><script type="module" src="/client-portal/_assets/portal.js"></script></body></html>');
-console.log(JSON.stringify({output,homepageBuilt:false,publicAssetsCopied:false,publicApiRoutesIncluded:false}));
+console.log(JSON.stringify({output,homepageBuilt:false,publicWebsiteAssetsCopied:false,publicApiRoutesIncluded:false,approvedBackupNoticesPreserved:true}));

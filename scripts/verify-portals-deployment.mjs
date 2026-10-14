@@ -1,7 +1,8 @@
 // Read-only acceptance checks. Never targets the frozen public website.
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-const origin='https://stackendbox-static-acceptance.stackendbox.workers.dev';
+const production=process.argv.includes('--production-candidate');
+const origin=production?'https://stackendbox-production.stackendbox.workers.dev':'https://stackendbox-static-acceptance.stackendbox.workers.dev';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const results=[];
 const manifestResponse=await fetch(`${origin}/client-portal/_assets/release.json`,{signal:AbortSignal.timeout(30000)});
@@ -13,6 +14,7 @@ for(const [path,status] of [['/',404],['/api/contact',404],['/client-portal/logi
   await response.arrayBuffer();
   if(response.status!==status)throw Error(`Unexpected status for ${path}: ${response.status}`);
   if(path.includes('/api/')&&status===401&&response.headers.get('x-stackendbox-release')!==release.commit)throw Error('Backend commit differs from frontend release');
+  if(path.includes('/api/')&&!response.headers.get('content-type')?.includes('application/json'))throw Error('Private API returned a non-JSON fallback');
   results.push({path,status:response.status,elapsedMs:Math.round(performance.now()-start)});
 }
 for(const file of ['portal.js','portal.css']){
@@ -22,4 +24,9 @@ for(const file of ['portal.js','portal.css']){
   if(hash!==sha(await readFile(`dist/portals-only/${file}`)))throw Error(`Deployed asset differs: ${file}`);
   results.push({asset:file,sha256:hash,matchesLocalBuild:true});
 }
-console.log(JSON.stringify({acceptanceOnly:true,readOnly:true,release,backendMatchesRelease:true,checks:results},null,2));
+if(production)for(const file of ['backup-authorization.html','backup-privacy.html']){
+  const response=await fetch(`${origin}/${file}`,{signal:AbortSignal.timeout(30000)});
+  if(!response.ok||sha(Buffer.from(await response.arrayBuffer()))!==sha(await readFile(`public/${file}`)))throw Error('Approved OAuth notice not preserved');
+  results.push({resource:file,approvedOriginalPreserved:true});
+}
+console.log(JSON.stringify({acceptanceOnly:!production,productionCandidateOnly:production,readOnly:true,release,backendMatchesRelease:true,checks:results},null,2));

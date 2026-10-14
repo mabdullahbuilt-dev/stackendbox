@@ -14,6 +14,12 @@ const portalPathGateway = {
   scheduled: gateway.scheduled,
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
+    if(url.hostname==="stackendbox-production.stackendbox.workers.dev"&&["/backup-authorization.html","/backup-privacy.html"].includes(url.pathname)){
+      if(!["GET","HEAD"].includes(req.method))return new Response(null,{status:405,headers:{Allow:"GET, HEAD"}});
+      const response=await env.ASSETS.fetch(req),headers=new Headers(response.headers);
+      headers.set("Cache-Control","no-store");headers.set("X-Content-Type-Options","nosniff");headers.set("X-Frame-Options","DENY");
+      return new Response(response.body,{status:response.status,headers});
+    }
     // Existing provider webhook stays on its Worker URL. It is not included in
     // the proposed company-domain path rewrites.
     if (url.pathname === "/api/webhooks/whop") return gateway.fetch(req, env);
