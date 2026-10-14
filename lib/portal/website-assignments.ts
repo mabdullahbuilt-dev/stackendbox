@@ -18,6 +18,8 @@ export const serviceAssignmentSchema = z.object({
   description: text.max(1000),
   status: z.enum(["included", "provisioned", "suspended"]),
 }).strict();
+export const serviceEditSchema=serviceAssignmentSchema.omit({idempotency_key:true}).extend({id:z.uuid(),website_id:z.uuid().nullable().optional()}).strict();
+export const websiteEditSchema=websiteAssignmentSchema.omit({idempotency_key:true}).extend({id:z.uuid()}).strict();
 
 async function requireActiveClient(db: ReturnType<typeof adminDb>, clientId: string) {
   const result = await db.from("portal_clients").select("id").eq("id", clientId).eq("status", "active").maybeSingle();
@@ -55,4 +57,23 @@ export async function assignService(actor: string, body: unknown) {
   // The database's composite ownership foreign key remains the final boundary.
   if(await insertAssignment(db,"portal_service_entitlements",{...input,created_by:actor},idempotency_key))await audit(actor, "service_entitlement_added", input.client_id);
   return { message: "Agreed service saved." };
+}
+
+export async function editAssignedService(actor:string,body:unknown){
+  const {id,...input}=serviceEditSchema.parse(body),db=adminDb();
+  await requireActiveClient(db,input.client_id);
+  if(input.website_id){
+    const website=await db.from("portal_websites").select("id").eq("id",input.website_id).eq("client_id",input.client_id).maybeSingle();checkDb(website.error);
+    if(!website.data)throw new PortalError("website_client_mismatch",409);
+  }
+  const saved=await db.from("portal_service_entitlements").update(input).eq("id",id).eq("client_id",input.client_id).select("id").maybeSingle();
+  checkDb(saved.error);if(!saved.data)throw new PortalError("service_not_found",404);
+  await audit(actor,"service_entitlement_updated",id);
+  return {message:"Service updated."};
+}
+export async function editAssignedWebsite(actor:string,body:unknown){
+  const {id,...input}=websiteEditSchema.parse(body),db=adminDb();await requireActiveClient(db,input.client_id);
+  const saved=await db.from("portal_websites").update(input).eq("id",id).eq("client_id",input.client_id).select("id").maybeSingle();
+  checkDb(saved.error);if(!saved.data)throw new PortalError("website_not_found",404);
+  await audit(actor,"website_updated",id);return {message:"Website updated."};
 }

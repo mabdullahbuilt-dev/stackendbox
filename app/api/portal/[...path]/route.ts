@@ -609,6 +609,8 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/services" && req.method === "POST") {
         return reply(await assignService(admin.user.id, body));
       }
+      if(route==="admin/service-update"&&req.method==="POST")return reply(await (await import("@/lib/portal/website-assignments")).editAssignedService(admin.user.id,body));
+      if(route==="admin/website-update"&&req.method==="POST")return reply(await (await import("@/lib/portal/website-assignments")).editAssignedWebsite(admin.user.id,body));
       if (route === "admin/pricing" && req.method === "POST") {
         const input = z
           .object({

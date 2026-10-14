@@ -6,6 +6,8 @@ it("supports the requested client route aliases without broad public fallbacks",
   expect(portalPageRoute("/client-portal/account")?.section).toBe("settings");
   expect(portalPageRoute("/client-portal")?.section).toBe("dashboard");
   expect(portalPageRoute("/admin")).toMatchObject({admin:true,section:"overview",publicPage:false});
+  expect(portalPageRoute("/admin/services")).toMatchObject({admin:true,section:"services",publicPage:false});
+  expect(portalPageRoute("/client-portal/services")).toBeNull();
   for(const path of ["/","/api/brief","/client-portal/not-real","/client-portal/domains/buy","/client-portal/support/extra","/admin/clients/not-a-uuid"])
     expect(portalPageRoute(path)).toBeNull();
 });

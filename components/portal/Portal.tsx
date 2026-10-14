@@ -754,7 +754,7 @@ export function PortalContent({
       </>
     );
   if (section === "admin" && adminMode)
-    return <Admin data={data} reload={reload} clientSelect={clientSelect} />;
+    return <Admin data={data} reload={reload} />;
   return null;
 }
 function Heading({
@@ -1297,11 +1297,9 @@ function Mfa({ factors }: { factors: { id: string; status: string }[] }) {
 function Admin({
   data,
   reload,
-  clientSelect,
 }: {
   data: Data;
   reload: () => Promise<void>;
-  clientSelect: ReactNode;
 }) {
   if (data.account.role !== "super_admin")
     return <Empty>Administrator access is required.</Empty>;
@@ -1343,24 +1341,9 @@ function Admin({
           <Link className="portal-button" href="/admin/domains#domain-handoff">Open domain handoff</Link>
         </section>
         <section className="portal-panel">
-          <h2>Add a website</h2>
-          <Form
-            button="Add website"
-            idempotent
-            onSubmit={async (f) => {
-              const r = await api("admin/websites", f);
-              await reload();
-              return r;
-            }}
-          >
-            {clientSelect}
-            <Field name="name" title="Website name" />
-            <Field name="url" title="HTTPS website URL" type="url" />
-          </Form>
-        </section>
-        <section className="portal-panel">
-          <h2>Assign an agreed service</h2>
-          <Form button="Save service" idempotent onSubmit={async f=>{const r=await api("admin/services",f);await reload();return r;}}>{clientSelect}<label>Service<select name="service">{["Website development","Website hosting","Managed database","Website performance optimization","Integrations","Maintenance","Technical support"].map(s=><option key={s}>{s}</option>)}</select></label><Field name="description" title="Actual service and agreement details"/><label>Service status<select name="status"><option value="included">Included in agreement</option><option value="provisioned">Provisioned</option><option value="suspended">Suspended</option></select></label></Form>
+          <h2>Websites & Services</h2>
+          <p>View, assign and update agreed client services.</p>
+          <Link className="p-button" href="/admin/services">Open service management</Link>
         </section>
         <section className="portal-panel">
           <h2>Verify supplier pricing</h2>

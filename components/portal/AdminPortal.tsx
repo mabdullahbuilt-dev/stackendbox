@@ -9,8 +9,9 @@ import { AdminDomains } from "./AdminDomains";
 import { AdminOperations } from "./AdminOperations";
 import {AdminRenewals} from "./AdminRenewals";
 import {AdminOverview} from "./AdminOverview";
+import {AdminServices} from "./AdminServices";
 import {customerScope} from "@/lib/portal/customer-scope";
-import {Activity,ClipboardList,Globe2,LayoutDashboard,LifeBuoy,Menu,Settings,Users,Wallet} from "lucide-react";
+import {Activity,Building2,ClipboardList,Globe2,LayoutDashboard,LifeBuoy,Menu,Settings,Users,Wallet} from "lucide-react";
 export function AdminPortal({
   section,
   createClient = false,
@@ -40,7 +41,7 @@ export function AdminPortal({
     }
   }, [section,scopedClient,scope]);
   useEffect(() => {
-    if (!["overview", "clients", "health", "renewals"].includes(section)) void reload();
+    if (!["overview", "clients", "services", "health", "renewals"].includes(section)) void reload();
   }, [reload, section]);
   const content = (
     {
@@ -58,7 +59,7 @@ export function AdminPortal({
         </Link>
         <nav aria-label="Administration">
           {([
-            ["Workspace",[["overview","Overview",LayoutDashboard],["clients","Clients",Users],["domains","Domains",Globe2]]],
+            ["Workspace",[["overview","Overview",LayoutDashboard],["clients","Clients",Users],["domains","Domains",Globe2],["services","Websites & Services",Building2]]],
             ["Business",[["billing","Billing & Renewals",Wallet],["support","Support",LifeBuoy]]],
             ["Administration",[["operations","Operations",ClipboardList],["health","Service health",Activity],["security","Settings",Settings]]],
           ] as const).map(([group,items])=><div className="p-nav-group" key={group}><p className="p-nav-label">{group}</p>{items.map(([key,title,Icon]) => (
@@ -108,6 +109,8 @@ export function AdminPortal({
             <AdminHealth />
           ) : section === "renewals" ? (
             <AdminRenewals />
+          ) : section === "services" ? (
+            <AdminServices />
           ) : error ? (
             <div role="alert" className="portal-error">
               {error}
@@ -117,7 +120,7 @@ export function AdminPortal({
             section === "domains" ? (
               <AdminDomains data={data} reload={reload} domain={domain} />
             ) : (
-              <>{section === "operations" && <AdminOperations />}{section === "operations"?<details className="portal-panel"><summary>Client setup, website and service assignment</summary><PortalContent section={content} path={[content]} data={data} reload={reload} adminMode/></details>:<PortalContent
+              <>{section === "operations" && <AdminOperations />}{section === "operations"?<details className="portal-panel"><summary>Advanced operations and supplier pricing</summary><PortalContent section={content} path={[content]} data={data} reload={reload} adminMode/></details>:<PortalContent
                 section={content}
                 path={[content]}
                 data={data}

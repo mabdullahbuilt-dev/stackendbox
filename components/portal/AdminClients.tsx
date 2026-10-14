@@ -321,7 +321,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               ) : (
                 <p>No websites assigned.</p>
               )}
-              <h3>Services</h3>{c.portal_service_entitlements?.length?c.portal_service_entitlements.map(service=><p key={service.id}>{service.service} <StatusBadge value={service.status}/></p>):<EmptyState title="No services assigned"/>}
+              <h3>Services</h3>{c.portal_service_entitlements?.length?c.portal_service_entitlements.map(service=><p key={service.id}>{service.service} <StatusBadge value={service.status}/></p>):<EmptyState title="No services assigned"/>}<Link className="p-button" href="/admin/services">Manage websites & services</Link>
               </div></div><p>
                 <Link href={`/admin/billing?client_id=${c.id}`}>Client billing</Link> ·{" "}
                 <Link href={`/admin/support?client_id=${c.id}`}>Support records</Link>

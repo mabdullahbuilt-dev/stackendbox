@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-const mock = vi.hoisted(() => ({ active: true, owned: true, failed: false, prior:null as Record<string,unknown>|null, insert: vi.fn(), filters: vi.fn(), audit: vi.fn() }));
+const mock = vi.hoisted(() => ({ active: true, owned: true, failed: false, prior:null as Record<string,unknown>|null, insert: vi.fn(), update:vi.fn(), filters: vi.fn(), audit: vi.fn() }));
 vi.mock("@/lib/portal/server", () => ({
   audit: mock.audit,
   checkDb: (error: unknown) => { if (error) throw new Error("database_unavailable"); },
@@ -10,16 +10,41 @@ vi.mock("@/lib/portal/server", () => ({
       eq: (key: string, value: string) => { mock.filters(table, key, value); return chain; },
       maybeSingle: async () => ({ data: table!=="portal_clients"&&mock.prior?mock.prior:(table === "portal_clients" ? mock.active : mock.owned) ? { id: "verified" } : null, error: mock.failed ? {} : null }),
       insert: mock.insert,
+      update:(value:unknown)=>{mock.update(table,value);return chain;},
     };
     return chain;
   } }),
 }));
-import { assignService, assignWebsite, websiteAssignmentSchema } from "@/lib/portal/website-assignments";
+import { assignService, assignWebsite, websiteAssignmentSchema,editAssignedService,editAssignedWebsite,serviceEditSchema } from "@/lib/portal/website-assignments";
 const client = "00000000-0000-4000-8000-000000000001";
 const website = "00000000-0000-4000-8000-000000000002";
 const service = { client_id: client, website_id: website, service: "Maintenance", description: "Authorized fixture only", status: "included" };
 beforeEach(() => { vi.clearAllMocks(); mock.active = true; mock.owned = true; mock.failed = false;mock.prior=null; mock.insert.mockResolvedValue({ error: null }); });
 describe("website and service assignment boundaries", () => {
+  it("keeps website edits bound to both the record and current client",async()=>{
+    await expect(editAssignedWebsite("actor",{id:website,client_id:client,name:"Test",url:"https://example.com"})).resolves.toEqual({message:"Website updated."});
+    expect(mock.filters).toHaveBeenCalledWith("portal_websites","id",website);expect(mock.filters).toHaveBeenCalledWith("portal_websites","client_id",client);
+    expect(mock.update).toHaveBeenCalledWith("portal_websites",{client_id:client,name:"Test",url:"https://example.com/"});
+  });
+  it("rejects an edit of a website outside the selected client",async()=>{
+    mock.owned=false;
+    await expect(editAssignedWebsite("actor",{id:website,client_id:client,name:"Test",url:"https://example.com"})).rejects.toThrow("website_not_found");
+    expect(mock.audit).not.toHaveBeenCalled();
+  });
+  it("validates the linked website again during service edits",async()=>{
+    mock.owned=false;
+    await expect(editAssignedService("actor",{...service,id:website})).rejects.toThrow("website_client_mismatch");
+    expect(mock.update).not.toHaveBeenCalled();
+  });
+  it("supports clearing a service's optional website without changing its client",async()=>{
+    await expect(editAssignedService("actor",{...service,id:website,website_id:null})).resolves.toEqual({message:"Service updated."});
+    expect(mock.filters).toHaveBeenCalledWith("portal_service_entitlements","client_id",client);
+    expect(mock.update).toHaveBeenCalledWith("portal_service_entitlements",{...service,website_id:null});
+  });
+  it("rejects privilege fields and unknown service edit states",()=>{
+    expect(serviceEditSchema.safeParse({...service,id:website,created_by:"someone"}).success).toBe(false);
+    expect(serviceEditSchema.safeParse({...service,id:website,status:"paid"}).success).toBe(false);
+  });
   it("deduplicates the same normalized website request and doesn't repeat its audit",async()=>{
     const input={client_id:client,name:"Test",url:"https://example.com"};
     mock.prior={...input,url:"https://example.com/"};mock.insert.mockResolvedValue({error:{code:"23505"}});
