@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 import { superAdmin, type Account } from "@/lib/portal/server";
+import {requiresFreshAdminMfa} from "@/lib/portal/admin-action";
 type Auth = NonNullable<Parameters<typeof superAdmin>[0]>;
 function fixture(role: Account["role"], level: string, error: unknown = null) {
   const assurance = vi.fn().mockResolvedValue({ data: { currentLevel: level }, error });
@@ -10,6 +11,11 @@ function fixture(role: Account["role"], level: string, error: unknown = null) {
 }
 afterEach(() => vi.unstubAllEnvs());
 describe("private administrator gate", () => {
+  it("requires fresh MFA for durable activation while read-only preview and review retain ordinary admin MFA",()=>{
+    expect(requiresFreshAdminMfa("admin/activate-domain-client","POST")).toBe(true);
+    expect(requiresFreshAdminMfa("admin/domain-handoff-review","POST")).toBe(false);
+    expect(requiresFreshAdminMfa("admin/domain-handoff-preview","POST")).toBe(false);
+  });
   it.each(["client", "staff"] as const)("rejects %s before querying MFA", async role => {
     const {auth, assurance} = fixture(role, "aal2");
     await expect(superAdmin(auth)).rejects.toThrow("administrator_required");

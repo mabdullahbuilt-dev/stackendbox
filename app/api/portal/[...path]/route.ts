@@ -46,6 +46,7 @@ import {editClient,sendClientAccess} from "@/lib/portal/client-operations";
 import {createServiceInvoice,transitionServiceInvoice} from "@/lib/portal/invoices";
 import {boundedText} from "@/lib/portal/request-body";
 import {customerScope,filterCustomerScope} from "@/lib/portal/customer-scope";
+import {requiresFreshAdminMfa} from "@/lib/portal/admin-action";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -507,7 +508,7 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ url: data?.signedUrl });
     }
     if (path[0] === "admin") {
-      const admin = await superAdmin(auth,["admin/activate-domain-client","admin/domain-handoff-review"].includes(route) && req.method === "POST"),
+      const admin = await superAdmin(auth,requiresFreshAdminMfa(route,req.method)),
         db = adminDb();
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined,customerScope(req.nextUrl.searchParams.get("scope"))));
