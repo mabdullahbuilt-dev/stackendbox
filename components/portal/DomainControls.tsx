@@ -28,7 +28,7 @@ export function DomainControls({ name, panel, admin = false }: { name: string; p
     }catch{setMessage("Unable to check this operation. Contact support before retrying. Your existing domain record is preserved.");}
     finally{setBusy(false);}
   }
-  async function load() { setBusy(true); setMessage(""); try { const next = await api(`${admin ? "admin/" : ""}domains/${name}/manage`); setState(admin ? {...next,changesEnabled:false} : next); } catch(e) { setState(previous=>previous?{...previous,changesEnabled:false}:null); setMessage(`Provider refresh failed. Previously displayed values may be stale. ${(e as Error).message}`); } finally { setBusy(false); } }
+  async function load() { if(busy)return; setBusy(true); setMessage(""); try { const next = await api(`${admin ? "admin/" : ""}domains/${name}/manage`); setState(admin ? {...next,changesEnabled:false} : next); } catch(e) { setState(previous=>previous?{...previous,changesEnabled:false}:null); setMessage(`Refresh failed. Previously displayed values may be out of date. ${(e as Error).message}`); } finally { setBusy(false); } }
   async function change(value: unknown) {
     if (!state || !state.changesEnabled || busy || pendingKey) return;
     if (!window.confirm(`Confirm this change to ${name}. It may interrupt your website, email, or expose public registration details. Continue?`)) return;
@@ -44,13 +44,13 @@ export function DomainControls({ name, panel, admin = false }: { name: string; p
   }
   return <section>
     {state && <p>Registration status: {state.detail.lifecycleStatus || "Not reported"}. Verified expiration: {state.detail.expirationDate ? new Date(state.detail.expirationDate).toLocaleDateString() : "Not reported"}. Auto-renew: {state.detail.autoRenew === undefined ? "Not reported" : state.detail.autoRenew ? "On, administrator review required" : "Off"}.</p>}
-    {state?.checked_at&&<p>Last successful provider read: {new Date(state.checked_at).toLocaleString()}.</p>}
-    <button className="portal-button" disabled={busy||!!pendingKey} onClick={() => void load()}>{busy ? "Checking provider…" : "Refresh verified settings"}</button>
-    {pendingKey&&<p>Operation reference: {pendingKey}. <button disabled={busy} onClick={()=>void checkOperation()}>Check saved result</button></p>}
+    {state?.checked_at&&<p>Last verified: {new Date(state.checked_at).toLocaleString()}.</p>}
+    <button className="portal-button" disabled={busy||!!pendingKey} onClick={() => void load()}>{busy ? "Checking settings…" : "Refresh settings"}</button>
+    {pendingKey&&<p>A change is awaiting confirmation. <button disabled={busy} onClick={()=>void checkOperation()}>Check saved result</button></p>}
     {message && <p role="status" className="portal-notice">{message}</p>}
     {state && <>
-      {!state.changesEnabled && <p>Live changes are unavailable in this environment or require a fresh verified state. Displayed values are from the last successful registrar read.</p>}
-      {panel === "dns" && (!state.managed ? <p>Spaceship authoritative DNS could not be confirmed. Manage active DNS with your authoritative provider, or allow a recent nameserver change to propagate.</p> : <>
+      {!state.changesEnabled && <p>Settings are read-only. Contact StackEndBox if you need a change.</p>}
+      {panel === "dns" && (!state.managed ? <p>DNS is managed separately for this domain or its settings are still updating. Contact StackEndBox for help.</p> : <>
         <div className="portal-table-wrap"><table><thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th>Source</th><th /></tr></thead><tbody>{state.dns.items.map((record,i) => <tr key={i}><td>{record.type}</td><td>{record.name}</td><td>{(fields[record.type] || []).map(k => `${k}: ${String(record[k] ?? "")}`).join(" · ")}</td><td>{String(record.ttl ?? "Not reported")}</td><td>{record.group.type}</td><td>{state.changesEnabled && record.group.type === "custom" && fields[record.type] && <><button disabled={busy} onClick={() => { setEditing(record); setType(record.type); }}>Edit</button><button disabled={busy} onClick={() => void change({kind: "dns", action: "delete", before: clean(record)})}>Delete</button></>}</td></tr>)}</tbody></table></div>
         {!state.dns.items.length && <p>No DNS records reported.</p>}
         {state.changesEnabled && <form className="portal-form" onSubmit={submitRecord} key={editing ? JSON.stringify(editing) : type}>
@@ -64,7 +64,7 @@ export function DomainControls({ name, panel, admin = false }: { name: string; p
           {editing && <button type="button" onClick={() => setEditing(null)}>Cancel edit</button>}
         </form>}
       </>)}
-      {panel === "nameservers" && <><ul>{state.detail.nameservers?.hosts.map(host => <li key={host}>{host}</li>)}</ul>{state.changesEnabled && <form className="portal-form" onSubmit={e => { e.preventDefault(); const value = String(new FormData(e.currentTarget).get("hosts")); void change({ kind: "nameservers", hosts: value.split(/\s+/).filter(Boolean) }); }}><label>Custom nameservers, one per line<textarea name="hosts" required /></label><p>Changing nameservers may disconnect your website and email. Verify the new DNS zone first.</p><button className="portal-button" disabled={busy}>Review nameserver change</button></form>}</>}
+      {panel === "nameservers" && admin && <ul>{state.detail.nameservers?.hosts.map(host => <li key={host}>{host}</li>)}</ul>}
       {panel === "privacy" && <><p>Privacy: {state.detail.privacyProtection?.level || "Not reported"}</p>{state.changesEnabled && state.detail.privacyProtection && <form className="portal-form" onSubmit={e => { e.preventDefault(); void change({ kind: "privacy", level: new FormData(e.currentTarget).get("level"), consent: true }); }}><label>Privacy level<select name="level" defaultValue={state.detail.privacyProtection.level}><option value="high">Private where supported</option><option value="public">Public registration details</option></select></label><label className="portal-check"><input type="checkbox" required />I consent to this privacy change and understand that public settings may expose registration contact details.</label><button className="portal-button" disabled={busy}>Review privacy change</button></form>}</>}
     </>}
   </section>;

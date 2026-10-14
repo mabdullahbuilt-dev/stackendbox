@@ -23,7 +23,7 @@ describe("renewal capability presentation",()=>{
  it("shows the quote while keeping disabled payment controls clear",()=>{
   const html=render(false,[quote()]);
   expect(html).toContain("$13.00");
-  expect(html).toContain("Online payments remain disabled pending acceptance");
+  expect(html).toContain("Online payments aren&#x27;t available yet");
   expect(html).not.toContain("Create sandbox order");
  });
  it("requires both a current quote and enabled Sandbox acceptance",()=>{

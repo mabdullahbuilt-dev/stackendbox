@@ -16,7 +16,7 @@ export async function reconcileAssignedDomains(clientIds?:string[]){
       checkDb((await db.from("portal_domains").update({provider_checked_at:new Date().toISOString(),next_provider_check_at:new Date(Date.now()+24*60*60*1000).toISOString()}).eq("id",domain.id)).error);
       if(detail.autoRenew){
         const assignment=await db.from("portal_domain_assignments").select("client_id").eq("domain_id",domain.id).single();checkDb(assignment.error);
-        if(assignment.data)await notifyClient(assignment.data.client_id,`${domain.name}: registrar auto-renew review`,"Spaceship reports auto-renew enabled. StackEndBox has not changed the setting or charged you. Contact support before starting a manual renewal.",`autorenew-review:${domain.id}:${new Date().toISOString().slice(0,10)}`);
+        if(assignment.data)await notifyClient(assignment.data.client_id,`${domain.name}: auto-renew review`,"Auto-renew is currently enabled for your domain. StackEndBox has not changed the setting or charged you. Contact support before starting a manual renewal.",`autorenew-review:${domain.id}:${new Date().toISOString().slice(0,10)}`);
       }
       await audit(null,"provider_domain_reconciled",domain.id,{auto_renew:detail.autoRenew,expiration_verified:!!detail.expirationDate,registrar_mutations:false});return true;
     }catch(error){

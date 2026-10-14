@@ -6,6 +6,7 @@ import { adminDb, audit, checkDb, identity, rateLimit } from "./server";
 import { assertCustomerDomain, domainName, PortalError } from "./rules";
 import { spaceship, mutationAllowed } from "./spaceship";
 import { dnsRecordSchema, planDnsChange, recordKey, type ProviderRecord } from "./dns";
+import { clientDnsRecord } from "./client-response";
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([k,v]) => [k,canonical(v)]));
@@ -44,8 +45,12 @@ export async function readDomainState(name: string) {
   return { detail, dns, version, managed, changesEnabled, checked_at:new Date().toISOString() };
 }
 export function clientDomainState(state:Awaited<ReturnType<typeof readDomainState>>) {
-  const {lifecycleStatus,expirationDate,autoRenew,nameservers,privacyProtection}=state.detail;
-  return {...state,detail:{lifecycleStatus,expirationDate,autoRenew,nameservers,privacyProtection}};
+  const {lifecycleStatus,expirationDate,autoRenew,privacyProtection}=state.detail;
+  return {
+    version:state.version,managed:state.managed,changesEnabled:state.changesEnabled,checked_at:state.checked_at,
+    detail:{lifecycleStatus,expirationDate,autoRenew,privacyProtection:privacyProtection ? {level:privacyProtection.level} : undefined},
+    dns:{items:state.dns.items.map(clientDnsRecord),total:state.dns.total},
+  };
 }
 export async function domainOperationStatus(name:string,key:string,auth:Awaited<ReturnType<typeof identity>>) {
   const {domain}=await authorizedDomain(name,auth);

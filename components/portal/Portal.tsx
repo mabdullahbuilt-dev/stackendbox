@@ -57,7 +57,7 @@ const money = (value: unknown) =>
       }).format(value / 100)
     : "Quote required";
 const date = (value: unknown) =>
-  typeof value === "string"
+  typeof value === "string" && Number.isFinite(Date.parse(value))
     ? new Date(value).toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
@@ -66,6 +66,12 @@ const date = (value: unknown) =>
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 const errors: Record<string, string> = {
+  invalid_input: "Check the entered values and try again. Your existing records haven't been changed.",
+  too_many_requests: "Too many requests. Please wait a few minutes before trying again.",
+  domain_information_unavailable: "Domain information is temporarily unavailable. Your saved records are unchanged. Please try again later or contact support.",
+  domain_change_requires_reconciliation: "This change needs a support review. Don't submit it again until its saved result has been checked.",
+  domain_state_changed: "These settings changed. Refresh them before making another change.",
+  external_authoritative_dns: "DNS changes are managed separately for this domain. Contact StackEndBox for help.",
   existing_account_requires_review:"This email has an unavailable or non-client account. Review its access in Clients before assigning a domain.",
   existing_client_requires_review:"This email doesn't have one active client membership. Review it in Clients before assigning a domain.",
   domain_already_assigned:"This domain is already assigned to another customer. Its existing access has been preserved.",
@@ -82,7 +88,7 @@ const errors: Record<string, string> = {
   spaceship_404: "This domain wasn't found in the configured Spaceship account. Check the registrar account and API key scope.",
   payment_acceptance_pending: "Online payments aren't available yet. Contact StackEndBox to arrange payment.",
   price_confirmation_required:
-    "A verified supplier quote is required. Please contact StackEndBox.",
+    "A current renewal quote is required. Please contact StackEndBox.",
   administrator_mfa_required:
     "Verify your authenticator in Account Settings before opening administration.",
   invalid_credentials:
@@ -111,7 +117,10 @@ export async function api(path: string, body?: unknown, signal?: AbortSignal) {
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(25000)]) : AbortSignal.timeout(25000),
   });
   const data = await r.json().catch(() => { throw new Error("The service returned an unreadable response. Refresh to check whether your action was saved before retrying."); });
-  if (!r.ok) throw new Error(errors[data.error] || label(data.error));
+  if (!r.ok) {
+    const providerError = typeof data.error === "string" && /^(spaceship_|registrant_|registrar_)/.test(data.error);
+    throw new Error(providerError && !path.startsWith("admin/") ? "Domain information is temporarily unavailable. Your saved records are unchanged. Please try again later or contact support." : errors[data.error] || "This request couldn't be completed. Refresh to check its saved status before retrying, or contact StackEndBox.");
+  }
   if(body&&["auth/login","auth/logout","auth/password","auth/session"].includes(path))notifySessionChange();
   return data;
 }
@@ -216,6 +225,7 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
     domainDetail = section === "domains" ? path[1] : undefined;
   const bootstrap=initialData?.account.user_id===userId?initialData:undefined;
   const firstLoad=useRef(true);
+  const pendingRead=useRef<AbortController|null>(null);
   const [data, setData] = useState<Data | null>(() => bootstrap || (cache?.userId === userId && cache.section === page ? cache.data : null)),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(() => !bootstrap && (cache?.userId !== userId || cache.section !== page)),
@@ -223,20 +233,27 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
   const [dataPage,setDataPage] = useState(page);
   const publicPage = section === "login" || section === "forgot-password";
   const reload = useCallback(async () => {
+    pendingRead.current?.abort();
+    const controller=new AbortController();
+    pendingRead.current=controller;
     setBusy(true);
     setError("");
     try {
-      const next = await api(`data?section=${encodeURIComponent(section)}${domainDetail ? `&domain=${encodeURIComponent(domainDetail)}` : ""}`);
+      const next = await api(`data?section=${encodeURIComponent(section)}${domainDetail ? `&domain=${encodeURIComponent(domainDetail)}` : ""}`,undefined,controller.signal);
+      if(controller.signal.aborted)return;
+      if(next.account?.user_id!==userId){save(null);setData(null);throw new Error("Your session changed. Sign in again to load your account.");}
       setData(next);
       setDataPage(page);
       save({ userId, section: page, data: next, loadedAt: Date.now() });
       setError("");
     } catch (e) {
+      if(controller.signal.aborted)return;
       setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if(!controller.signal.aborted)setBusy(false);
     }
   }, [save, userId, page, section, domainDetail]);
+  useEffect(()=>()=>{pendingRead.current?.abort();},[page,userId]);
   useEffect(() => {
     if (publicPage) return;
     // Static bootstrap already obtained this page through the normal server
@@ -416,7 +433,7 @@ export function PortalContent({
             View all <ArrowUpRight size={16} />
           </Link>
         </div>
-        <DomainList domains={domains} quotes={rows(data,"quotes")} />
+        <DomainList domains={domains} quotes={rows(data,"quotes")} websites={websites} />
         {!!rows(data,"service_entitlements").length&&<section className="portal-panel"><h2>Your agreed services</h2>{rows(data,"service_entitlements").map(s=><p key={str(s.id)}>{str(s.service)} · {str(s.description)} · {label(s.status)}</p>)}</section>}
         <div className="portal-columns">
           <section className="portal-panel">
@@ -468,7 +485,7 @@ export function PortalContent({
           title="My Domains"
           description="Registration details and renewal information for your assigned domains."
         />
-        <DomainList domains={domains} quotes={rows(data,"quotes")} />
+        <DomainList domains={domains} quotes={rows(data,"quotes")} websites={websites} />
       </>
     );
   if (section === "websites")
@@ -752,10 +769,10 @@ function Heading({
 function BillingNavigation({section}:{section:string}) {
   return <nav aria-label="Billing sections" className="portal-tabs"><Link href="/client-portal/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/client-portal/renewals" aria-current={section==="renewals"?"page":undefined}>Domain renewals</Link></nav>;
 }
-function DomainList({ domains, admin = false, quotes = [] }: { domains: Row[]; admin?:boolean; quotes?:Row[] }) {
+function DomainList({ domains, admin = false, quotes = [], websites=[] }: { domains: Row[]; admin?:boolean; quotes?:Row[]; websites?:Row[] }) {
   const [search, setSearch] = useState("");
   const [now] = useState(()=>Date.now());
-  if(!admin)return <ClientDomainCards domains={domains} quotes={quotes}/>;
+  if(!admin)return <ClientDomainCards domains={domains} quotes={quotes} websites={websites}/>;
   return (
     <section className="portal-panel">
       {domains.length > 10 && <label className="portal-search">
@@ -1072,7 +1089,6 @@ export function AdminDomainSearch({ clientSelect }: { clientSelect: ReactNode })
 function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
   const [now] = useState(() => Date.now());
   const security = d.security as { eppStatuses?: string[]; privacy?: { level?: string } } | undefined;
-  const nameservers = d.nameservers as { hosts?: string[] } | undefined;
   const latestRenewal = rows(data, "quotes").filter(q => q.domain_id === d.id && q.kind === "renewal" && Date.parse(str(q.valid_until)) > now).sort((a, b) => str(b.created_at).localeCompare(str(a.created_at)))[0];
   const linkedWebsites = rows(data, "websites").filter(w => w.domain_id === d.id);
   const [tab, setTab] = useState("Overview");
@@ -1089,7 +1105,6 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
         {[
           "Overview",
           "DNS Records",
-          "Nameservers",
           "Security",
           "Ownership",
           "Renewal & Billing",
@@ -1120,8 +1135,6 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
               <dd>{label(d.verification_status)}</dd>
               <dt>Time remaining</dt>
               <dd>{d.expiration_date && Number.isFinite(Date.parse(str(d.expiration_date))) ? `${Math.max(0, Math.ceil((Date.parse(str(d.expiration_date)) - now) / 86400000))} days` : "Not verified"}</dd>
-              <dt>Nameservers</dt>
-              <dd>{nameservers?.hosts?.join(", ") || "Not reported"}</dd>
               <dt>Privacy</dt>
               <dd>{security?.privacy?.level || "Not reported"}</dd>
               <dt>Renewal quote</dt>
@@ -1139,7 +1152,7 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
             </dl>
             {d.reconciliation_required === true && (
               <p role="alert">
-                This domain needs reconciliation with the registrar.
+                We couldn&apos;t confirm the latest domain information. These are your last verified details. Contact support for an update.
               </p>
             )}
           </>
@@ -1148,12 +1161,6 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
           <>
             <h2>DNS records</h2>
             <DomainControls name={str(d.name)} panel="dns" />
-          </>
-        )}
-        {tab === "Nameservers" && (
-          <>
-            <h2>Nameservers</h2>
-            <DomainControls name={str(d.name)} panel="nameservers" />
           </>
         )}
         {tab === "Security" && (
@@ -1197,8 +1204,8 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
               request.
             </p>
             {assignment && latestRenewal ? (
-              data.sandbox_checkout_enabled === true ? <QuoteCheckout quote={latestRenewal} /> : <p>Verified renewal quote: {money(latestRenewal.retail_minor)}. Online payments remain disabled pending acceptance.</p>
-            ) : <p>A current verified renewal quote hasn&apos;t been issued. StackEndBox must confirm supplier pricing before you can approve a renewal.</p>}
+              data.sandbox_checkout_enabled === true ? <QuoteCheckout quote={latestRenewal} /> : <p>Verified renewal quote: {money(latestRenewal.retail_minor)}. Online payments aren&apos;t available yet.</p>
+            ) : <p>A current renewal quote hasn&apos;t been issued. Contact StackEndBox for pricing.</p>}
             {(!latestRenewal || data.sandbox_checkout_enabled !== true) && <p className="portal-notice">Renewal setup in progress. Online renewal is unavailable.</p>}
             <p><Link href="/client-portal/requests">Contact StackEndBox about renewal</Link></p>
           </>

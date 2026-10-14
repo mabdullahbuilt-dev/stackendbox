@@ -5,7 +5,7 @@ export type ClientSection = typeof clientSections[number];
 export function clientTables(section: ClientSection, domainDetail=false): readonly PortalTable[] {
   switch(section) {
     case "dashboard": return ["clients","domains","websites","requests","notifications","quotes","service_entitlements"];
-    case "domains": return domainDetail ? ["clients","domains","domain_assignments","websites","quotes","orders"] : ["clients","domains","quotes"];
+    case "domains": return domainDetail ? ["clients","domains","domain_assignments","websites","quotes","orders"] : ["clients","domains","websites","quotes"];
     case "websites": return ["clients","websites","service_entitlements"];
     case "renewals": return ["clients","domains","domain_assignments","quotes","orders"];
     case "billing": return ["clients","orders","payments","invoices","external_payments"];

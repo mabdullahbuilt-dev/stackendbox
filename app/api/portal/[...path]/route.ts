@@ -39,6 +39,7 @@ import { clientDirectory, clientOptions, operationalHealth } from "@/lib/portal/
 import { saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { adminTables, clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
+import { clientColumns, clientRow, customerErrorCode } from "@/lib/portal/client-response";
 import { checkPassword } from "@/lib/portal/password-check";
 import { registrarAcceptance } from "@/lib/portal/registrar-acceptance";
 import {editClient,sendClientAccess} from "@/lib/portal/client-operations";
@@ -53,9 +54,11 @@ const text = z.string().trim().min(1).max(5000);
 const reply = (data: unknown, status = 200) =>
   NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 async function handle(req: NextRequest, context: Context) {
+  let administratorRoute = false;
   try {
     const { path } = await context.params,
       route = path.join("/");
+    administratorRoute = path[0] === "admin";
     let body: Record<string, unknown> = {};
     if (req.method === "POST") {
       originCheck(req);
@@ -234,7 +237,8 @@ async function handle(req: NextRequest, context: Context) {
           if (!adminMode && t === "memberships") return {data:memberships||[],error:null};
           if (!selected.has(t)) return {data:[],error:null};
           if (!adminMode && !clientIds.length) return { data: [], error: null };
-          let query = auth.db.from(`portal_${t}`).select(t === "external_payments" ? "id,client_id,acquisition_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at" : "*").limit(500);
+          const columns = adminMode ? (t === "external_payments" ? "id,client_id,acquisition_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at" : "*") : clientColumns(t);
+          let query = auth.db.from(`portal_${t}`).select(columns).limit(500);
           if (!adminMode || scopedClient) {
             if (t === "domains") query = query.in("id", (assigned || []).map((a) => a.domain_id));
             else if (t === "clients") query = query.in("id", clientIds);
@@ -250,17 +254,17 @@ async function handle(req: NextRequest, context: Context) {
         sandbox_checkout_enabled: sandboxCheckoutEnabled(),
         factors:
           factors?.totp.map((f) => ({ id: f.id, status: f.status })) || [],
-        ...Object.fromEntries(tables.map((t, i) => [t, results[i].data])),
+        ...Object.fromEntries(tables.map((t, i) => [t, adminMode ? results[i].data : (results[i].data || []).map(row => clientRow(t,row))])),
       });
     }
-    if (path[0] === "domains" && path[1] && path[2] === "manage") {
+    if (path[0] === "domains" && path[1] && path[2] === "manage" && path.length === 3) {
       const name = domainName(path[1]);
       await authorizedDomain(name, auth);
       if (req.method === "GET" && req.nextUrl.searchParams.has("operation")) return reply(await domainOperationStatus(name,req.nextUrl.searchParams.get("operation")!,auth));
       if (req.method === "GET") return reply(clientDomainState(await readDomainState(name)));
       if (req.method === "POST") return reply(await changeDomain(name, body, auth));
     }
-    if (path[0] === "domains" && path[1] && req.method === "GET") {
+    if (path[0] === "domains" && path[1] && req.method === "GET" && (path.length === 2 || (path.length === 3 && path[2] === "dns"))) {
       const name = domainName(path[1]);
       const { data: d, error } = await auth.db
         .from("portal_domains")
@@ -269,8 +273,11 @@ async function handle(req: NextRequest, context: Context) {
         .maybeSingle();
       checkDb(error);
       if (!d) throw new PortalError("domain_not_found", 404);
-      if (path[2] === "dns") return reply(await spaceship.dns(name));
-      return reply(d);
+      if (path[2] === "dns") {
+        await authorizedDomain(name,auth);
+        return reply(clientDomainState(await readDomainState(name)).dns);
+      }
+      return reply(clientRow("domains",d));
     }
     if (route === "availability" && req.method === "POST") {
       await superAdmin(auth);
@@ -694,7 +701,7 @@ async function handle(req: NextRequest, context: Context) {
     }
     throw new PortalError("not_found", 404);
   } catch (e) {
-    if (e instanceof PortalError) return reply({ error: e.code }, e.status);
+    if (e instanceof PortalError) return reply({ error: administratorRoute ? e.code : customerErrorCode(e.code) }, e.status);
     if (e instanceof z.ZodError || e instanceof SyntaxError)
       return reply({ error: "invalid_input" }, 422);
     return reply({ error: "service_temporarily_unavailable" }, 503);

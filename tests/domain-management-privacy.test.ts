@@ -13,6 +13,7 @@ it("keeps provider contact IDs and account metadata outside the client response"
  const result=clientDomainState(await readDomainState("fixture.invalid"));
  expect(result.detail.autoRenew).toBe(false);expect(result.changesEnabled).toBe(false);
  expect(JSON.stringify(result)).not.toContain("private-contact");expect(JSON.stringify(result)).not.toContain("private-account");
+ expect(result.detail).not.toHaveProperty("nameservers");
 });
 it("checks assignment and actor before returning only operation status",async()=>{
  const auth={user:{id:"actor"},db:{from:(table:string)=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:table==="portal_domains"?{id:"domain",name:"fixture.invalid",protected:false}:{client_id:"client"},error:null})})})})}} as unknown as Awaited<ReturnType<typeof identity>>;
