@@ -1,0 +1,26 @@
+{
+  "officialSource": "https://docs.spaceship.dev/",
+  "verification": "Parsed the JSON OpenAPI specification embedded in the official Redoc document, without evaluating its JavaScript. Version 1.0.0, OpenAPI 3.0.0, base https://spaceship.dev/api. Scopes below are the operation x-scopes values.",
+  "account": "Dedicated client-domain account. Company-domain and personal test credentials remain separate. Existing key permissions were not changed.",
+  "capabilities": [
+    {"capability":"Inventory","endpoint":"GET /v1/domains","scope":"domains:read","implemented":true,"tested":"Existing dedicated-account inventory acceptance, pagination contract tests","activation":"Read-only enabled"},
+    {"capability":"Status, expiry, auto-renew and nameserver reads","endpoint":"GET /v1/domains/{domain}","scope":"domains:read","implemented":true,"tested":"Existing real test123.buzz acceptance","activation":"Read-only enabled"},
+    {"capability":"DNS records","endpoint":"GET /v1/dns/records/{domain}","scope":"dnsrecords:read","implemented":true,"tested":"Existing real-domain read and approved TXT acceptance","activation":"Read-only enabled"},
+    {"capability":"Save DNS","endpoint":"PUT /v1/dns/records/{domain}","scope":"dnsrecords:write","implemented":true,"tested":"Prior exact authorized TXT add/remove, reusable adapter tests","activation":"General writes disabled. Previous exact test approval grants no new mutation authority."},
+    {"capability":"Delete DNS","endpoint":"DELETE /v1/dns/records/{domain}","scope":"dnsrecords:write","implemented":true,"tested":"Prior exact authorized TXT cleanup","activation":"General writes disabled"},
+    {"capability":"Nameserver update","endpoint":"PUT /v1/domains/{domain}/nameservers","scope":"domains:write","implemented":true,"tested":"Contract and fixture coverage only, no new live change","activation":"Disabled"},
+    {"capability":"Privacy preference","endpoint":"PUT /v1/domains/{domain}/privacy/preference","scope":"domains:write","implemented":true,"tested":"Contract/fixture coverage, live acceptance not claimed","activation":"Disabled"},
+    {"capability":"Contact read","endpoint":"GET /v1/contacts/{contact}","scope":"contacts:read","implemented":true,"tested":"Existing registrar-backed holder verification","activation":"Server/admin only"},
+    {"capability":"Contact save","endpoint":"PUT /v1/contacts","scope":"contacts:write","implemented":true,"tested":"Contract/fixture coverage, no real legal change","activation":"Disabled"},
+    {"capability":"Registered contact update","endpoint":"PUT /v1/domains/{domain}/contacts","scope":"domains:write","implemented":true,"tested":"Contract/fixture coverage only","activation":"Disabled. Owner consent and real registrar/customer confirmation remain required."},
+    {"capability":"Renewal request","endpoint":"POST /v1/domains/{domain}/renew","scope":"domains:billing","implemented":true,"tested":"Request contract and prior Sandbox/simulated fulfillment evidence, no live renewal","activation":"Disabled. Requires approved paid order, single supplier execution, async reconciliation and verified new expiry."},
+    {"capability":"Async operation lookup","endpoint":"GET /v1/async-operations/{operationId}","scope":"asyncoperations:read","implemented":true,"tested":"Contract coverage; no new real async mutation was initiated","activation":"Server capability. HTTP 202 is pending, never completed."},
+    {"capability":"Auto-renew update","endpoint":"PUT /v1/domains/{domain}/autorenew","scope":"domains:write","implemented":false,"tested":"Official contract verified: isEnabled boolean","activation":"Unavailable. Read actual state only."},
+    {"capability":"Transfer-out code/status","endpoint":"GET /v1/domains/{domain}/transfer/auth-code and GET /v1/domains/{domain}/transfer","scope":"domains:transfer","implemented":false,"tested":"Official endpoints verified, no sensitive code retrieved","activation":"Owner-assisted tracked task only"},
+    {"capability":"Transfer lock","endpoint":"PUT /v1/domains/{domain}/transfer/lock","scope":"domains:transfer","implemented":false,"tested":"Official endpoint verified, no live change","activation":"Unavailable"},
+    {"capability":"Same-registrar account custody transfer","endpoint":null,"scope":null,"implemented":"Tracked administrator-assisted task","tested":"Task state and consent checks, not a real custody transfer","activation":"No public API endpoint was identified. Never substitute portal assignment for custody transfer."},
+    {"capability":"Supplier renewal pricing","endpoint":null,"scope":null,"implemented":"Verified administrator-supplied pricing evidence and saved customer quotes","tested":"Existing pricing policy tests","activation":"No public renewal-price endpoint was identified in the inspected specification. Never invent supplier costs."}
+  ],
+  "remainingIntegrationWork": ["Granular staff authorization", "Hosted isolated operator exercise", "Auto-renew write workflow if separately approved", "Complete staff-operated renewal execution/reconciliation UI", "Bounded read retry policy and explicit Retry-After handling", "Real financial and registrar activation acceptance"],
+  "noLiveOperationsPerformed": true
+}

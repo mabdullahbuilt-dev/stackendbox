@@ -42,7 +42,7 @@ import { adminTables, clientSections, clientTables, portalTables } from "@/lib/p
 import { clientColumns, clientRow, customerErrorCode } from "@/lib/portal/client-response";
 import { checkPassword } from "@/lib/portal/password-check";
 import { registrarAcceptance } from "@/lib/portal/registrar-acceptance";
-import {editClient,sendClientAccess} from "@/lib/portal/client-operations";
+import {editClient,sendClientAccess,changeClientSignIn} from "@/lib/portal/client-operations";
 import {createServiceInvoice,transitionServiceInvoice} from "@/lib/portal/invoices";
 import {boundedText} from "@/lib/portal/request-body";
 import {customerScope,filterCustomerScope} from "@/lib/portal/customer-scope";
@@ -521,6 +521,8 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/renewals" && req.method === "GET") return reply(await (await import("@/lib/portal/renewal-monitor")).renewalMonitor(req.nextUrl.searchParams.get("after")||undefined,customerScope(req.nextUrl.searchParams.get("scope"))));
       if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions(req.nextUrl.searchParams.get("client_id")||undefined));
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
+      if (route === "admin/notification-reconcile" && req.method === "POST") return reply(await (await import("@/lib/portal/notification-operations")).reconcileNotification(admin.user.id,body));
+      if (route === "admin/notification-recover" && req.method === "POST") return reply(await (await import("@/lib/portal/notification-operations")).recoverUnsentNotification(admin.user.id,body));
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
       if (route === "admin/domain-handoff-preview" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).previewDomainHandoff(body));
       if (route === "admin/client-email-review" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).reviewClientEmail(body));
@@ -596,23 +598,7 @@ async function handle(req: NextRequest, context: Context) {
         return reply(await provisionClient(admin.user.id,body));
       }
       if (route === "admin/account-status" && req.method === "POST") {
-        const input = z
-          .object({ user_id: uuid, active: z.boolean() })
-          .parse(body);
-        if (input.user_id === admin.user.id)
-          throw new PortalError("cannot_disable_current_admin");
-        checkDb(
-          (
-            await db
-              .from("portal_accounts")
-              .update({ active: input.active })
-              .eq("user_id", input.user_id)
-          ).error,
-        );
-        await audit(admin.user.id, "account_access_changed", input.user_id, {
-          active: input.active,
-        });
-        return reply({ message: "Account access updated." });
+        return reply(await changeClientSignIn(admin.user.id,body));
       }
       if (route === "admin/assign" && req.method === "POST") {
         throw new PortalError("use_reviewed_domain_handoff",410);

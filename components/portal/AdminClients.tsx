@@ -51,6 +51,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   const [credentialMode, setCredentialMode] = useState("initial_password");
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [showPassword,setShowPassword]=useState(false);
+  const [resumePasswords,setResumePasswords]=useState<Record<string,string>>({});
   const [finished,setFinished]=useState(false);
   const createForm=useRef<HTMLFormElement>(null);
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
@@ -93,14 +94,14 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   useEffect(() => {
     if (!create) void load();
   }, [create,load]);
-  async function provision(input: Record<string, unknown>) {
+  async function provision(input: Record<string, unknown>,resumePassword?:string) {
     setBusy(true);
     setError("");
     setMessage("");
     try {
       const result = await api("admin/clients", {
         ...input,
-        ...(["initial_password", "temporary_password"].includes(String(input.credential_mode)) && temporaryPassword ? { temporary_password: temporaryPassword } : {}),
+        ...(["initial_password", "temporary_password"].includes(String(input.credential_mode)) && (resumePassword||temporaryPassword) ? { temporary_password: resumePassword||temporaryPassword } : {}),
       });
       setTemporaryPassword("");
       setFinished(Boolean(result.auth_user_id));
@@ -110,6 +111,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      if(resumePassword)setResumePasswords({});
     }
   }
   async function operate(route:string,input:Record<string,unknown>) {
@@ -339,14 +341,17 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
                   </p>
                   <small>{p.id}</small>
                   {p.state === "reserved" && (
+                    <div>
+                    {["initial_password","temporary_password"].includes(String(p.input.credential_mode))&&<label>Initial password if the identity still needs creating<input type="password" autoComplete="new-password" minLength={8} maxLength={128} value={resumePasswords[p.id]||""} onChange={event=>setResumePasswords({[p.id]:event.target.value})}/><small>Existing passwords are never reset by resuming. Passwords aren't saved in retry records.</small></label>}
                     <button
                       disabled={busy}
                       onClick={() =>
-                        void provision({ ...p.input, idempotency_key: p.id })
+                        void provision({ ...p.input, idempotency_key: p.id },resumePasswords[p.id])
                       }
                     >
                       Resume saved request
                     </button>
+                    </div>
                   )}
                   {p.state === "review_required" && (
                     <p>

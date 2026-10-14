@@ -4,6 +4,15 @@ import {adminDb,audit,checkDb,rateLimit} from "./server";
 import {PortalError} from "./rules";
 import {sendAuthEmail} from "./auth-email";
 export const clientEditSchema=z.object({client_id:z.uuid(),name:z.string().trim().min(1).max(100),business_name:z.string().trim().min(1).max(150),status:z.enum(["active","suspended"])}).strict();
+export async function changeClientSignIn(actor:string,raw:unknown){
+  const input=z.object({user_id:z.uuid(),active:z.boolean()}).strict().parse(raw);
+  if(input.user_id===actor)throw new PortalError("cannot_disable_current_admin",409);
+  const changed=await adminDb().from("portal_accounts").update({active:input.active}).eq("user_id",input.user_id).eq("role","client").select("user_id").maybeSingle();
+  checkDb(changed.error);
+  if(!changed.data)throw new PortalError("client_identity_required",409);
+  await audit(actor,"account_access_changed",input.user_id,{active:input.active});
+  return {message:"Client sign-in access updated. Password and assigned services are unchanged."};
+}
 export async function editClient(actor:string,raw:unknown) {
   const input=clientEditSchema.parse(raw);
   checkDb((await adminDb().rpc("portal_edit_client",{p_client:input.client_id,p_name:input.name,p_business:input.business_name,p_status:input.status,p_actor:actor})).error);

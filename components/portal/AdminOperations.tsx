@@ -3,6 +3,7 @@ import Link from "next/link";
 import {useEffect,useState} from "react";
 import {api} from "./Portal";
 import {OwnershipTasks} from "./OwnershipTasks";
+import {operatorGuide} from "@/lib/portal/operator-guide";
 type Assignment={client_id:string;portal_clients:{name:string;business_name:string}};
 type Domain={id:string;name:string;lifecycle_status:string;expiration_date:string|null;auto_renew:boolean|null;last_synced_at:string|null;reconciliation_required:boolean;portal_domain_assignments:Assignment[]|Assignment|null};
 type Item={id?:string;client_id?:string;domain?:string;subject?:string;status?:string;kind?:string;category?:string;order_id?:string;last_error?:string;created_at?:string;environment?:string;reconciliation_status?:string};
@@ -11,15 +12,23 @@ type Snapshot={checked_at:string;counts:Record<string,number>;domains:Domain[];q
 const title=(value:string)=>value.replaceAll("_"," ");
 export function AdminOperations(){
   const [data,setData]=useState<Snapshot|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false);
+  const [message,setMessage]=useState("");
+  async function notification(route:string,id:string){
+    setBusy(true);setError("");setMessage("");
+    try{const result=await api(route,{id,...(route.endsWith("recover")?{confirmed:true}:{})});setMessage(result.message);await load();}
+    catch(e){setError((e as Error).message);}finally{setBusy(false);}
+  }
   async function load(){setBusy(true);try{setData(await api("admin/operations"));setError("");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   useEffect(()=>{void load();},[]);
   return <section aria-label="Client operations">
     <h1>Client operations</h1>
+    <details className="portal-panel"><summary>Administrator operating guide</summary>{operatorGuide.map(section=><section key={section.title}><h2>{section.title}</h2><ol>{section.steps.map(step=><li key={step}>{step}</li>)}</ol></section>)}</details>
     <OwnershipTasks/>
     <p><Link href="/admin/health">Integration and backup health</Link> · <Link href="/admin/renewals">Renewal follow-up</Link></p>
     <p>Saved provider-verified snapshots. Refreshing this dashboard doesn&apos;t call Spaceship or change domains.</p>
     <button disabled={busy} onClick={()=>void load()}>{busy?"Refreshing…":"Refresh operations"}</button>
     {error&&<p className="portal-error" role="alert">{error}</p>}
+    {message&&<p role="status">{message}</p>}
     {data&&<>
       <p>Database snapshot: {new Date(data.checked_at).toLocaleString()}. Counts include test records. Expiry windows overlap.</p>
       <section className="portal-panel"><h2>Saved operations summary</h2><dl>{Object.entries(data.counts).map(([key,value])=><div key={key}><dt>{title(key)}</dt><dd>{value??"Unavailable"}</dd></div>)}</dl></section>
@@ -56,6 +65,10 @@ export function AdminOperations(){
           <small>Reference: {item.id||item.order_id}</small>
           {item.created_at&&<p>{new Date(item.created_at).toLocaleString()}</p>}
           {item.last_error&&<p>{item.last_error}</p>}
+          {key==="email"&&item.id&&<div className="portal-actions">
+            <button disabled={busy} onClick={()=>void notification("admin/notification-reconcile",item.id!)}>Check delivery status</button>
+            {item.status==="review_required"&&item.last_error==="configuration_required:BREVO_CLIENT_SENDER_EMAIL"&&<button disabled={busy} onClick={()=>{if(window.confirm("Queue this confirmed pre-send failure once? This won't send immediately and won't retry an uncertain delivery."))void notification("admin/notification-recover",item.id!);}}>Recover confirmed unsent email</button>}
+          </div>}
           {item.client_id&&<p><Link href={`/admin/clients/${item.client_id}`}>Open client profile</Link></p>}
         </article>):<p>No records in this queue.</p>}
       </section>)}

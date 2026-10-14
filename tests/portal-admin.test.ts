@@ -15,6 +15,9 @@ describe("private administrator gate", () => {
     expect(requiresFreshAdminMfa("admin/activate-domain-client","POST")).toBe(true);
     expect(requiresFreshAdminMfa("admin/domain-handoff-review","POST")).toBe(false);
     expect(requiresFreshAdminMfa("admin/domain-handoff-preview","POST")).toBe(false);
+    for(const route of ["admin/account-status","admin/client-update","admin/client-access-email","admin/external-payments","admin/notification-recover"])expect(requiresFreshAdminMfa(route,"POST")).toBe(true);
+    expect(requiresFreshAdminMfa("admin/notification-reconcile","POST")).toBe(false);
+    expect(requiresFreshAdminMfa("admin/account-status","GET")).toBe(false);
   });
   it.each(["client", "staff"] as const)("rejects %s before querying MFA", async role => {
     const {auth, assurance} = fixture(role, "aal2");
