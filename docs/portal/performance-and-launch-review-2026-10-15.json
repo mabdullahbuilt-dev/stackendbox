@@ -1,0 +1,59 @@
+{
+  "applicationCommit": "9e01448c427aa01b7c102163107c087d39c1c850",
+  "candidateWorkerVersion": "cdd7c099-aeb7-4c41-a906-244bf5a1f32f",
+  "origin": "https://stackendbox-production.stackendbox.workers.dev",
+  "changes": [
+    "Added request-local numeric gateway round-trip and aggregate data-query timings, without URLs, credentials or tenant identifiers",
+    "Scheduled job wrapper rejects incomplete successful-HTTP responses and invalid accepted-email counts",
+    "Added independent activation, audit, delivery, duplicate-run and rollback evidence requirements to the prepared scheduler plan",
+    "Future isolated tests retain the ten slowest section-labelled data requests and safe timing spans, instead of only aggregate percentiles"
+  ],
+  "performance": {
+    "hostedCheckedAtUtc": "2026-10-14T20:24:23.160Z",
+    "scope": "One authorized existing test tenant, read-only requests using an SDK email-token session. No browser password/MFA test or distinct-tenant load repeat.",
+    "medianDataMs": 607,
+    "maximumDataMs": 2395,
+    "slowDashboard": {"clientMs": 2395, "gatewayUpstreamMs": 2324, "backendMs": 546.4, "authUserMs": 57.8, "accountMs": 274.7, "parallelDataQueriesMs": 204},
+    "warmSections": {"clientRangeMs": [575, 653], "parallelDataQueriesRangeMs": [29.6, 61]},
+    "finding": "Most of the slow dashboard request was outside the measured application handler but inside the gateway-to-Supabase response-header round trip. The trace does not distinguish network, platform routing or isolate startup. A cold-start cause is not proven.",
+    "local50TenantFinding": "The historical p95 of 3592 ms was aggregate data latency. It cannot identify the slowest section or distinguish local process contention from Auth/REST/database work. Existing indexed lookup evidence does not support another index. No new 10/25/50 benchmark was run.",
+    "decision": "Preserve the existing authenticated query optimization, parallel section reads, RLS, per-user cache boundaries and refresh checks. No speculative global cache, prewarming schedule, index or infrastructure change.",
+    "evidence": "dist/portal-evidence/customer-contract-instrumented.json"
+  },
+  "launchConfiguration": {
+    "deployedCandidateProbe": "HTTP 200, technicalChecksPassed true, database accessible, migration 202610140002",
+    "requiredBindings": "All 18 checked bindings present, including distinct public and client Brevo keys and identities. Presence is not a fresh provider-send or key-authentication claim.",
+    "safeguards": "Sandbox mode, checkout disabled, purchases disabled, renewals disabled, registrar writes disabled, mutation allowlist empty and customer diagnostics disabled",
+    "probeCleanup": "Temporary readiness-token secret was removed and its absence independently checked",
+    "auth": {"publicSignupDisabled": true, "totpEnabled": true, "minimumPasswordLength": 8, "emailLinkLifetimeSeconds": 3600, "companyCallbackAlreadyAllowlisted": true, "siteUrlStillPreview": true},
+    "authCutoverRequirement": "After the approved company routes are live and verified, change the Supabase Site URL and production origin to the company callback. No auth configuration was changed in this review.",
+    "workerDryRun": "Prepared main-domain Wrangler configuration bundled successfully with --dry-run. Worker upload 8.24 KiB uncompressed, 2.49 KiB gzip. This is a build-size observation, not runtime capacity proof.",
+    "publicWebsite": "Deployment preserved 28 nonportal artifacts byte-for-byte. Public source, UI, contact forms, Vercel configuration and DNS targets were not changed.",
+    "scheduler": "Still disabled with an empty production cron list. No scheduled task was created or resumed.",
+    "finalMainDomainChecks": "Company TLS, callbacks, Turnstile, public contact delivery and private authenticated smoke checks remain post-cutover gates. Candidate checks do not substitute for them."
+  },
+  "customerPrivacy": {
+    "hostedContractPassed": true,
+    "privateSupplierAndRegistrarFieldsAbsent": true,
+    "unassignedDomainDenied": true,
+    "administratorAccessDenied": true,
+    "directRlsPassed": true,
+    "receiptDownloadPassed": true,
+    "credentialPatternScan": "Served portal JavaScript contained no sb_secret_ or xkeysib- private-key pattern. This pattern check supplements the server-only secret boundary and DTO allowlist, not a universal proof that arbitrary secrets cannot leak.",
+    "authenticDns": "Required authoritative DNS values remain accurate. No DNS or registrar values were fabricated or modified."
+  },
+  "verification": {"affectedTestsPassed": 42, "typescriptPassed": true, "changedApplicationFilesEslintPassed": true, "backendAndPortalBuildsPassed": true, "full395SuiteRepeated": false},
+  "dns": {
+    "boundedCheckUtc": "2026-10-14T20:23:57.421Z",
+    "google": "Apex and www A still SERVFAIL. MX succeeds and DS is absent.",
+    "cloudflare": "Apex A, www A, MX and DS queries succeed, with no DS answer.",
+    "recoveryComplete": false,
+    "gateUtc": "2026-10-15T19:00:10.186Z",
+    "gatePakistan": "2026-10-16T00:00:10.186+05:00",
+    "changes": "None. No nameserver, DNSSEC, record, customer assignment or custom-domain binding change.",
+    "nextApproval": "Only after the minimum gate, fresh parent absence, healthy independent validating resolvers and all eleven staged Cloudflare records are verified, present the actual assigned Cloudflare nameservers for separate delegation approval. Retain Vercel targets after delegation. Worker application cutover remains a later separate approval.",
+    "monitor": "Codex monitor remains paused. This review does not arrange a future automatic wakeup."
+  },
+  "preserved": ["Existing customer records", "Real customer domain assignment state", "Original public website", "Vercel fallback", "All provider credentials", "Existing encrypted backups and hosted backup job"],
+  "remainingOperationalGates": ["Proactive failure-alert delivery is not yet verified", "Real customer identity and pairing require final secure admin confirmation", "Live financial and registrar execution remain disabled pending separate acceptance and approval"]
+}

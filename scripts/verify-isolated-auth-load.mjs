@@ -13,7 +13,7 @@ const origin='https://isolated.stackendbox.invalid',bridge=randomBytes(32).toStr
 const options={auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(url,options)=>fetch(url,{...options,signal:AbortSignal.timeout(30000)})}};
 const db=createClient(local.API_URL,local.SECRET_KEY,options);
 const fresh=()=>createClient(local.API_URL,local.PUBLISHABLE_KEY,options);
-const measures=[],fixtures=[];
+const measures=[],fixtures=[],dataTraces=[];
 const requested=process.argv.find(value=>value.startsWith('--clients='))?.slice(10);
 const concurrencyRuns=requested?[Number(requested)]:[10,25,50];
 if(concurrencyRuns.some(value=>![10,25,50].includes(value)))throw Error('bounded_concurrency_required');
@@ -41,15 +41,21 @@ try{
   for(const key of ['SPACESHIP_API_KEY','SPACESHIP_API_SECRET','BREVO_CLIENT_API_KEY','BREVO_API_KEY','WHOP_SANDBOX_API_KEY'])delete process.env[key];
   const {handleEdge}=await import(pathToFileURL(resolve('dist/isolated-auth/handler.mjs')).href);
   const request=async(jar,path,body,expected=200)=>{
+    const started=performance.now();
     const headers={'x-stackendbox-bridge':bridge,'x-forwarded-for':jar.ip||'192.0.2.254',Origin:origin,...(jar.size?{Cookie:[...jar].map(([k,v])=>`${k}=${v}`).join('; ')}:{}),...(body?{'Content-Type':'application/json'}:{})};
     const response=await handleEdge(new Request(`${origin}/api/portal/${path}`,{method:body?'POST':'GET',headers,...(body?{body:JSON.stringify(body)}:{})}));
     for(const cookie of response.headers.getSetCookie()){const part=cookie.split(';')[0],i=part.indexOf('=');jar.set(part.slice(0,i),part.slice(i+1));}
     const text=await response.text();if(response.status!==expected)throw Error(`local_api_status_${response.status}_expected_${expected}`);
+    if(path.startsWith('data?section=')){
+      const section=new URLSearchParams(path.split('?')[1]).get('section');
+      const spans=Object.fromEntries([...(response.headers.get('server-timing')||'').matchAll(/\b(auth_user|account|data_queries|backend);dur=([0-9.]+)/g)].map(match=>[match[1],Number(match[2])]));
+      dataTraces.push({section,ms:Math.round(performance.now()-started),spans});
+    }
     return response.headers.get('content-type')?.includes('application/json')?JSON.parse(text):text;
   };
   const runs=[];
   for(const concurrent of concurrencyRuns){
-    stage=`distinct_${concurrent}`;const before=measures.length,start=performance.now();
+    stage=`distinct_${concurrent}`;const before=measures.length,traceStart=dataTraces.length,start=performance.now();
     const settled=await Promise.allSettled(fixtures.slice(0,concurrent).map(async(f,index)=>{
       const auth=fresh(),jar=Object.assign(new Map(),{ip:`192.0.2.${index+1}`});
       try{
@@ -87,7 +93,8 @@ try{
     const sample=measures.slice(before),metrics={};
     for(const kind of ['password_auth','refresh','portal_session','portal_data']){const values=sample.filter(m=>m.kind===kind).map(m=>m.ms).sort((a,b)=>a-b);metrics[kind]={requests:values.length,p50Ms:Math.round(values[Math.ceil(values.length*.5)-1]),p95Ms:Math.round(values[Math.ceil(values.length*.95)-1]),p99Ms:Math.round(values[Math.ceil(values.length*.99)-1])};}
     const errors=settled.filter(r=>r.status==='rejected').map(r=>String(r.reason?.message||'test_failed'));
-    runs.push({distinctClients:concurrent,elapsedMs:Math.round(performance.now()-start),failures:errors.length,errors:[...new Set(errors)],metrics});
+    const slowestDataRequests=dataTraces.slice(traceStart).sort((a,b)=>b.ms-a.ms).slice(0,10);
+    runs.push({distinctClients:concurrent,elapsedMs:Math.round(performance.now()-start),failures:errors.length,errors:[...new Set(errors)],metrics,slowestDataRequests});
     console.log(JSON.stringify(runs.at(-1)));
   }
   const report={checkedAt:new Date().toISOString(),runtime:'Supabase native on local WSL',syntheticAuthIdentities:50,runs,allPassed:runs.every(r=>r.failures===0),duplicateSupportTested:true,invalidInputTested:true,providerConfigurationFailurePreservesSnapshot:true,simulatedDistinctIngressIps:true,hostedTenantLoadMeasured:false,workerCpuMeasured:false,hostedSupabaseInvocations:0,providerCalls:0,scope:'Distinct real local Supabase Auth password/refresh sessions, current application handlers, real PostgreSQL/RLS, isolated synthetic data, one simulated gateway IP per client. Provider failure uses absent local credentials. Local handler timings exclude internet, Cloudflare CPU and hosted Supabase invocation costs. No production or shared acceptance fixtures were created.'};
