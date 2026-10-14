@@ -47,6 +47,7 @@ import {createServiceInvoice,transitionServiceInvoice} from "@/lib/portal/invoic
 import {boundedText} from "@/lib/portal/request-body";
 import {customerScope,filterCustomerScope} from "@/lib/portal/customer-scope";
 import {requiresFreshAdminMfa} from "@/lib/portal/admin-action";
+import {observeLatency} from "@/lib/portal/latency";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -240,7 +241,7 @@ async function handle(req: NextRequest, context: Context) {
         clientIds=(scoped.data||[]).map(client=>client.id);
       }
       const tables = portalTables;
-      const results = await Promise.all(
+      const results = await observeLatency("data_queries", () => Promise.all(
         tables.map((t) => {
           if (!adminMode && t === "memberships") return {data:memberships||[],error:null};
           if (!selected.has(t)) return {data:[],error:null};
@@ -256,7 +257,7 @@ async function handle(req: NextRequest, context: Context) {
           }
           return query;
         }),
-      );
+      ));
       results.forEach((r) => checkDb(r.error));
       return reply({
         account: adminMode ? auth.account : {user_id:auth.account.user_id,name:auth.account.name,approved_email:auth.account.approved_email,role:auth.account.role},

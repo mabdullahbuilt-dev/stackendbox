@@ -7,9 +7,9 @@ const gateway = {
     target.searchParams.set("reminders",event.cron === "0 0 * * *" ? "true" : "false");
     if (target.protocol !== "https:" || !target.hostname.endsWith(".supabase.co")) throw Error("scheduled_backend_invalid");
     const response=await fetch(target,{headers:{"x-stackendbox-bridge":env.STACKENDBOX_BRIDGE_SECRET,Authorization:`Bearer ${env.CRON_SECRET}`,...(env.EDGE_BACKEND_REGION?{"x-region":env.EDGE_BACKEND_REGION}:{})},redirect:"manual",signal:AbortSignal.timeout(60000)});
-    const result=await response.json() as {status?:string;emailsAccepted?:number};
-    if (!response.ok || result.status === "disabled") throw Error("scheduled_job_not_completed");
-    console.info(JSON.stringify({event:"portal_schedule_complete",cron:event.cron,emailsAccepted:result.emailsAccepted||0}));
+    const result=await response.json() as {status?:string;emailsAccepted?:number} | null;
+    if (!response.ok || !result || result.status === "disabled" || !Number.isInteger(result.emailsAccepted) || result.emailsAccepted! < 0 || result.emailsAccepted! > 4) throw Error("scheduled_job_not_completed");
+    console.info(JSON.stringify({event:"portal_schedule_complete",cron:event.cron,emailsAccepted:result.emailsAccepted}));
   },
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
@@ -33,8 +33,11 @@ const gateway = {
     headers.set("x-stackendbox-bridge", env.STACKENDBOX_BRIDGE_SECRET);
     headers.set("x-forwarded-for", req.headers.get("cf-connecting-ip") || "unknown");
     try {
+      const started=performance.now();
       const response = await fetch(target, { method: req.method, headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : req.body, redirect: "manual", signal: AbortSignal.timeout(30000) });
       const outgoing = new Headers(response.headers);
+      // Numeric request-local timing only. Never include targets, tokens or IDs.
+      outgoing.append("Server-Timing", `gateway_upstream;dur=${(performance.now()-started).toFixed(1)}`);
       outgoing.set("Cache-Control", "private, no-store");
       outgoing.set("X-Content-Type-Options", "nosniff");
       if (url.pathname === "/client-portal/auth/callback" && req.method === "GET" && response.ok) outgoing.set("Content-Type", "text/html; charset=utf-8");

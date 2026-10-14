@@ -108,6 +108,10 @@ describe("static frontend server boundary", () => {
     vi.stubGlobal("fetch",vi.fn(async()=>Response.json({status:"disabled"})));
     await expect(gateway.scheduled({}, {EDGE_BACKEND_URL:"https://project.supabase.co/functions/v1/stackendbox-acceptance",STACKENDBOX_BRIDGE_SECRET:"fixture",CRON_SECRET:"fixture",PORTAL_JOBS_ENABLED:"true",ASSETS:{fetch:vi.fn()}})).rejects.toThrow("scheduled_job_not_completed");
   });
+  it.each([{},null,{error:"job_execution_failed"},{emailsAccepted:-1},{emailsAccepted:5},{emailsAccepted:0.5},{emailsAccepted:"0"}])("rejects incomplete scheduled results without logging success",async result=>{
+    vi.stubGlobal("fetch",vi.fn(async()=>Response.json(result)));
+    await expect(gateway.scheduled({}, {EDGE_BACKEND_URL:"https://project.supabase.co/functions/v1/stackendbox-production",STACKENDBOX_BRIDGE_SECRET:"fixture",CRON_SECRET:"fixture",PORTAL_JOBS_ENABLED:"true",ASSETS:{fetch:vi.fn()}})).rejects.toThrow("scheduled_job_not_completed");
+  });
   it("isolates parallel sessions and preserves secure response cookies", async () => {
     const run = (value: string) => withRequest(new Request("https://example.test/api", { headers: { cookie: `session=${value}` } }), async () => {
       const jar = await cookies();
@@ -144,11 +148,12 @@ describe("static frontend server boundary", () => {
       expect(init.headers.get("x-forwarded-for")).toBe("192.0.2.1");
       expect(await new Response(init.body).text()).toBe('{"signed":"unchanged"}');
       expect(init.redirect).toBe("manual");
-      return new Response("ok", { headers: { "set-cookie": "session=refreshed; HttpOnly; Secure" } });
+      return new Response("ok", { headers: { "set-cookie": "session=refreshed; HttpOnly; Secure", "server-timing":"backend;dur=12.3" } });
     }); vi.stubGlobal("fetch", fetch);
     const response = await gateway.fetch(new Request("https://example.test/api/webhooks/whop", { method: "POST", body: '{"signed":"unchanged"}', headers: { "x-stackendbox-bridge": "attacker", "cf-connecting-ip": "192.0.2.1" } }), { EDGE_BACKEND_URL: "https://project.supabase.co/functions/v1/stackendbox-acceptance", STACKENDBOX_BRIDGE_SECRET: "private-key", ASSETS: { fetch: vi.fn() } });
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("server-timing")).toMatch(/^backend;dur=12\.3, gateway_upstream;dur=\d+\.\d$/);
   });
   it("fails closed when gateway configuration is missing", async () => {
     const response = await gateway.fetch(new Request("https://example.test/api/portal/admin/clients"), { EDGE_BACKEND_URL: "", STACKENDBOX_BRIDGE_SECRET: "", ASSETS: { fetch: vi.fn() } });

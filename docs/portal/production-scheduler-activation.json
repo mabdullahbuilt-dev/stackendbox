@@ -57,5 +57,15 @@
     "Verify a controlled failure alert with no real registrar mutation",
     "Keep all financial and registrar execution flags false"
   ],
+  "independentEvidence": {
+    "beforeActivation": "Record the existing Worker version, empty production cron list, both disabled switches and outbox status counts without exporting secrets or message bodies.",
+    "workerResult": "A real scheduled event must report portal_schedule_complete with an integer emailsAccepted from zero through four. HTTP 200 alone is not success. Disabled, missing, malformed, negative, fractional and over-batch results fail the Worker event.",
+    "databaseAuditReadOnlySql": "select created_at, action, detail from portal_audit where action = 'email_job_completed' order by created_at desc limit 10;",
+    "outboxReadOnlySql": "select status, count(*) from portal_email_outbox group by status order by status;",
+    "delivery": "Correlate an authorized fixture outbox ID with its accepted provider ID and Brevo delivery evidence. Accepted does not mean delivered. Keep recipient and message content out of public reports.",
+    "duplicateRun": "Run only an approved fixture twice and verify one durable dedupe key and at most one accepted send. Ambiguous results must remain review_required, not be resent.",
+    "rollbackVerification": "After removing cron entries and disabling both switches, confirm the deployed cron list is empty and a separately authorized authenticated job probe returns disabled. Preserve audit and queued history. Verify no new email_job_completed event appears after the rollback cutoff.",
+    "alerts": "A controlled fixture failure must reach the founder's chosen alert channel before automatic failure alerts can be claimed verified. This channel is not configured by this plan."
+  },
   "rollback": "Remove production cron entries and set both job switches false. Preserve outbox, audit and reconciliation history. Never delete queued or accepted customer notifications to roll back scheduling."
 }

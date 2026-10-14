@@ -17,7 +17,7 @@ async function request(path,body,expected=200){
     const pair=cookie.split(';')[0],index=pair.indexOf('=');jar.set(pair.slice(0,index),pair.slice(index+1));
   }
   const text=await response.text();
-  const timing=Object.fromEntries([...(response.headers.get('server-timing')||'').matchAll(/\b(auth_user|account|backend);dur=([0-9.]+)/g)].map(match=>[match[1],Number(match[2])]));
+  const timing=Object.fromEntries([...(response.headers.get('server-timing')||'').matchAll(/\b(auth_user|account|data_queries|backend|gateway_upstream);dur=([0-9.]+)/g)].map(match=>[match[1],Number(match[2])]));
   metrics.push({path,status:response.status,ms:Math.round(performance.now()-start),bytes:Buffer.byteLength(text),serverTimingMs:timing});
   if(response.status!==expected)throw Error('unexpected_status');
   return response.headers.get('content-type')?.includes('application/json')?JSON.parse(text):text;
