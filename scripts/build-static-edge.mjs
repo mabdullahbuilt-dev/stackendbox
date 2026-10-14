@@ -66,4 +66,9 @@ for (const name of ['icon.png','apple-icon.png','opengraph-image','twitter-image
   await cp(`.next/server/app/${name}.body`,`dist/static/${name}`);
 await writeFile('dist/static/robots.txt', productionBuild&&!candidateBuild ? await readFile('.next/server/app/robots.txt.body','utf8') : 'User-agent: *\nDisallow: /\n');
 await writeFile('dist/static/_headers', `/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n${productionBuild&&!candidateBuild?'':'  X-Robots-Tag: noindex, nofollow\n'}/portal.html\n  Cache-Control: no-cache\n/opengraph-image\n  Content-Type: image/png\n/twitter-image\n  Content-Type: image/png\n`);
+// Carry the verified portal build into the full-site candidate. Its namespaced
+// APIs, assets and release hashes must not regress to the older static shell.
+execFileSync(process.execPath, ['scripts/build-portals-only.mjs'], {stdio:'inherit',windowsHide:true,env:{...process.env,NEXT_PUBLIC_TURNSTILE_SITE_KEY:publicSiteKey}});
+for (const name of ['portal.js','portal.css','portal.html','release.json'])
+  await cp(`dist/portals-only/${name}`,`dist/static/${name}`);
 console.log(JSON.stringify({ edgeBundleBytes: (await stat('dist/edge/handler.mjs')).size, portalBundleBytes: (await stat('dist/static/portal.js')).size, scope: 'isolated portal proof, existing public site untouched' }));

@@ -2,6 +2,8 @@
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const production=process.argv.includes('--production-candidate');
+const fullSite=process.argv.includes('--full-site');
+if(fullSite&&!production)throw Error('Full site checks require the isolated production candidate');
 const origin=production?'https://stackendbox-production.stackendbox.workers.dev':'https://stackendbox-static-acceptance.stackendbox.workers.dev';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const results=[];
@@ -9,7 +11,7 @@ const manifestResponse=await fetch(`${origin}/client-portal/_assets/release.json
 if(!manifestResponse.ok)throw Error('Deployed release metadata unavailable');
 const release=await manifestResponse.json();
 if(!/^[a-f0-9]{40}$/.test(release.commit)||release.scope!=='portal-only'||release.uncommittedInputs?.length)throw Error('Release not built from committed portal sources');
-for(const [path,status] of [['/',404],['/api/contact',404],['/client-portal/login',200],['/admin/renewals',200],['/client-portal/api/admin/renewals',401]]){
+for(const [path,status] of [['/',fullSite?200:404],['/api/contact',404],['/client-portal/login',200],['/admin/renewals',200],['/client-portal/api/admin/renewals',401]]){
   const start=performance.now(),response=await fetch(origin+path,{signal:AbortSignal.timeout(30000),redirect:'manual'});
   await response.arrayBuffer();
   if(response.status!==status)throw Error(`Unexpected status for ${path}: ${response.status}`);
