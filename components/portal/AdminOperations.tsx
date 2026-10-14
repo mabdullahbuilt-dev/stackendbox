@@ -2,6 +2,7 @@
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {api} from "./Portal";
+import {OwnershipTasks} from "./OwnershipTasks";
 type Assignment={client_id:string;portal_clients:{name:string;business_name:string}};
 type Domain={id:string;name:string;lifecycle_status:string;expiration_date:string|null;auto_renew:boolean|null;last_synced_at:string|null;reconciliation_required:boolean;portal_domain_assignments:Assignment[]|Assignment|null};
 type Item={id?:string;client_id?:string;domain?:string;subject?:string;status?:string;kind?:string;category?:string;order_id?:string;last_error?:string;created_at?:string;environment?:string;reconciliation_status?:string};
@@ -14,6 +15,7 @@ export function AdminOperations(){
   useEffect(()=>{void load();},[]);
   return <section aria-label="Client operations">
     <h1>Client operations</h1>
+    <OwnershipTasks/>
     <p><Link href="/admin/health">Integration and backup health</Link> · <Link href="/admin/renewals">Renewal follow-up</Link></p>
     <p>Saved provider-verified snapshots. Refreshing this dashboard doesn&apos;t call Spaceship or change domains.</p>
     <button disabled={busy} onClick={()=>void load()}>{busy?"Refreshing…":"Refresh operations"}</button>

@@ -1,0 +1,43 @@
+{
+  "baseline": "d04b4ad",
+  "scope": "Existing independent portal acceptance environment. Public website, Vercel configuration, DNS and all provider credentials unchanged.",
+  "implemented": [
+    "Operations ownership follow-up for registered-holder changes, registrar-account custody moves and external transfers",
+    "Creation verifies dedicated-account registration/custody read-only before saving a minimal baseline",
+    "Admin-only persisted tasks, versioned progress, immutable event history and atomic audit",
+    "Idempotent create/progress requests, duplicate active-task prevention and stale-update rejection",
+    "Consent evidence gate before registrar follow-up",
+    "No manually selectable verified/completed status and no registrar execution endpoint",
+    "Concise client-creation wording without changing provisioning or credential behavior"
+  ],
+  "migration": {
+    "version": "202610140002",
+    "additive": true,
+    "existingRowsChanged": false,
+    "rlsEnabled": true,
+    "clientReadDenied": true,
+    "directServiceUpdateDeleteDenied": true,
+    "existingBackupReaderSelectVerified": true
+  },
+  "isolatedVerification": ["Atomic audit", "Idempotent replay", "Stale progress rejection", "Consent stage gate", "Manual completion rejection", "Client privilege denial"],
+  "legalBehavior": {
+    "registeredHolder": "Save an official contact and PUT /domains/{domain}/contacts after separate approval, preserving other contact IDs. Complete provider notices and verify the resulting registrant contact and verification status. Registrar acceptance alone is not completion.",
+    "custody": "Documented registrar dashboard: Domain List, select domain, Transfer, Transfer ownership. Confirm receiving account and contact handling. Follow actual provider prompts and independently verify custody in the receiving account.",
+    "externalTransfer": "Separate transfer-out procedure. Review eligibility, explicit unlock/code authorization and receiving-registrar confirmation. Keep authorization codes outside task notes.",
+    "completion": "Tasks track follow-up only. No legal ownership result is certified by these tables, statuses or ordinary portal assignments.",
+    "communications": "Required registrar confirmation emails are provider-controlled and are not claimed to be StackEndBox-branded or suppressible. Normal portal notifications retain the separate client Brevo integration."
+  },
+  "realCustomer": {
+    "domain": "dubaicarrecovery.site",
+    "assignmentExecuted": false,
+    "identityHardcoded": false,
+    "founderAction": "Open Admin Domains, choose new/existing client, enter the approved identity and onboarding method securely, enter the domain, Verify and review, confirm the exact pairing and Activate Client Access with fresh MFA. Legal change is a separate approved operation."
+  },
+  "publication": {
+    "mainPaths": "Prepared, not live",
+    "smallestTechnicalChange": "Existing prepared two-path Vercel rewrite configuration with portal-only upstream and private caching rules",
+    "commercialPolicy": "Current Hobby terms permit non-commercial personal use only. Business portal proxying does not resolve eligibility. No compliant activation is claimed under the unchanged free/frozen-routing constraints.",
+    "rollback": "Existing prepared routing-only rollback removes the two rewrites/restores the recorded public deployment without deleting client data or changing DNS."
+  },
+  "sources": ["https://docs.spaceship.dev/", "https://www.spaceship.com/blog/domain-updates/", "https://vercel.com/docs/limits/fair-use-guidelines"]
+}

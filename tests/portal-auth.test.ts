@@ -154,7 +154,7 @@ describe("page-scoped administrator queries", () => {
     expect(response.status).toBe(200);
     for(const table of adminTables("billing"))expect(filters).toContainEqual([`portal_${table}`,table==="clients"?"id":"client_id",[id]]);
   });
-  it.each(["admin/summary","admin/operations","admin/clients","admin/renewals"])("rejects non-admin read models at %s",async route=>{
+  it.each(["admin/summary","admin/operations","admin/clients","admin/renewals","admin/ownership-tasks"])("rejects non-admin read models at %s",async route=>{
     vi.mocked(identity).mockResolvedValue({user:{id:"fixture"},account:{role:"client"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>);
     vi.mocked(superAdmin).mockRejectedValueOnce(new PortalError("administrator_required",403));
     const response=await GET(new NextRequest(`https://portal.example/api/portal/${route}`),{params:Promise.resolve({path:route.split("/")})});

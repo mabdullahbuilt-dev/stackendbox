@@ -66,6 +66,10 @@ const date = (value: unknown) =>
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 const errors: Record<string, string> = {
+  ownership_task_already_open:"This domain already has an open task for that operation. Refresh tasks and update the existing task.",
+  ownership_task_changed:"This task changed in another session. Refresh tasks and review its current stage before updating.",
+  ownership_stage_invalid:"That stage transition isn't available. Refresh the task and choose a valid next stage.",
+  ownership_consent_reference_required:"Confirm the approved consent evidence before recording consent or registrar follow-up.",
   administrator_fresh_mfa_required: "Verify your existing authenticator in Account Settings, then retry this same activation within 10 minutes.",
   use_reviewed_domain_handoff: "Open Domains and use Verify and review before activating client access.",
   client_selection_changed: "The selected client's approved email or membership changed. Reload and select the client again.",

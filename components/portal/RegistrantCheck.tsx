@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { api } from "./Portal";
+import Link from "next/link";
 type Evidence = {
   holder: string; contact_id: string; custody: string; checked_at: string;
   verification_status: string | null; verification_reported: boolean;
@@ -42,7 +43,7 @@ export function RegistrantCheck({ name }: { name: string }) {
       <ol><li>Capture the domain, contacts and DNS baseline, then review the exact new registrant details.</li><li>After specific approval, save the official contact and update this domain’s registrant contact ID, preserving all other contact IDs and settings.</li><li>Complete registrar notices and verification. Read the resulting contact and verification state before marking the change verified. A successful API response alone is insufficient.</li></ol>
       <p>A change of registrant may create a 60-day transfer lock. Check eligibility with the registrar before authorizing it.</p>
       <p>Moving custody to another Spaceship account is a separate dashboard process: Domain List, select the domain, Transfer, Transfer ownership. An external registrar transfer is also separate. Neither is required for portal access.</p>
-      <p>Execution remains unavailable until the exact legal operation is approved.</p>
+      <p>Execution remains unavailable until the exact legal operation is approved. <Link href="/admin/operations#ownership-tasks">Track an ownership review</Link>.</p>
       <p><a href="https://docs.spaceship.dev/" target="_blank" rel="noopener noreferrer">Official contact API</a> · <a href="https://www.icann.org/resources/pages/ownership-2013-05-03-en" target="_blank" rel="noopener noreferrer">Registrant confirmation and transfer policy</a></p>
     </details>
   </section>;

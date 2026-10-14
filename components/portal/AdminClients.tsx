@@ -113,12 +113,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
     return (
       <section className="portal-panel">
         <h1>Create a client</h1>
-        <p>
-          The approved email is the sign-in identity. Passwords are set through
-          Supabase Auth. Invitations let the client verify their email and choose
-          a private password. An administrator-approved initial password remains
-          usable after email verification and is never saved in provisioning records.
-        </p>
+        <p>Use the client’s approved sign-in email. Choose an initial password or let them set one by invitation.</p>
         <form ref={createForm}
           onSubmit={async (e) => {
             e.preventDefault();
@@ -191,7 +186,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
             </label>
             <label className="portal-check"><input type="checkbox" checked={showPassword} onChange={e=>setShowPassword(e.target.checked)}/>Show initial password for secure personal delivery</label>
             <button type="button" onClick={() => setTemporaryPassword(generateTemporaryPassword())}>Generate strong password</button>
-            <p>Use 8-128 characters. Deliver this password personally through an agreed secure channel, never plaintext email. The account-ready message verifies the email without forcing a password reset. Retries never overwrite an existing identity&apos;s password.</p>
+            <small>8-128 characters. Deliver the password separately, never by plaintext email. Email verification won’t force a password reset.</small>
           </fieldset>}
           <button className="portal-button" disabled={busy || !requestId || finished}>
             {busy
