@@ -33,6 +33,7 @@ export async function authorizedDomain(name: string, auth: Awaited<ReturnType<ty
 export async function readDomainState(name: string) {
   await rateLimit(`provider:detail:${name}`, 4, 300);
   const detail = await spaceship.detail(name);
+  if(domainName(detail.name)!==domainName(name))throw new PortalError("registrar_domain_mismatch",502);
   const authoritativeHosts = await authoritativeNameservers(name);
   const expectedHosts = detail.nameservers?.hosts.map(s => s.toLowerCase().replace(/\.$/, "")) || [];
   const managed = detail.nameservers?.provider === "basic" && authoritativeHosts.length > 0 && authoritativeHosts.every(s => expectedHosts.includes(s.toLowerCase().replace(/\.$/, ""))) && authoritativeHosts.length === expectedHosts.length;
@@ -41,6 +42,16 @@ export async function readDomainState(name: string) {
   let changesEnabled = true;
   try { mutationAllowed(name); } catch { changesEnabled = false; }
   return { detail, dns, version, managed, changesEnabled, checked_at:new Date().toISOString() };
+}
+export function clientDomainState(state:Awaited<ReturnType<typeof readDomainState>>) {
+  const {lifecycleStatus,expirationDate,autoRenew,nameservers,privacyProtection}=state.detail;
+  return {...state,detail:{lifecycleStatus,expirationDate,autoRenew,nameservers,privacyProtection}};
+}
+export async function domainOperationStatus(name:string,key:string,auth:Awaited<ReturnType<typeof identity>>) {
+  const {domain}=await authorizedDomain(name,auth);
+  const {data,error}=await adminDb().from("portal_domain_operations").select("id,status,updated_at").eq("domain_id",domain.id).eq("actor_id",auth.user.id).eq("idempotency_key",z.uuid().parse(key)).maybeSingle();
+  checkDb(error);
+  return data?{operation_id:data.id,status:data.status,updated_at:data.updated_at}:{status:"not_recorded"};
 }
 export async function changeDomain(name: string, raw: unknown, auth: Awaited<ReturnType<typeof identity>>) {
   const input = requestSchema.parse(raw);

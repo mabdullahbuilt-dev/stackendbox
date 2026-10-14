@@ -17,13 +17,24 @@ function clean(record: RecordRow) {
 export function DomainControls({ name, panel, admin = false }: { name: string; panel: "dns" | "nameservers" | "privacy"; admin?:boolean }) {
   const [state, setState] = useState<State | null>(null), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
   const [type, setType] = useState("A"), [editing, setEditing] = useState<RecordRow | null>(null);
+  const [pendingKey,setPendingKey]=useState<string|null>(null);
+  async function checkOperation(){
+    if(!pendingKey||busy)return;
+    setBusy(true);
+    try{
+      const result=await api(`domains/${name}/manage?operation=${encodeURIComponent(pendingKey)}`);
+      setMessage(result.status==="verified"?"Your change was verified. Refresh settings to see the latest values.":result.status==="rejected"?"The change was rejected before execution. Refresh settings before starting another change.":result.status==="not_recorded"?"No saved result is available yet. Contact support before retrying this change.":"This operation is still being processed or needs staff review. Don't submit it again.");
+      if(["verified","rejected"].includes(result.status))setPendingKey(null);
+    }catch{setMessage("Unable to check this operation. Contact support before retrying. Your existing domain record is preserved.");}
+    finally{setBusy(false);}
+  }
   async function load() { setBusy(true); setMessage(""); try { const next = await api(`${admin ? "admin/" : ""}domains/${name}/manage`); setState(admin ? {...next,changesEnabled:false} : next); } catch(e) { setState(previous=>previous?{...previous,changesEnabled:false}:null); setMessage(`Provider refresh failed. Previously displayed values may be stale. ${(e as Error).message}`); } finally { setBusy(false); } }
   async function change(value: unknown) {
-    if (!state || !state.changesEnabled || busy) return;
+    if (!state || !state.changesEnabled || busy || pendingKey) return;
     if (!window.confirm(`Confirm this change to ${name}. It may interrupt your website, email, or expose public registration details. Continue?`)) return;
-    setBusy(true); setMessage("");
-    try { const response = await api(`domains/${name}/manage`, { idempotency_key: crypto.randomUUID(), expected_version: state.version, confirmed: true, change: value }); setMessage(response.message || response.status); setState(null); setEditing(null); }
-    catch(e) { setMessage((e as Error).message); }
+    const key=crypto.randomUUID();setPendingKey(key);setBusy(true); setMessage("");
+    try { const response = await api(`domains/${name}/manage`, { idempotency_key: key, expected_version: state.version, confirmed: true, change: value }); setMessage(response.message || response.status); if(["verified","rejected"].includes(response.status))setPendingKey(null); setState(null); setEditing(null); }
+    catch(e) { setState(previous=>previous?{...previous,changesEnabled:false}:null);setMessage(`The result couldn't be confirmed. Check the saved operation before retrying. ${(e as Error).message}`); }
     finally { setBusy(false); }
   }
   function submitRecord(event: FormEvent<HTMLFormElement>) {
@@ -32,9 +43,10 @@ export function DomainControls({ name, panel, admin = false }: { name: string; p
     void change({ kind: "dns", action: editing ? "edit" : "add", ...(editing ? { before: clean(editing) } : {}), after: { ...after, type } });
   }
   return <section>
-    {state && <p>Spaceship status: {state.detail.lifecycleStatus || "Not reported"}. Provider expiration: {state.detail.expirationDate ? new Date(state.detail.expirationDate).toLocaleDateString() : "Not reported"}. Auto-renew: {state.detail.autoRenew === undefined ? "Not reported" : state.detail.autoRenew ? "On, administrator review required" : "Off"}.</p>}
+    {state && <p>Registration status: {state.detail.lifecycleStatus || "Not reported"}. Verified expiration: {state.detail.expirationDate ? new Date(state.detail.expirationDate).toLocaleDateString() : "Not reported"}. Auto-renew: {state.detail.autoRenew === undefined ? "Not reported" : state.detail.autoRenew ? "On, administrator review required" : "Off"}.</p>}
     {state?.checked_at&&<p>Last successful provider read: {new Date(state.checked_at).toLocaleString()}.</p>}
-    <button className="portal-button" disabled={busy} onClick={() => void load()}>{busy ? "Checking provider…" : "Refresh verified settings"}</button>
+    <button className="portal-button" disabled={busy||!!pendingKey} onClick={() => void load()}>{busy ? "Checking provider…" : "Refresh verified settings"}</button>
+    {pendingKey&&<p>Operation reference: {pendingKey}. <button disabled={busy} onClick={()=>void checkOperation()}>Check saved result</button></p>}
     {message && <p role="status" className="portal-notice">{message}</p>}
     {state && <>
       {!state.changesEnabled && <p>Live changes are unavailable in this environment or require a fresh verified state. Displayed values are from the last successful registrar read.</p>}

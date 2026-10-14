@@ -16,7 +16,7 @@ const quote=()=>({id:"quote",domain_id:"domain",domain:"fixture.invalid",kind:"r
 describe("renewal capability presentation",()=>{
  it("disables online renewal when no current verified quote exists",()=>{
   const html=render(true);
-  expect(html).toContain('disabled="">Online renewal unavailable');
+  expect(html).toContain('Renewal setup in progress. Online renewal is unavailable.');
   expect(html).not.toContain("Create sandbox order");
   expect(html).toContain("Contact StackEndBox about renewal");
  });

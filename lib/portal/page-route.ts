@@ -6,7 +6,7 @@ export function portalPageRoute(pathname: string) {
   const aliases: Record<string, string> = admin ? {} : { support: "requests", account: "settings" };
   const section = aliases[path[1]] || path[1] || (admin ? "operations" : "dashboard");
   const allowed = admin
-    ? ["operations", "domains", "clients", "health", "support", "billing", "security"]
+    ? ["operations", "domains", "clients", "health", "support", "billing", "security", "renewals"]
     : ["login", "forgot-password", "reset-password", "dashboard", "domains", "websites", "billing", "renewals", "requests", "documents", "settings"];
   const detail = path[2];
   if(section === "domains" && detail === "buy") return null;

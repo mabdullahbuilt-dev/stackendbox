@@ -7,6 +7,7 @@ import { AdminClients } from "./AdminClients";
 import { AdminHealth } from "./AdminHealth";
 import { AdminDomains } from "./AdminDomains";
 import { AdminOperations } from "./AdminOperations";
+import {AdminRenewals} from "./AdminRenewals";
 export function AdminPortal({
   section,
   createClient = false,
@@ -35,7 +36,7 @@ export function AdminPortal({
     }
   }, [section,scopedClient]);
   useEffect(() => {
-    if (!["clients", "health"].includes(section)) void reload();
+    if (!["clients", "health", "renewals"].includes(section)) void reload();
   }, [reload, section]);
   const content = (
     {
@@ -55,6 +56,7 @@ export function AdminPortal({
           {[
             ["operations", "Operations"],
             ["domains", "Domains"],
+            ["renewals", "Renewals"],
             ["clients", "Clients"],
             ["health", "Backend health"],
             ["support", "Support"],
@@ -102,6 +104,8 @@ export function AdminPortal({
             <AdminClients key={`${createClient}:${clientId||""}`} create={createClient} clientId={clientId} />
           ) : section === "health" ? (
             <AdminHealth />
+          ) : section === "renewals" ? (
+            <AdminRenewals />
           ) : error ? (
             <div role="alert" className="portal-error">
               {error}
@@ -111,13 +115,13 @@ export function AdminPortal({
             section === "domains" ? (
               <AdminDomains data={data} reload={reload} domain={domain} />
             ) : (
-              <>{section === "operations" && <AdminOperations />}<PortalContent
+              <>{section === "operations" && <AdminOperations />}{section === "operations"?<details className="portal-panel"><summary>Client setup, website and service assignment</summary><PortalContent section={content} path={[content]} data={data} reload={reload} adminMode/></details>:<PortalContent
                 section={content}
                 path={[content]}
                 data={data}
                 reload={reload}
                 adminMode
-              /></>
+              />}</>
             )
           ) : (
             <p role="status">Loading administration…</p>

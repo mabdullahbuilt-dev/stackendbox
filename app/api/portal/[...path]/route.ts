@@ -31,7 +31,7 @@ import {
 } from "@/lib/portal/services";
 import { spaceship } from "@/lib/portal/spaceship";
 import { searchDomains } from "@/lib/portal/search-service";
-import { authorizedDomain, changeDomain, readDomainState } from "@/lib/portal/domain-operations";
+import { authorizedDomain, changeDomain, readDomainState, clientDomainState, domainOperationStatus } from "@/lib/portal/domain-operations";
 import { sendAuthEmail } from "@/lib/portal/auth-email";
 import { receiptHtml,serviceInvoiceHtml } from "@/lib/portal/receipt";
 import { provisionClient } from "@/lib/portal/provisioning";
@@ -257,7 +257,8 @@ async function handle(req: NextRequest, context: Context) {
     if (path[0] === "domains" && path[1] && path[2] === "manage") {
       const name = domainName(path[1]);
       await authorizedDomain(name, auth);
-      if (req.method === "GET") return reply(await readDomainState(name));
+      if (req.method === "GET" && req.nextUrl.searchParams.has("operation")) return reply(await domainOperationStatus(name,req.nextUrl.searchParams.get("operation")!,auth));
+      if (req.method === "GET") return reply(clientDomainState(await readDomainState(name)));
       if (req.method === "POST") return reply(await changeDomain(name, body, auth));
     }
     if (path[0] === "domains" && path[1] && req.method === "GET") {
@@ -494,6 +495,7 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined));
       if (route === "admin/operations" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsData());
+      if (route === "admin/renewals" && req.method === "GET") return reply(await (await import("@/lib/portal/renewal-monitor")).renewalMonitor(req.nextUrl.searchParams.get("after")||undefined));
       if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions());
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));

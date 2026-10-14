@@ -245,7 +245,8 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
           {!data.clients.length && (
             <p>{clientId?"Client not found.":activeSearch.current?"No matching clients.":"No client accounts have been provisioned."}</p>
           )}
-          {data.clients.map((c) => (
+          {!clientId&&data.clients.map(c=><article className="portal-client-row" key={c.id}><div><h2><Link href={`/admin/clients/${c.id}`}>{c.business_name}</Link></h2><p>{c.name} · {c.status}</p><p>{c.portal_memberships.map(m=>data.identities.find(i=>i.user_id===m.user_id)?.approved_email).filter(Boolean).join(", ")||"Identity needs reconciliation"}</p><small>{c.portal_domain_assignments.length} domains · {c.portal_websites.length} websites</small></div><Link href={`/admin/clients/${c.id}`}>Open profile</Link></article>)}
+          {clientId&&data.clients.map((c) => (
             <section className="portal-panel" key={c.id}>
               <h2>{clientId?c.business_name:<Link href={`/admin/clients/${c.id}`}>{c.business_name}</Link>}</h2>
               <p>

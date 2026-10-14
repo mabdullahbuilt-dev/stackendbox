@@ -5,11 +5,13 @@ import { PortalError, safeWebUrl } from "./rules";
 
 const text = z.string().trim().min(1);
 export const websiteAssignmentSchema = z.object({
+  idempotency_key:z.uuid().optional(),
   client_id: z.uuid(),
   name: text.max(120),
   url: z.url().transform(safeWebUrl),
 }).strict();
 export const serviceAssignmentSchema = z.object({
+  idempotency_key:z.uuid().optional(),
   client_id: z.uuid(),
   website_id: z.uuid().optional(),
   service: z.enum(["Website development", "Website hosting", "Managed database", "Website performance optimization", "Integrations", "Maintenance", "Technical support"]),
@@ -22,18 +24,27 @@ async function requireActiveClient(db: ReturnType<typeof adminDb>, clientId: str
   checkDb(result.error);
   if (!result.data) throw new PortalError("active_client_required", 409);
 }
+async function insertAssignment(db:ReturnType<typeof adminDb>,table:"portal_websites"|"portal_service_entitlements",input:Record<string,unknown>,key?:string){
+  const result=await db.from(table).insert({...input,...(key?{id:key}:{})});
+  if(key&&result.error?.code==="23505"){
+    const prior=await db.from(table).select(Object.keys(input).join(",")).eq("id",key).maybeSingle();
+    checkDb(prior.error);
+    if(!prior.data||Object.entries(input).some(([field,value])=>(prior.data as unknown as Record<string,unknown>)[field]!==value))throw new PortalError("idempotency_conflict",409);
+    return false;
+  }
+  checkDb(result.error);return true;
+}
 
 export async function assignWebsite(actor: string, body: unknown) {
-  const input = websiteAssignmentSchema.parse(body);
+  const {idempotency_key,...input} = websiteAssignmentSchema.parse(body);
   const db = adminDb();
   await requireActiveClient(db, input.client_id);
-  checkDb((await db.from("portal_websites").insert(input)).error);
-  await audit(actor, "website_added", input.client_id);
+  if(await insertAssignment(db,"portal_websites",input,idempotency_key))await audit(actor, "website_added", input.client_id);
   return { message: "Website added." };
 }
 
 export async function assignService(actor: string, body: unknown) {
-  const input = serviceAssignmentSchema.parse(body);
+  const {idempotency_key,...input} = serviceAssignmentSchema.parse(body);
   const db = adminDb();
   await requireActiveClient(db, input.client_id);
   if (input.website_id) {
@@ -42,7 +53,6 @@ export async function assignService(actor: string, body: unknown) {
     if (!website.data) throw new PortalError("website_client_mismatch", 409);
   }
   // The database's composite ownership foreign key remains the final boundary.
-  checkDb((await db.from("portal_service_entitlements").insert({ ...input, created_by: actor })).error);
-  await audit(actor, "service_entitlement_added", input.client_id);
+  if(await insertAssignment(db,"portal_service_entitlements",{...input,created_by:actor},idempotency_key))await audit(actor, "service_entitlement_added", input.client_id);
   return { message: "Agreed service saved." };
 }

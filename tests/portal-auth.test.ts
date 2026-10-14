@@ -14,7 +14,7 @@ vi.mock("@/lib/portal/services", () => ({
 vi.mock("@/lib/portal/whop", () => ({ checkout: vi.fn() }));
 vi.mock("@/lib/portal/spaceship", () => ({ spaceship: vi.fn() }));
 vi.mock("@/lib/portal/search-service", () => ({ searchDomains: vi.fn() }));
-vi.mock("@/lib/portal/domain-operations", () => ({ authorizedDomain: vi.fn(), changeDomain: vi.fn(), readDomainState: vi.fn() }));
+vi.mock("@/lib/portal/domain-operations", () => ({ authorizedDomain: vi.fn(), changeDomain: vi.fn(), readDomainState: vi.fn(),clientDomainState:vi.fn(value=>value),domainOperationStatus:vi.fn() }));
 vi.mock("@/lib/portal/auth-email", () => ({ sendAuthEmail: vi.fn() }));
 
 import { GET, POST } from "@/app/api/portal/[...path]/route";
@@ -143,7 +143,7 @@ describe("page-scoped administrator queries", () => {
     expect(response.status).toBe(200);
     for(const table of adminTables("billing"))expect(filters).toContainEqual([`portal_${table}`,table==="clients"?"id":"client_id",[id]]);
   });
-  it.each(["admin/operations","admin/clients"])("rejects non-admin read models at %s",async route=>{
+  it.each(["admin/operations","admin/clients","admin/renewals"])("rejects non-admin read models at %s",async route=>{
     vi.mocked(identity).mockResolvedValue({user:{id:"fixture"},account:{role:"client"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>);
     vi.mocked(superAdmin).mockRejectedValueOnce(new PortalError("administrator_required",403));
     const response=await GET(new NextRequest(`https://portal.example/api/portal/${route}`),{params:Promise.resolve({path:route.split("/")})});

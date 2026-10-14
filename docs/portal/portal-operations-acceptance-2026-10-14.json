@@ -1,0 +1,60 @@
+{
+  "scope": "Independent portal acceptance only. Frozen public website excluded.",
+  "worker": "stackendbox-static-acceptance",
+  "worker_version": "f6dff049-099a-4564-a83c-05993662e09c",
+  "backend": "stackendbox-acceptance",
+  "changes": [
+    "Paginated administrator renewal monitoring with expiry windows and client search",
+    "Compact client directory and client domain cards",
+    "Consolidated customer billing and renewal navigation",
+    "Separate operational monitoring and setup form presentation",
+    "Provider domain identity validation and minimized customer domain response",
+    "Actor-scoped read-only operation status and blocked ambiguous retries",
+    "Idempotent website and service assignment retries"
+  ],
+  "checks": {
+    "full_regression_before_assignment_retry_change": {"files":51,"tests":311,"passed":true},
+    "final_assignment_and_authorization_tests": {"files":2,"tests":45,"passed":true},
+    "typescript": "passed",
+    "changed_file_lint": "passed",
+    "portal_only_build": "passed, homepageBuilt=false, publicAssetsCopied=false, publicApiRoutesIncluded=false",
+    "edge_backend_build": "passed",
+    "deployed_js_css_sha256_match": true,
+    "anonymous_admin_renewals_api": 401,
+    "acceptance_homepage_and_public_contact_api": "404 by design, this Worker does not own public website routes",
+    "administrator_existing_mfa": "hosted browser passed",
+    "renewal_domain_and_email_search": "hosted browser passed",
+    "renewal_expired_empty_filter": "hosted browser passed",
+    "renewal_mobile_and_desktop_horizontal_overflow": "none at measured content widths 375 and 1425",
+    "client_directory_and_profile": "hosted browser passed",
+    "client_scoped_billing_and_existing_sandbox_receipt": "hosted browser passed, no new payment",
+    "client_scoped_support_history": "hosted browser passed, no new message",
+    "create_client_form": "rendered without submission or password entry",
+    "readonly_database_models": "passed, one saved domain, seven backup audit records, no history truncation",
+    "authenticated_client_new_layout": "hosted login passed, assigned domain card, actual expiry, saved auto-renew and website visible",
+    "client_readonly_domain_refresh": "hosted browser passed, registrar returned registered status, 2027-10-13 expiry, auto-renew off and no DNS records. No mutation controls enabled.",
+    "client_renewal_disabled_state": "hosted browser passed, quote required and online renewal unavailable",
+    "client_billing_navigation": "hosted browser passed, saved Sandbox receipt and domain renewal screen",
+    "real_client_admin_denial": "hosted browser passed, administrator renewal route denied"
+  },
+  "single_request_samples_not_capacity_benchmarks": {
+    "login_static_ms":58,
+    "admin_renewals_static_ms":63,
+    "anonymous_admin_api_ms":894,
+    "local_readonly_operations_model_ms":1483
+  },
+  "preserved": [
+    "Public website, Vercel, public forms, DNS and production routing",
+    "Both existing separate Brevo integrations and credentials",
+    "Existing customer records and registrar settings",
+    "Existing cron schedules and backup recovery evidence",
+    "Baseline 6dc0c15 and prior acceptance deployment 2fc8b7ed-e1d2-4ccf-b24a-1b601fa30fdf"
+  ],
+  "not_executed": [
+    "Live payment or registrar mutation",
+    "New Sandbox payment, domain assignment or TXT acceptance mutation",
+    "Fresh website/service database assignment to test retries",
+    "New full disaster recovery exercise",
+    "Production deployment, DNS changes, or Git push"
+  ]
+}

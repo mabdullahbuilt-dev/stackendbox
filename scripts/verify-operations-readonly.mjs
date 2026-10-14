@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {cli,projectRef} from './lib/supabase-access.mjs';
 const runtime=resolve('platform/edge/next-runtime.ts');
-await build({stdin:{contents:'export {operationsData} from "./lib/portal/operations-data"; export {clientDirectory,operationalHealth} from "./lib/portal/admin-data";',resolveDir:process.cwd(),loader:'ts'},outfile:'dist/edge/read-model-verification.mjs',bundle:true,platform:'node',format:'esm',plugins:[{name:'server-adapters',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'empty',namespace:'empty'}));b.onLoad({filter:/.*/,namespace:'empty'},()=>({contents:'export {}'}));b.onResolve({filter:/^next\/(headers|server)$/},()=>({path:runtime}));}}]});
+await build({stdin:{contents:'export {operationsData} from "./lib/portal/operations-data"; export {clientDirectory,operationalHealth} from "./lib/portal/admin-data";export {renewalMonitor} from "./lib/portal/renewal-monitor";',resolveDir:process.cwd(),loader:'ts'},outfile:'dist/edge/read-model-verification.mjs',bundle:true,platform:'node',format:'esm',plugins:[{name:'server-adapters',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'empty',namespace:'empty'}));b.onLoad({filter:/.*/,namespace:'empty'},()=>({contents:'export {}'}));b.onResolve({filter:/^next\/(headers|server)$/},()=>({path:runtime}));}}]});
 try{
   const testEmail=process.env.STACKENDBOX_TEST_CLIENT_EMAIL,testDomain=process.env.STACKENDBOX_TEST_DOMAIN;
   if(!testEmail||!testDomain)throw Error('authorized_test_identity_required');
@@ -12,7 +12,10 @@ try{
   process.env.NEXT_PUBLIC_SUPABASE_URL=`https://${projectRef}.supabase.co`;
   process.env.SUPABASE_SECRET_KEY=keys.find(k=>k.type==='secret')?.api_key;
   if(!process.env.SUPABASE_SECRET_KEY)throw Error('missing_configuration');
-  const {operationsData,clientDirectory,operationalHealth}=await import(pathToFileURL(resolve('dist/edge/read-model-verification.mjs')).href);
+  const {operationsData,clientDirectory,operationalHealth,renewalMonitor}=await import(pathToFileURL(resolve('dist/edge/read-model-verification.mjs')).href);
+  const renewals=await renewalMonitor();
+  if(!renewals.domains.some(d=>d.name===testDomain)||renewals.reminders.some(r=>'dedupe_key' in r))throw Error('renewal_monitor_verification_failed');
+  console.log(JSON.stringify({renewalMonitorReadOnly:true,domainRecords:renewals.domains.length,historyLimited:renewals.history_limited,privateDedupeKeysExcluded:true}));
   const health=await operationalHealth();
   if(health.backups.some(b=>'destination_ref' in b||Object.keys(b.detail).some(k=>!['offsite','objects','checksum_readback_verified'].includes(k))))throw Error('health_response_metadata_exposed');
   console.log(JSON.stringify({healthReadOnly:true,backupRecords:health.backups.length,backupMetadataMinimized:true}));

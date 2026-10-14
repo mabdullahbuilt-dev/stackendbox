@@ -3,12 +3,24 @@ vi.mock("server-only",()=>({}));
 const state=vi.hoisted(()=>({calls:[] as {table:string;method:string;args:unknown[]}[],results:{} as Record<string,unknown[]>}));
 vi.mock("@/lib/portal/server",()=>({checkDb:(error:unknown)=>{if(error)throw Error("database_error");},adminDb:()=>({from:(table:string)=>{
   const builder:Record<string,unknown>={then:(resolve:(value:unknown)=>unknown)=>Promise.resolve({data:state.results[table]||[],count:3,error:null}).then(resolve)};
-  for(const method of ["select","eq","gt","gte","lt","lte","in","not","neq","or","ilike","order","limit"])builder[method]=(...args:unknown[])=>{state.calls.push({table,method,args});return builder;};
+  for(const method of ["select","eq","gt","gte","lt","lte","in","not","neq","or","ilike","like","order","limit"])builder[method]=(...args:unknown[])=>{state.calls.push({table,method,args});return builder;};
   return builder;
 }})}));
 import {clientDirectory,operationalHealth} from "../lib/portal/admin-data";
 import {operationsData} from "../lib/portal/operations-data";
+import {renewalMonitor} from "../lib/portal/renewal-monitor";
 beforeEach(()=>{state.calls=[];state.results={};});
+it("paginates renewal domains and scopes saved history without exposing email payloads",async()=>{
+  state.results.portal_domains=Array.from({length:51},(_,i)=>({id:String(i),name:`fixture${i}.invalid`,portal_domain_assignments:[{client_id:"client"}]}));
+  state.results.portal_email_outbox=[{id:"mail",dedupe_key:"renewal:fixture0.invalid:expiry:30:private@example.invalid",status:"accepted"}];
+  const result=await renewalMonitor();
+  expect(result.domains).toHaveLength(50);expect(result.next).toBe("49");
+  expect(result.reminders).toEqual([{id:"mail",status:"accepted",domain:"fixture0.invalid"}]);
+  expect(JSON.stringify(result)).not.toContain("private@example.invalid");
+  expect(state.calls).toContainEqual({table:"portal_domains",method:"eq",args:["protected",false]});
+  expect(state.calls).toContainEqual({table:"portal_orders",method:"eq",args:["kind","renewal"]});
+  await expect(renewalMonitor("bad-cursor")).rejects.toThrow();
+});
 it("excludes backup custody locations and arbitrary detail from health responses",async()=>{
   state.results.portal_backup_runs=[{id:"fixture",detail:{offsite:true,objects:0,checksum_readback_verified:true,drive_generation:"private-folder",unexpected:"sensitive"}}];
   const result=await operationalHealth();

@@ -21,7 +21,6 @@ import {
   LockKeyhole,
   LogOut,
   Menu,
-  RefreshCw,
   Settings,
 } from "lucide-react";
 import { Turnstile } from "@/components/builder/Turnstile";
@@ -30,6 +29,8 @@ import { DomainControls } from "./DomainControls";
 import {AdminInvoices} from "./AdminInvoices";
 import { validatePassword } from "@/lib/portal/password-policy";
 import { portalApiPath } from "@/lib/portal/browser-path";
+import {ClientDomainCards} from "./ClientDomainCards";
+import "./portal-ux.css";
 
 type Row = Record<string, unknown>;
 export type Data = {
@@ -189,8 +190,7 @@ const nav = [
   ["dashboard", "Overview", LayoutDashboard],
   ["domains", "My Domains", Globe2],
   ["websites", "My Websites", Building2],
-  ["renewals", "Renewals", RefreshCw],
-  ["billing", "Billing & Invoices", CreditCard],
+  ["billing", "Billing & Renewals", CreditCard],
   ["requests", "Support", LifeBuoy],
   ["settings", "Account Settings", Settings],
 ] as const;
@@ -353,7 +353,7 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
               key={url}
               href={`/client-portal/${url}`}
               onClick={() => setOpen(false)}
-              aria-current={page === url ? "page" : undefined}
+              aria-current={section === url || (url === "billing" && section === "renewals") ? "page" : undefined}
             >
               <Icon size={18} />
               {title}
@@ -367,10 +367,8 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
           </Link>
           <button
             onClick={async () => {
-              await api("auth/logout", {});
-              save(null);
-              router.replace("/client-portal/login");
-              router.refresh();
+              try { await api("auth/logout", {}); save(null); router.replace("/client-portal/login"); router.refresh(); }
+              catch(e){setError(e instanceof Error?e.message:"Sign-out failed. Please retry.");}
             }}
           >
             <LogOut size={16} />
@@ -592,9 +590,10 @@ export function PortalContent({
     return (
       <>
         <Heading
-          title="Domain renewals"
+          title="Billing & Renewals"
           description="Review a verified quote and decide whether to renew. Payments are one-time."
         />
+        <BillingNavigation section="renewals"/>
         {domains.length ? <DomainList domains={[...domains].sort((a, b) => str(a.expiration_date).localeCompare(str(b.expiration_date)))} quotes={rows(data,"quotes")} /> : <Empty>No domain has been assigned to your account yet. Your renewal details will appear once StackEndBox completes the setup. <Link href="/client-portal/requests">Contact StackEndBox</Link></Empty>}
         <section className="portal-panel">
           <h2>Renewal orders</h2>
@@ -610,9 +609,10 @@ export function PortalContent({
     return (
       <>
         <Heading
-          title="Billing & Invoices"
+          title={adminMode?"Client billing":"Billing & Renewals"}
           description="Your service payments, renewal history, and receipts."
         />
+        {!adminMode&&<BillingNavigation section="billing"/>}
         {adminMode&&<AdminInvoices clientSelect={clientSelect} reload={reload} invoices={rows(data,"invoices")} clients={rows(data,"clients")} sandboxCheckoutEnabled={data.sandbox_checkout_enabled === true}/>}
         <OrderList orders={rows(data, "orders")} reload={reload} checkoutEnabled={data.sandbox_checkout_enabled === true} />
         {!!rows(data,"external_payments").length&&<section className="portal-panel"><h2>Payments made to StackEndBox</h2>{rows(data,"external_payments").map(p=><article key={str(p.id)}><p>{money(p.amount_minor)} · {date(p.paid_at)} · {label(p.source)}</p><p>{p.reconciliation_status==="verified"?"Payment evidence verified":"Payment record awaiting reconciliation"}. Reference: {str(p.transaction_reference)}</p></article>)}</section>}
@@ -825,9 +825,13 @@ function Heading({
     </div>
   );
 }
+function BillingNavigation({section}:{section:string}) {
+  return <nav aria-label="Billing sections" className="portal-tabs"><Link href="/client-portal/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/client-portal/renewals" aria-current={section==="renewals"?"page":undefined}>Domain renewals</Link></nav>;
+}
 function DomainList({ domains, admin = false, quotes = [] }: { domains: Row[]; admin?:boolean; quotes?:Row[] }) {
   const [search, setSearch] = useState("");
   const [now] = useState(()=>Date.now());
+  if(!admin)return <ClientDomainCards domains={domains} quotes={quotes}/>;
   return (
     <section className="portal-panel">
       {domains.length > 10 && <label className="portal-search">
@@ -1157,7 +1161,7 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
         title={str(d.name)}
         description={`Expires on ${date(d.expiration_date)}. Last synchronized ${date(d.last_synced_at)}.`}
       />
-      <div role="tablist" className="portal-tabs">
+      <div role="group" aria-label="Domain sections" className="portal-tabs">
         {[
           "Overview",
           "DNS Records",
@@ -1169,15 +1173,15 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
         ].map((t) => (
           <button
             key={t}
-            role="tab"
-            aria-selected={tab === t}
+            aria-pressed={tab === t}
+            aria-controls="domain-section"
             onClick={() => setTab(t)}
           >
             {t}
           </button>
         ))}
       </div>
-      <section className="portal-panel" role="tabpanel">
+      <section className="portal-panel" id="domain-section" aria-label={tab}>
         {tab === "Overview" && (
           <>
             <h2>Registration details</h2>
@@ -1230,7 +1234,7 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
         )}
         {tab === "Security" && (
           <>
-            <h2>Provider-reported security</h2>
+            <h2>Security & privacy</h2>
             <p>Verification: {label(d.verification_status)}</p>
             <h3>Transfer status</h3>
             <p>{security?.eppStatuses?.length ? security.eppStatuses.join(", ") : "No transfer-lock status was reported by the registrar."}</p>
@@ -1253,7 +1257,7 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
                 ? str(assignment.legal_holder)
                 : "Contact StackEndBox for confirmation"}
             </p>
-            <p>Portal access: this client account. Registrar custody: StackEndBox&apos;s dedicated Spaceship account. Assigning management access doesn&apos;t perform a legal-holder change or an account transfer.</p>
+            <p>You have access to manage this domain through StackEndBox. Portal access is separate from legal ownership and registrar account custody.</p>
             <p>
               Contact corrections and transfer or handover requests are reviewed
               by StackEndBox under the applicable registrar process.
@@ -1271,7 +1275,7 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
             {assignment && latestRenewal ? (
               data.sandbox_checkout_enabled === true ? <QuoteCheckout quote={latestRenewal} /> : <p>Verified renewal quote: {money(latestRenewal.retail_minor)}. Online payments remain disabled pending acceptance.</p>
             ) : <p>A current verified renewal quote hasn&apos;t been issued. StackEndBox must confirm supplier pricing before you can approve a renewal.</p>}
-            {(!latestRenewal || data.sandbox_checkout_enabled !== true) && <button className="portal-button" disabled>Online renewal unavailable</button>}
+            {(!latestRenewal || data.sandbox_checkout_enabled !== true) && <p className="portal-notice">Renewal setup in progress. Online renewal is unavailable.</p>}
             <p><Link href="/client-portal/requests">Contact StackEndBox about renewal</Link></p>
           </>
         )}
@@ -1450,6 +1454,7 @@ function Admin({
           <h2>Add a website</h2>
           <Form
             button="Add website"
+            idempotent
             onSubmit={async (f) => {
               const r = await api("admin/websites", f);
               await reload();
@@ -1463,7 +1468,7 @@ function Admin({
         </section>
         <section className="portal-panel">
           <h2>Assign an agreed service</h2>
-          <Form button="Save service" onSubmit={async f=>{const r=await api("admin/services",f);await reload();return r;}}>{clientSelect}<label>Service<select name="service">{["Website development","Website hosting","Managed database","Website performance optimization","Integrations","Maintenance","Technical support"].map(s=><option key={s}>{s}</option>)}</select></label><Field name="description" title="Actual service and agreement details"/><label>Service status<select name="status"><option value="included">Included in agreement</option><option value="provisioned">Provisioned</option><option value="suspended">Suspended</option></select></label></Form>
+          <Form button="Save service" idempotent onSubmit={async f=>{const r=await api("admin/services",f);await reload();return r;}}>{clientSelect}<label>Service<select name="service">{["Website development","Website hosting","Managed database","Website performance optimization","Integrations","Maintenance","Technical support"].map(s=><option key={s}>{s}</option>)}</select></label><Field name="description" title="Actual service and agreement details"/><label>Service status<select name="status"><option value="included">Included in agreement</option><option value="provisioned">Provisioned</option><option value="suspended">Suspended</option></select></label></Form>
         </section>
         <section className="portal-panel">
           <h2>Verify supplier pricing</h2>
