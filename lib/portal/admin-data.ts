@@ -15,7 +15,7 @@ export async function clientOptions(clientId?:string){
 }
 export async function clientDirectory(after?: string, search = "", clientId?: string, scope?:CustomerScope) {
   const db=adminDb();
-  let query=db.from("portal_clients").select("*,portal_memberships(user_id),portal_domain_assignments(domain_id,holder_arrangement,legal_holder,portal_domains(name,lifecycle_status)),portal_websites(id,name,url)").order("id").limit(51);
+  let query=db.from("portal_clients").select("*,portal_memberships(user_id),portal_domain_assignments(domain_id,holder_arrangement,legal_holder,portal_domains(name,lifecycle_status)),portal_websites(id,name,url),portal_service_entitlements(id,service,status)").order("id").limit(51);
   query=filterCustomerScope(query,scope);
   if(clientId) query=query.eq("id",z.uuid().parse(clientId));
   // Escape PostgREST filter punctuation and SQL wildcard characters. Search is

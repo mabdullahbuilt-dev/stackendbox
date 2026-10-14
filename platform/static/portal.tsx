@@ -12,6 +12,7 @@ import "./fonts.css";
 import "../../styles/tokens.css";
 import "../../styles/base.css";
 import "../../styles/portal.css";
+import "../../styles/portal-design.css";
 
 function App() {
   const route = portalPageRoute(window.location.pathname);

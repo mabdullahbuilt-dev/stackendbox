@@ -10,6 +10,7 @@ import { AdminOperations } from "./AdminOperations";
 import {AdminRenewals} from "./AdminRenewals";
 import {AdminOverview} from "./AdminOverview";
 import {customerScope} from "@/lib/portal/customer-scope";
+import {Activity,ClipboardList,Globe2,LayoutDashboard,LifeBuoy,Menu,Settings,Users,Wallet} from "lucide-react";
 export function AdminPortal({
   section,
   createClient = false,
@@ -51,29 +52,26 @@ export function AdminPortal({
   )[section];
   return (
     <div className="portal-shell">
-      <aside className={`portal-sidebar ${open ? "is-open" : ""}`}>
+      <aside id="admin-navigation" className={`portal-sidebar ${open ? "is-open" : ""}`}>
         <Link prefetch={false} className="portal-brand" href="/admin">
           StackEndBox<span>ADMINISTRATION</span>
         </Link>
         <nav aria-label="Administration">
-          {[
-            ["overview", "Overview"],
-            ["clients", "Clients"],
-            ["domains", "Domains"],
-            ["billing", "Billing & Renewals"],
-            ["support", "Support"],
-            ["operations", "Operations"],
-            ["security", "Settings"],
-          ].map(([key, title]) => (
+          {([
+            ["Workspace",[["overview","Overview",LayoutDashboard],["clients","Clients",Users],["domains","Domains",Globe2]]],
+            ["Business",[["billing","Billing & Renewals",Wallet],["support","Support",LifeBuoy]]],
+            ["Administration",[["operations","Operations",ClipboardList],["health","Service health",Activity],["security","Settings",Settings]]],
+          ] as const).map(([group,items])=><div className="p-nav-group" key={group}><p className="p-nav-label">{group}</p>{items.map(([key,title,Icon]) => (
             <Link
               prefetch={false}
               key={key}
               href={`/admin/${key}`}
-              aria-current={section === key || key === "billing" && section === "renewals" || key === "operations" && section === "health" ? "page" : undefined}
+              onClick={()=>setOpen(false)}
+              aria-current={section === key || key === "billing" && section === "renewals" ? "page" : undefined}
             >
-              {title}
+              <Icon size={17} aria-hidden="true"/>{title}
             </Link>
-          ))}
+          ))}</div>)}
         </nav>
         <div className="portal-sidebar-foot">
           <button
@@ -93,16 +91,16 @@ export function AdminPortal({
       </aside>
       <div className="portal-workspace">
         <header className="portal-topbar">
-          <button className="portal-menu" onClick={() => setOpen(!open)}>
-            Menu
+          <button className="portal-menu" aria-label="Toggle navigation" aria-expanded={open} aria-controls="admin-navigation" onClick={() => setOpen(!open)}>
+            <Menu size={20}/>
           </button>
-          <span>Private administration{scopedClient?" · Selected client records":""}</span>
+          <span>Workspace <span aria-hidden="true">/</span> {section==="overview"?"Overview":section.charAt(0).toUpperCase()+section.slice(1)}{scopedClient?" · Selected client":""}</span>
         </header>
         <main id="main" className="portal-main">
           <p className="portal-sandbox">
-          Live payments and registrar changes are unavailable.
+          Safe mode · Live payments and registrar changes are off
           </p>
-          {scope&&!["overview","clients"].includes(section)&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href={`/admin/${section}`}>Show all records</Link></p>}
+          {scope&&!["overview","clients","operations"].includes(section)&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href={`/admin/${section}`}>Show all records</Link></p>}
           {["billing","renewals"].includes(section)&&<nav className="portal-tabs" aria-label="Billing sections"><Link href="/admin/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/admin/renewals" aria-current={section==="renewals"?"page":undefined}>Renewals</Link></nav>}
           {section === "overview" ? <AdminOverview/> : section === "clients" ? (
             <AdminClients key={`${createClient}:${clientId||""}`} create={createClient} clientId={clientId} />

@@ -19,16 +19,16 @@ it("prefills client-profile handoffs through one authorized UUID lookup instead 
 });
 it("loads the overview with count-only queries and no client or message payloads",async()=>{
   const result=await operationsSummary();
-  expect(result.counts).toEqual({active_clients:3,assigned_domains:3,expires_30_days:3,unpaid_invoices:3,open_support:3});
-  expect(state.calls.filter(call=>call.method==="select")).toHaveLength(5);
+  expect(result.counts).toEqual({active_clients:3,assigned_domains:3,expires_30_days:3,unpaid_invoices:3,open_support:3,operation_reviews:3});
+  expect(state.calls.filter(call=>call.method==="select")).toHaveLength(6);
   for(const call of state.calls.filter(call=>call.method==="select"))expect(call.args[1]).toEqual({count:"exact",head:true});
   expect(state.calls.some(call=>["auth.users","portal_messages","portal_email_outbox"].includes(call.table))).toBe(false);
   expect(result.scope).toBe("customers");
-  expect(state.calls.filter(call=>call.method==="not"&&call.args[1]==="ilike")).toHaveLength(5);
+  expect(state.calls.filter(call=>call.method==="not"&&call.args[1]==="ilike")).toHaveLength(6);
 });
 it("counts labelled test accounts separately instead of mixing them into customer totals",async()=>{
   expect((await operationsSummary("test")).scope).toBe("test");
-  expect(state.calls.filter(call=>call.method==="ilike"&&call.args[1]==="TEST ONLY %")).toHaveLength(5);
+  expect(state.calls.filter(call=>call.method==="ilike"&&call.args[1]==="TEST ONLY %")).toHaveLength(6);
 });
 it("keeps customer and test scopes on directory and renewal drill-down queries",async()=>{
   await clientDirectory(undefined,"",undefined,"customers");
@@ -79,6 +79,11 @@ it("returns exact counts separately from capped exception lists and excludes pri
   expect(result.counts.active_clients).toBe(3);
   expect(result.counts.expires_1_days).toBe(3);
   expect(state.calls).toContainEqual({table:"portal_domains",method:"limit",args:[100]});
-  const sensitive=state.calls.filter(c=>["portal_email_outbox","portal_domain_operations"].includes(c.table)&&c.method==="select");
+  const sensitive=state.calls.filter(c=>["portal_email_outbox","portal_domain_operations"].includes(c.table)&&c.method==="select"&&!(c.args[1] as {head?:boolean})?.head);
   for(const call of sensitive){expect(call.args[0]).not.toBe("*");expect(call.args[0]).not.toContain("body");expect(call.args[0]).not.toContain("input");}
+});
+it("uses exact database-backed notification and operation-review counts",async()=>{
+  const result=await operationsData();
+  expect(result.counts.email_delivery_issues).toBe(3);expect(result.counts.pending_renewals).toBe(3);expect(result.counts.domain_operation_reviews).toBe(3);
+  expect(state.calls).toContainEqual({table:"portal_email_outbox",method:"in",args:["status",["review_required","failed","bounced","deferred"]]});
 });

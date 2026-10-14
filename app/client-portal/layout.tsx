@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/portal.css";
+import "@/styles/portal-design.css";
 import { PortalCache } from "@/components/portal/PortalCache";
 export const metadata: Metadata = {
   title: "Client Portal | StackEndBox",

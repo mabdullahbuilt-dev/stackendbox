@@ -31,6 +31,7 @@ import { portalApiPath } from "@/lib/portal/browser-path";
 import {ClientDomainCards} from "./ClientDomainCards";
 import {notifySessionChange} from "@/lib/portal/session-events";
 import "./portal-ux.css";
+import {PageHeader,StatusBadge,MetricCard} from "./PortalUI";
 
 type Row = Record<string, unknown>;
 export type Data = {
@@ -211,7 +212,7 @@ function Empty({ children }: { children: ReactNode }) {
   return <div className="portal-empty">{children}</div>;
 }
 function Status({ value }: { value: unknown }) {
-  return <span className="portal-status">{label(value)}</span>;
+  return <StatusBadge value={value}/>;
 }
 const nav = [
   ["dashboard", "Overview", LayoutDashboard],
@@ -287,7 +288,7 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
   </main>;
   return (
     <div className="portal-shell">
-      <aside className={open ? "portal-sidebar is-open" : "portal-sidebar"}>
+      <aside id="client-navigation" className={open ? "portal-sidebar is-open" : "portal-sidebar"}>
         <Link href="/client-portal" className="portal-brand">
           StackEndBox<span>CLIENT PORTAL</span>
         </Link>
@@ -325,6 +326,8 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
         <header className="portal-topbar">
           <button
             aria-label="Toggle navigation"
+            aria-expanded={open}
+            aria-controls="client-navigation"
             className="portal-menu"
             onClick={() => setOpen(!open)}
           >
@@ -402,15 +405,12 @@ export function PortalContent({
   if (section === "dashboard")
     return (
       <>
-        <div className="portal-heading">
-          <h1>Overview</h1>
-          <p>{str(clients[0]?.business_name || data.account.name)}</p>
-        </div>
-        {(domains.length > 0 || websites.length > 0 || requests.length > 0 || rows(data,"invoices").length > 0) && <div className="portal-stats">
+        <PageHeader title="Your workspace" eyebrow="Overview" description={`Welcome back, ${data.account.name}. Your domains and services, in one place.`} actions={<Link className="p-button" href="/client-portal/requests"><LifeBuoy size={16}/>Get support</Link>}/>
+        <div className="p-metric-grid p-client-metrics">
           {[
-            ["My domains", domains.length],
-            ["My websites", websites.length],
-            ["Outstanding invoices", rows(data,"invoices").filter(i=>i.status==="issued").length],
+            ["My domains", domains.length,"domains",Globe2],
+            ["My websites", websites.length,"websites",Building2],
+            ["Outstanding invoices", rows(data,"invoices").filter(i=>i.status==="issued").length,"billing",CreditCard],
             [
               "Renewals within 60 days",
               domains.filter(
@@ -418,21 +418,16 @@ export function PortalContent({
                   d.expiration_date &&
                   Date.parse(str(d.expiration_date)) >= now &&
                   Date.parse(str(d.expiration_date)) - now < 60 * 86400000,
-              ).length,
+              ).length,"renewals",Globe2,
             ],
             [
               "Open requests",
               requests.filter(
                 (r) => !["completed", "closed"].includes(str(r.status)),
-              ).length,
+              ).length,"requests",LifeBuoy,
             ],
-          ].map(([title, count]) => (
-            <div key={title}>
-              <span>{title}</span>
-              <strong>{count}</strong>
-            </div>
-          ))}
-        </div>}
+          ].map(([title,count,href,Icon])=><MetricCard key={String(title)} title={String(title)} value={Number(count)} href={`/client-portal/${href}`} icon={Icon as typeof Globe2}/>)}
+        </div>
         <div className="portal-section-title">
           <h2>Your domains</h2>
           <Link href="/client-portal/domains">
@@ -769,13 +764,7 @@ function Heading({
   title: string;
   description: string;
 }) {
-  return (
-    <div className="portal-heading">
-      <span className="portal-eyebrow">STACKENDBOX</span>
-      <h1>{title}</h1>
-      <p>{description}</p>
-    </div>
-  );
+  return <PageHeader title={title} description={description}/>;
 }
 function BillingNavigation({section}:{section:string}) {
   return <nav aria-label="Billing sections" className="portal-tabs"><Link href="/client-portal/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/client-portal/renewals" aria-current={section==="renewals"?"page":undefined}>Domain renewals</Link></nav>;

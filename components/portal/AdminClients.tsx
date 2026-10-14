@@ -5,6 +5,8 @@ import {customerScope} from "@/lib/portal/customer-scope";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { api } from "./Portal";
 import { generateTemporaryPassword, validatePassword } from "@/lib/portal/password-policy";
+import {PageHeader,StatusBadge,EmptyState,SectionTabs} from "./PortalUI";
+import {Plus} from "lucide-react";
 type Client = {
   id: string;
   name: string;
@@ -12,6 +14,7 @@ type Client = {
   status: string;
   portal_memberships: { user_id: string }[];
   portal_websites: { id: string; name: string; url: string }[];
+  portal_service_entitlements?:{id:string;service:string;status:string}[];
   portal_domain_assignments: {
     domain_id: string;
     legal_holder: string;
@@ -53,6 +56,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   const [showPassword,setShowPassword]=useState(false);
   const [resumePasswords,setResumePasswords]=useState<Record<string,string>>({});
   const [finished,setFinished]=useState(false);
+  const [profileTab,setProfileTab]=useState("Overview");
   const createForm=useRef<HTMLFormElement>(null);
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
   const [search,setSearch]=useState("");
@@ -222,14 +226,10 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
     );
   return (
     <>
-      <h1>{clientId?"Client profile":"Clients"}</h1>
+      <PageHeader title={clientId?"Client profile":"Clients"} eyebrow="Workspace" description={clientId?"Account, assigned services and customer access.":"Manage customer accounts and their assigned services."} actions={!clientId?<Link className="p-button p-button-primary" href="/admin/clients/new"><Plus size={16}/>Add client</Link>:<Link className="p-button" href="/admin/clients">All clients</Link>}/>
       {scope&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href="/admin/clients">Show all clients</Link></p>}
-      <p>Saved PostgreSQL records, linked to Supabase Auth identities.</p>
-      {clientId?<p><Link href="/admin/clients">All clients</Link></p>:<form className="portal-form" onSubmit={e=>{e.preventDefault();if(loading)return;activeSearch.current=search.trim();void load();}}><label>Search by name, approved email or domain<input value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/></label><button disabled={loading}>{loading?"Searching…":"Search clients"}</button></form>}
+      {!clientId&&<form className="p-client-search" onSubmit={e=>{e.preventDefault();if(loading)return;activeSearch.current=search.trim();void load();}}><label>Find a client<input type="search" placeholder="Name, approved email or domain" value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/></label><button disabled={loading}>{loading?"Searching…":"Search clients"}</button></form>}
       <p>
-        <Link className="portal-button" href="/admin/clients/new">
-          Create client
-        </Link>{" "}
         <button disabled={busy||loading} onClick={() => void load()}>
           Refresh saved records
         </button>
@@ -248,14 +248,18 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
           {!data.clients.length && (
             <p>{clientId?"Client not found.":activeSearch.current?"No matching clients.":"No client accounts have been provisioned."}</p>
           )}
-          {!clientId&&data.clients.map(c=><article className="portal-client-row" key={c.id}><div><h2><Link href={`/admin/clients/${c.id}`}>{c.business_name}</Link></h2><p>{c.name} · {c.status}</p><p>{c.portal_memberships.map(m=>data.identities.find(i=>i.user_id===m.user_id)?.approved_email).filter(Boolean).join(", ")||"Identity needs reconciliation"}</p><small>{c.portal_domain_assignments.length} domains · {c.portal_websites.length} websites</small></div><Link href={`/admin/clients/${c.id}`}>Open profile</Link></article>)}
+          {!clientId&&data.clients.length>0&&<div className="p-workbench portal-table-wrap"><table><thead><tr><th>Client</th><th>Approved email</th><th>Status</th><th>Domains</th><th>Services</th><th>Last sign-in</th><th>Action</th></tr></thead><tbody>{data.clients.map(c=>{const identities=c.portal_memberships.map(m=>data.identities.find(i=>i.user_id===m.user_id));const last=identities.map(i=>i?.last_sign_in_at).filter(Boolean).sort().at(-1);return <tr key={c.id}><td><strong>{c.business_name}</strong><small>{c.name}</small></td><td>{identities.map(i=>i?.approved_email).filter(Boolean).join(", ")||"Needs review"}</td><td><StatusBadge value={c.status}/></td><td>{c.portal_domain_assignments.length}</td><td>{c.portal_service_entitlements?.length??0}<small>{c.portal_websites.length} websites</small></td><td>{last?new Date(last).toLocaleDateString():"Not signed in"}</td><td><Link className="p-button p-button-small" href={`/admin/clients/${c.id}`}>Open profile</Link></td></tr>;})}</tbody></table></div>}
           {clientId&&data.clients.map((c) => (
             <section className="portal-panel" key={c.id}>
               <h2>{clientId?c.business_name:<Link href={`/admin/clients/${c.id}`}>{c.business_name}</Link>}</h2>
               <p>
                 {c.name} · {c.status}
               </p>
-              <p>Client ID: {c.id}</p>
+              <SectionTabs tabs={["Overview","Domains","Websites & Services","Account"]} value={profileTab} onChange={setProfileTab} label="Client profile sections" panelId={`profile-${c.id}`}/>
+              <div id={`profile-${c.id}`} role="tabpanel" aria-labelledby={`profile-${c.id}-${["Overview","Domains","Websites & Services","Account"].indexOf(profileTab)}`} tabIndex={0}>
+              {profileTab==="Overview"&&<div className="p-profile-overview"><div><StatusBadge value={c.status}/><p>{c.portal_domain_assignments.length} assigned domains · {c.portal_websites.length} websites · {c.portal_service_entitlements?.length??0} services</p></div><div className="portal-actions"><Link className="p-button p-button-primary" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain</Link><Link className="p-button" href={`/admin/billing?client_id=${c.id}`}>Client billing</Link><Link className="p-button" href={`/admin/support?client_id=${c.id}`}>Open support</Link><button onClick={()=>setProfileTab("Account")}>Account & access</button></div></div>}
+              <div hidden={profileTab!=="Account"}>
+              <details><summary>Internal reference</summary><code>{c.id}</code></details>
               <details><summary>Edit client details and access</summary><form className="portal-form" onSubmit={e=>{e.preventDefault();const fields=Object.fromEntries(new FormData(e.currentTarget));void operate("admin/client-update",{...fields,client_id:c.id});}}>
                 <label>Client name<input name="name" defaultValue={c.name} required maxLength={100}/></label>
                 <label>Business name<input name="business_name" defaultValue={c.business_name} required maxLength={150}/></label>
@@ -296,7 +300,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
                   </div>
                 );
               })}
-              <h3>Domains</h3>
+              </div><div hidden={profileTab!=="Domains"}><h3>Domains</h3>
               <p><Link className="portal-button" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain to this client</Link></p>
               {c.portal_domain_assignments.length ? (
                 c.portal_domain_assignments.map((d) => (
@@ -307,7 +311,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               ) : (
                 <p>No domains assigned.</p>
               )}
-              <h3>Websites</h3>
+              </div><div hidden={profileTab!=="Websites & Services"}><h3>Websites</h3>
               {c.portal_websites.length ? (
                 c.portal_websites.map((w) => (
                   <p key={w.id}>
@@ -317,7 +321,8 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               ) : (
                 <p>No websites assigned.</p>
               )}
-              <p>
+              <h3>Services</h3>{c.portal_service_entitlements?.length?c.portal_service_entitlements.map(service=><p key={service.id}>{service.service} <StatusBadge value={service.status}/></p>):<EmptyState title="No services assigned"/>}
+              </div></div><p>
                 <Link href={`/admin/billing?client_id=${c.id}`}>Client billing</Link> ·{" "}
                 <Link href={`/admin/support?client_id=${c.id}`}>Support records</Link>
               </p>
