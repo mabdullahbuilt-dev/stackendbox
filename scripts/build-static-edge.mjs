@@ -60,6 +60,16 @@ await build({ stdin:{ contents:'import React from "react"; import {renderToStrin
 const rendered = await import(pathToFileURL(resolve('dist/site-render.mjs')).href);
 const escape = value => String(value).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
 await writeFile('dist/static/index.html', `<!doctype html><html lang="en" data-motion="full"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(rendered.title)}</title><meta name="description" content="${escape(rendered.description)}"><link rel="canonical" href="https://www.stackendbox.com/"><link rel="stylesheet" href="/site.css"></head><body><noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript><a href="#main" class="skip-link">Skip to content</a><div id="root">${rendered.markup}</div><script type="module" src="/site.js"></script></body></html>`);
+// Preserve the frozen Next homepage's generated metadata, including its JSON-LD,
+// social cards, icons and viewport settings, without importing its server layout.
+const originalHtml = await readFile('.next/server/app/index.html','utf8');
+const originalHead = originalHtml.match(/<head>([\s\S]*?)<\/head>/)?.[1];
+if (!originalHead) throw Error('Original homepage metadata unavailable');
+const metadata = (originalHead.match(/<(?:meta|link)\b[^>]*>/g)||[])
+  .filter(tag=>!tag.includes('/_next/')&&!/rel="(?:preload|stylesheet)"/.test(tag)).join('');
+const structuredData = originalHtml.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g)?.join('')||'';
+const candidateHtml = await readFile('dist/static/index.html','utf8');
+await writeFile('dist/static/index.html',candidateHtml.replace(/<head>[\s\S]*?<\/head>/,`<head><title>${escape(rendered.title)}</title>${metadata}<link rel="stylesheet" href="/site.css"></head>`).replace('<body>','<body>'+structuredData));
 // Retain the existing Next-generated public artifacts instead of rebuilding
 // images or running a metadata renderer in the Free Worker at request time.
 for (const name of ['icon.png','apple-icon.png','opengraph-image','twitter-image','sitemap.xml'])
