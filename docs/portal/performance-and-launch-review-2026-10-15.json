@@ -22,7 +22,7 @@
   },
   "launchConfiguration": {
     "deployedCandidateProbe": "HTTP 200, technicalChecksPassed true, database accessible, migration 202610140002",
-    "requiredBindings": "All 18 checked bindings present, including distinct public and client Brevo keys and identities. Presence is not a fresh provider-send or key-authentication claim.",
+    "requiredBindings": "All 17 checked bindings present, including distinct public and client Brevo keys and identities. Presence is not a fresh provider-send or key-authentication claim.",
     "safeguards": "Sandbox mode, checkout disabled, purchases disabled, renewals disabled, registrar writes disabled, mutation allowlist empty and customer diagnostics disabled",
     "probeCleanup": "Temporary readiness-token secret was removed and its absence independently checked",
     "auth": {"publicSignupDisabled": true, "totpEnabled": true, "minimumPasswordLength": 8, "emailLinkLifetimeSeconds": 3600, "companyCallbackAlreadyAllowlisted": true, "siteUrlStillPreview": true},
