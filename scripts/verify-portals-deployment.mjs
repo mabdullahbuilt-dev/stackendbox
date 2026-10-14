@@ -14,7 +14,7 @@ for(const [path,status] of [['/',404],['/api/contact',404],['/client-portal/logi
   await response.arrayBuffer();
   if(response.status!==status)throw Error(`Unexpected status for ${path}: ${response.status}`);
   if(path.includes('/api/')&&status===401&&response.headers.get('x-stackendbox-release')!==release.commit)throw Error('Backend commit differs from frontend release');
-  if(path.includes('/api/')&&!response.headers.get('content-type')?.includes('application/json'))throw Error('Private API returned a non-JSON fallback');
+  if(path.startsWith('/client-portal/api/')&&!response.headers.get('content-type')?.includes('application/json'))throw Error('Private API returned a non-JSON fallback');
   results.push({path,status:response.status,elapsedMs:Math.round(performance.now()-start)});
 }
 for(const file of ['portal.js','portal.css']){
