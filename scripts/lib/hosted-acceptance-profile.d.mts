@@ -1,0 +1,1 @@
+export function hostedAcceptanceProfile(origin: string, options?: {bounded?: boolean; sessionCount?: number|string}): {vercelPreview: boolean; staticFrontend: boolean; sessions: number; apiPrefix: string};
