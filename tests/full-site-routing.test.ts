@@ -1,8 +1,15 @@
 import {afterEach,expect,it,vi} from "vitest";
+import {readFileSync} from "node:fs";
 import fullSite from "../platform/cloudflare/full-site-gateway";
 const assets=vi.fn(async(req:Request)=>new Response(new URL(req.url).pathname));
 const env={ASSETS:{fetch:assets},EDGE_BACKEND_URL:"https://project.supabase.co/functions/v1/production",STACKENDBOX_BRIDGE_SECRET:"fixture"};
 afterEach(()=>{vi.unstubAllGlobals();vi.clearAllMocks();});
+it("runs the gateway for homepage requests so the owned apex redirect is not bypassed by static assets",()=>{
+  for(const file of ["wrangler.production-candidate.jsonc","wrangler.main-domain.jsonc"]){
+    const config=readFileSync(file,"utf8");
+    expect(config).toContain('"run_worker_first": ["/", "/index.html"');
+  }
+});
 it("preserves the original homepage and public assets alongside both portal shells",async()=>{
   for(const path of ["/","/site.js","/site.css","/sitemap.xml","/robots.txt"])
     expect(await (await fullSite.fetch(new Request(`https://candidate.example${path}`),env)).text()).toBe(path);
