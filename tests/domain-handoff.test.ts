@@ -5,7 +5,7 @@ vi.mock("@/lib/portal/server",()=>({portalOrigin:()=>"https://portal.example",ad
 vi.mock("@/lib/portal/services",()=>({importDomain:state.importDomain,notifyClient:state.notifyClient}));
 vi.mock("@/lib/portal/provisioning",()=>({provisionClient:state.provisionClient}));
 vi.mock("@/lib/portal/registrant",()=>({readRegistrant:async()=>({holder:"Verified agency holder",domain:"example.net"}),verifyPortalAssignment:async()=>({holder:"Verified agency holder"})}));
-import {activateDomainClient,previewDomainHandoff,inspectDomainHandoff} from "../lib/portal/domain-handoff";
+import {activateDomainClient,previewDomainHandoff,inspectDomainHandoff,reviewClientEmail} from "../lib/portal/domain-handoff";
 const input={idempotency_key:"aaaaaaaa-0000-4000-8000-000000000001",domain:"example.net",email:"client@example.test",name:"Test Client",initial_password:"fixture-password-only",holder_arrangement:"licensed",rights_confirmed:true};
 beforeEach(()=>{vi.clearAllMocks();state.records={};state.provisionClient.mockResolvedValue({client_id:"new-client",state:"invited"});state.rpc.mockResolvedValue({error:null});state.importDomain.mockResolvedValue({domain:{id:"verified-domain",name:"example.net",lifecycle_status:"registered",expiration_date:"2027-10-13"}});});
 it("reports real custody without adopting or importing an unassigned domain",async()=>{
@@ -85,4 +85,10 @@ it("recovers an automatically detected new-account request after its identity al
   state.records.portal_provisioning={actor_id:"admin",email:input.email,input:{domain_id:"verified-domain"}};state.records.portal_accounts={user_id:"existing-user",role:"client",active:true};
   await activateDomainClient("admin",{idempotency_key:input.idempotency_key,email:input.email,domain:input.domain,initial_password:input.initial_password,rights_confirmed:true});
   expect(state.provisionClient).toHaveBeenCalledTimes(1);expect(state.rpc).not.toHaveBeenCalled();
+});
+it("detects existing clients before a domain or password is entered, without provider calls or writes",async()=>{
+  state.records.portal_accounts={user_id:"existing-user",role:"client",active:true};state.records.portal_memberships={client_id:"existing-client",portal_clients:{status:"active"}};
+  expect(await reviewClientEmail({email:input.email.toUpperCase()})).toEqual({email:input.email,existing_client:true});
+  for(const method of [state.importDomain,state.provisionClient,state.rpc,state.audit,state.notifyClient])expect(method).not.toHaveBeenCalled();
+  state.records={};expect(await reviewClientEmail({email:input.email})).toEqual({email:input.email,existing_client:false});
 });

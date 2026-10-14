@@ -39,6 +39,11 @@ export async function previewDomainHandoff(raw:unknown){
   const verified=await verifyPortalAssignment(name);
   return {domain:name,client_id:clientId||null,email:input.email.toLowerCase(),existing_client:!!clientId,already_assigned:alreadyAssigned,status:verified.lifecycle_status,expiration:verified.expiration_date,registered_holder:verified.holder,custody:verified.custody,verification_status:verified.verification_status,checked_at:verified.checked_at,action:"Portal management access only. Registered holder, registrar custody and live settings stay unchanged."};
 }
+export async function reviewClientEmail(raw:unknown){
+  const {email}=z.object({email:z.email().max(254)}).strict().parse(raw);
+  const client=await resolveClient(adminDb(),email.toLowerCase());
+  return {email:email.toLowerCase(),existing_client:!!client};
+}
 export async function activateDomainClient(actor:string,raw:unknown){
   const input=handoffSchema.parse(raw),name=domainName(input.domain),email=input.email.toLowerCase();
   assertCustomerDomain(name);

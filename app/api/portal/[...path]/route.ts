@@ -503,6 +503,7 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
       if (route === "admin/domain-handoff-preview" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).previewDomainHandoff(body));
+      if (route === "admin/client-email-review" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).reviewClientEmail(body));
       if (route === "admin/domain-handoff-review" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).previewDomainHandoff(body));
       if(path[1]==="domains"&&path[2]&&path[3]==="dns-acceptance"&&path.length===4){
         const acceptance=await import("@/lib/portal/dns-acceptance");
