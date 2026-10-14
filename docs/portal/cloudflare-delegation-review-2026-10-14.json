@@ -1,0 +1,166 @@
+{
+  "status": "PREPARED_REVIEW_ONLY_NO_DELEGATION_AUTHORIZATION",
+  "preparedAt": "2026-10-14T17:20:59Z",
+  "application": {
+    "commit": "670a84626710981a155b3ac1ee7cb2802bba76c5",
+    "workerVersion": "c2d252db-9c5c-42eb-a229-f32a703d7d2c",
+    "origin": "https://stackendbox-production.stackendbox.workers.dev",
+    "diagnosticBase": "6d213b9",
+    "unchangedApplication": true,
+    "artifactAudit": {
+      "at": "2026-10-14T17:17:42.813Z",
+      "allEightPreparedArtifactsMatch": true,
+      "acceptanceOriginUrlsFound": 0
+    },
+    "productionReadiness": {
+      "http": 200,
+      "databaseAccessible": true,
+      "latestMigration": "202610140002",
+      "requiredBindingsPresent": true,
+      "liveChargesPurchasesRenewalsRegistrarWritesDisabled": true,
+      "origin": "https://stackendbox-production.stackendbox.workers.dev"
+    },
+    "publicWebsite": {
+      "originalSourceBaseline": "a00db027ac60d22e22e19c1846055e692e5f3514",
+      "homepageComponentsContentOriginalStylesUnchanged": true,
+      "previousDesktopTabletMobileAnimationEvidenceRetained": true,
+      "additionalBookingCheck": "Existing Stack End Box calendar opens with Work With StackEndBox and available dates. No appointment submitted.",
+      "additionalDomChecks": "No missing in-page anchor targets or failed loaded images. One JSON-LD block and company www canonical present. Existing opaque Turnstile NaN console messages remain, with no new functional regression identified.",
+      "seo": "Original canonical, social metadata and structured data retained. Candidate noindex is intentional. Final approved main-domain build must remove only the candidate public-site noindex. Private portal stays noindex."
+    },
+    "hostedJourneys": "Previously verified admin MFA, client password login, reviewed handoff preview, client domain isolation, DNS reads, invoice download and support history remain applicable because deployed application assets are unchanged. No repeated login or real domain assignment performed."
+  },
+  "dns": {
+    "domain": "stackendbox.com",
+    "dsRemovalVerifiedUtc": "2026-10-14T17:00:10.186Z",
+    "removedDs": {
+      "keyTag": 38997,
+      "algorithm": 13,
+      "digestType": 2
+    },
+    "minimumWaitSeconds": 93600,
+    "earliestReviewUtc": "2026-10-15T19:00:10.186Z",
+    "earliestReviewPakistan": "2026-10-16T00:00:10.186+05:00",
+    "elapsedTimeDoesNotAuthorizeChange": true,
+    "lastReadOnlyObservationUtc": "2026-10-14T17:17:07.4242123Z",
+    "authoritativeRecordParity": [
+      {
+        "authority": "launch1.spaceship.net",
+        "records": 11,
+        "preserved": true
+      },
+      {
+        "authority": "launch2.spaceship.net",
+        "records": 11,
+        "preserved": true
+      }
+    ],
+    "recursiveQueries": 22,
+    "recursiveNonzeroStatuses": 0,
+    "localCachedDs": [
+      {
+        "KeyTag": 38997,
+        "TTL": 53265
+      }
+    ],
+    "cloudflareZone": "54f1755fd9cff5c661da3406f09f7690",
+    "cloudflareStatus": "Pending, Free",
+    "assignedNameserversReconfirmedInDashboard": true,
+    "before": [
+      "launch1.spaceship.net",
+      "launch2.spaceship.net"
+    ],
+    "proposed": [
+      "hugh.ns.cloudflare.com",
+      "jillian.ns.cloudflare.com"
+    ],
+    "recordComparison": "company-zone-comparison.json, eleven comparison rows only. Its older DNSSEC narrative is superseded by this report and the approved October 14 removal receipt.",
+    "recordsBaseline": "company-zone-before.json, record values only. Historical DS is not the current state.",
+    "preserveDuringDelegation": {
+      "apexA": "216.198.79.1",
+      "wwwCname": "4a78646662027dfa.vercel-dns-017.com",
+      "proxy": false,
+      "websiteTtlSeconds": 1800,
+      "mailAndVerification": "All nine remaining records, values, priorities and TTLs unchanged"
+    },
+    "reviewRequirements": [
+      "Gate elapsed plus parent DS absence freshly reconfirmed.",
+      "Independent validating A/CNAME/MX/TXT/SRV answers succeed and match the eleven-record baseline. Check ordinary HTTPS with certificate validation.",
+      "Re-read current Cloudflare assignments and all eleven staged records. Do not assume prior screenshots are current.",
+      "Present exact nameserver-only action for separate founder approval."
+    ],
+    "afterApprovedDelegation": [
+      "Verify parent NS delegation and both Cloudflare authorities.",
+      "Keep Vercel A/CNAME DNS-only during initial delegation.",
+      "Verify ordinary apex/www TLS and original site, plus MX, SPF, DKIM, DMARC, Brevo and autodiscover.",
+      "Record resolver results during cache convergence. Do not change DS or enable Cloudflare signing under delegation approval."
+    ],
+    "rollback": {
+      "beforeWorkerCutover": "Stop progression on any record mismatch or resolution failure. Keep both identical zones and Vercel deployment available. Reverting registrar delegation to launch1/launch2 is a separate approved action, only after confirming old authorities still serve all eleven records and parent DS remains absent.",
+      "cacheLimit": "Last measured parent delegation TTL is 172800 seconds. Reconfirm at delegation. A nameserver rollback is not instant, and both zones must remain available throughout convergence.",
+      "dnssec": "Never restore the old Spaceship DS over Cloudflare nameservers. Enabling Cloudflare DNSSEC and publishing its actual new DS require a separate reviewed action.",
+      "vercelDeployment": "BfgYxRfYe7hjivyHNDSdMtA7iTda"
+    },
+    "separateWorkerCutover": [
+      "Obtain separate approval for both apex and www Worker custom-domain bindings.",
+      "Build final public profile without --candidate, retain original website source and private portal noindex.",
+      "Activate company-domain backend origin and verify callback allowlist before customer invitations.",
+      "Prepare controlled production notification scheduler activation with its dedicated secret and safe payment/registrar flags. Candidate cron remains disabled.",
+      "Verify both TLS hostnames, canonical redirect, client/admin authentication and persisted records. Preserve Vercel record values for application rollback."
+    ]
+  },
+  "capacity": {
+    "cloudflareObservedLast24Hours": {
+      "invocations": 521,
+      "assetRequests": 427,
+      "runtimeErrors": 0,
+      "cpuLimitErrors": 0,
+      "activeVersionMedianCpuMs": 0.89
+    },
+    "supabaseObservedBillingPeriod": {
+      "edgeInvocations": 591,
+      "edgeFreeQuota": 500000,
+      "egressGb": 0.01,
+      "egressFreeGb": 5,
+      "databaseMb": 29,
+      "databaseFreeMb": 500,
+      "mau": 5,
+      "mauFree": 50000,
+      "storageGb": 0,
+      "storageFreeGb": 1
+    },
+    "meterScope": "Provider totals include development and other traffic. Meters can lag. Worker numbers are for this candidate, not the entire Cloudflare account.",
+    "existingLoadEvidence": {
+      "independentSessions": 10,
+      "distinctTestTenants": 1,
+      "authenticatedDataRequests": 100,
+      "pageShellRequests": 100,
+      "errors": 0,
+      "dataMedianMs": 624,
+      "dataP95Ms": 1150,
+      "notProofOf400ConcurrentCustomers": true
+    },
+    "planningAssumptions": {
+      "scenario": "400 clients, 2 daily visits, 12 Edge requests per visit, 30 days",
+      "estimatedMonthlyEdgeInvocations": 288000,
+      "heavyScenario": "400 clients, 4 daily visits, 12 Edge requests per visit, 30 days = 576000, exceeding 500000 before jobs and public forms.",
+      "interpretation": "Registered account count alone is insufficient. Measure requests per visit and actual traffic. Review at 70% of quota. No paid upgrade or extra load test performed."
+    },
+    "sources": [
+      "https://developers.cloudflare.com/workers/platform/limits/",
+      "https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/",
+      "https://supabase.com/docs/guides/platform/manage-your-usage/edge-function-invocations"
+    ],
+    "staticAccounting": "run_worker_first patterns invoke the Worker even for matching page shells/assets. These requests consume Workers quota."
+  },
+  "monitor": {
+    "id": "stackendbox-dnssec-cache-window-check",
+    "readOnly": true,
+    "hourly": true,
+    "mutedNotificationsPreserved": true,
+    "limitedRuns": 28,
+    "desktopMustBeAvailable": true,
+    "approvalNeverAutomatic": true
+  },
+  "changesPerformed": "Read-only checks, local diagnostic improvements and muted read-only follow-up configuration only. No DNS, registrar, Worker binding, customer assignment, billing or mail configuration changes."
+}
