@@ -49,7 +49,7 @@ export async function operationalHealth() {
   const counts=await Promise.all(names.map(n=>db.from(`portal_${n}`).select("*",{count:"exact",head:true})));
   counts.forEach(r=>checkDb(r.error));
   const [backups,releases,provisioning,email,jobs,domains,ledger]=await Promise.all([
-    db.from("portal_backup_runs").select("*").order("started_at",{ascending:false}).limit(10),
+    db.from("portal_backup_runs").select("id,kind,status,started_at,completed_at,includes_auth,includes_objects,detail").order("started_at",{ascending:false}).limit(10),
     db.from("portal_schema_releases").select("*").order("version",{ascending:false}).limit(10),
     db.from("portal_provisioning").select("id,email,state,last_error,created_at").neq("state","invited").limit(50),
     db.from("portal_email_outbox").select("id,status,last_error,created_at").in("status",["review_required","retry","sending"]).limit(50),
@@ -58,5 +58,10 @@ export async function operationalHealth() {
     db.from("portal_ledger").select("order_id,category,reconciliation_status").eq("reconciliation_status","unreconciled").limit(50),
   ]);
   [backups,releases,provisioning,email,jobs,domains,ledger].forEach(r=>checkDb(r.error));
-  return {checked_at:new Date().toISOString(),counts:Object.fromEntries(names.map((n,i)=>[n,counts[i].count])),backups:backups.data,releases:releases.data,provisioning:provisioning.data,email:email.data,jobs:jobs.data,domain_exceptions:domains.data,unreconciled_ledger:ledger.data};
+  const backupEvidence=(backups.data||[]).map(({detail,...record})=>({...record,detail:{
+    offsite:detail?.offsite===true,
+    checksum_readback_verified:detail?.checksum_readback_verified===true,
+    objects:Number.isSafeInteger(detail?.objects)&&detail.objects>=0?detail.objects:null,
+  }}));
+  return {checked_at:new Date().toISOString(),counts:Object.fromEntries(names.map((n,i)=>[n,counts[i].count])),backups:backupEvidence,releases:releases.data,provisioning:provisioning.data,email:email.data,jobs:jobs.data,domain_exceptions:domains.data,unreconciled_ledger:ledger.data};
 }

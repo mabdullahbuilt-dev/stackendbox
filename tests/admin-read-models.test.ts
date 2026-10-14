@@ -6,9 +6,16 @@ vi.mock("@/lib/portal/server",()=>({checkDb:(error:unknown)=>{if(error)throw Err
   for(const method of ["select","eq","gt","gte","lt","lte","in","not","neq","or","ilike","order","limit"])builder[method]=(...args:unknown[])=>{state.calls.push({table,method,args});return builder;};
   return builder;
 }})}));
-import {clientDirectory} from "../lib/portal/admin-data";
+import {clientDirectory,operationalHealth} from "../lib/portal/admin-data";
 import {operationsData} from "../lib/portal/operations-data";
 beforeEach(()=>{state.calls=[];state.results={};});
+it("excludes backup custody locations and arbitrary detail from health responses",async()=>{
+  state.results.portal_backup_runs=[{id:"fixture",detail:{offsite:true,objects:0,checksum_readback_verified:true,drive_generation:"private-folder",unexpected:"sensitive"}}];
+  const result=await operationalHealth();
+  expect(result.backups[0].detail).toEqual({offsite:true,objects:0,checksum_readback_verified:true});
+  expect(JSON.stringify(result)).not.toContain("private-folder");
+  expect(state.calls).toContainEqual({table:"portal_backup_runs",method:"select",args:["id,kind,status,started_at,completed_at,includes_auth,includes_objects,detail"]});
+});
 it("searches identities and domains with an explicit client page limit",async()=>{
   await clientDirectory(undefined,'test%,(name).*');
   expect(state.calls).toContainEqual({table:"portal_memberships",method:"ilike",args:["portal_accounts.approved_email","%test\\%,(name).*%"]});
