@@ -22,7 +22,7 @@ export async function handleEdge(incoming: Request, waitUntil?: (p: Promise<unkn
   if (!origin || !origin.startsWith("https://")) return new Response(null, { status: 503 });
   const req = new NextRequest(new URL(path + url.search, origin), incoming);
   const frameworkRequest = req as unknown as Parameters<typeof portal.GET>[0];
-  return withLatency(() => withRequest(req, async () => {
+  const response=await withLatency(() => withRequest(req, async () => {
     if (path === "/client-portal/auth/callback") return req.method === "GET" ? callback.GET() : req.method === "POST" ? callback.POST(frameworkRequest) : new Response(null, { status: 405 });
     if (path === "/api/webhooks/whop" && req.method === "POST") return webhook.POST(req);
     if (path === "/api/portal/upload" && req.method === "POST") return upload.POST(req);
@@ -38,4 +38,7 @@ export async function handleEdge(incoming: Request, waitUntil?: (p: Promise<unkn
     }
     return new Response(null, { status: 404 });
   }, waitUntil));
+  const headers=new Headers(response.headers);
+  if(process.env.PORTAL_RELEASE_COMMIT)headers.set("X-StackEndBox-Release",process.env.PORTAL_RELEASE_COMMIT);
+  return new Response(response.body,{status:response.status,headers});
 }

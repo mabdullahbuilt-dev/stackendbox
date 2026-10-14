@@ -18,12 +18,11 @@ import {
   Globe2,
   LayoutDashboard,
   LifeBuoy,
-  LockKeyhole,
   LogOut,
   Menu,
   Settings,
 } from "lucide-react";
-import { Turnstile } from "@/components/builder/Turnstile";
+import {PortalAuth} from "./PortalAuth";
 import { usePortalCache } from "./PortalCache";
 import { DomainControls } from "./DomainControls";
 import {AdminInvoices} from "./AdminInvoices";
@@ -86,7 +85,7 @@ const errors: Record<string, string> = {
   password_access_update_failed: "Your password changed, but access verification needs a retry. Contact StackEndBox.",
   verification_failed: "Please complete the security check again.",
   verification_required:
-    "Security verification hasn't completed. Wait for the check to succeed, or use Retry verification if it fails.",
+    "Select Sign in to complete security verification.",
   quote_expired: "This quote has expired. Request a fresh quote.",
   renewal_requires_administrator_review:
     "This domain needs an administrator review before renewal. Contact support.",
@@ -211,8 +210,6 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
     [error, setError] = useState(""),
     [busy, setBusy] = useState(() => !bootstrap && (cache?.userId !== userId || cache.section !== page)),
     [open, setOpen] = useState(false);
-  const [token, setToken] = useState(""),
-    [tokenKey, setTokenKey] = useState(0);
   const [dataPage,setDataPage] = useState(page);
   const publicPage = section === "login" || section === "forgot-password";
   const reload = useCallback(async () => {
@@ -245,95 +242,7 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
     window.addEventListener("focus",refresh);document.addEventListener("visibilitychange",refresh);
     return()=>{window.removeEventListener("focus",refresh);document.removeEventListener("visibilitychange",refresh);};
   },[publicPage,section,reload]);
-  if (publicPage)
-    return (
-      <main id="main" className="portal-auth">
-        <Link href="/client-portal" className="portal-brand">
-          StackEndBox<span>CLIENT PORTAL</span>
-        </Link>
-        <div className="portal-auth-grid">
-          <section>
-            <span className="portal-eyebrow">CLIENT PORTAL</span>
-            <h1>
-              Your domains and websites.
-            </h1>
-            <p>
-              Manage your domains, review renewals, and request support.
-            </p>
-            <div className="portal-auth-note">
-              <LockKeyhole size={18} />
-              <span>Private access for StackEndBox clients.</span>
-            </div>
-          </section>
-          <section className="portal-panel">
-            <h2>
-              {section === "login" ? "Welcome back" : "Reset your password"}
-            </h2>
-            <p>
-              {section === "login"
-                ? "Sign in with your approved email address."
-                : "Enter your approved email to request a recovery link."}
-            </p>
-            <Form
-              button={section === "login" ? "Sign in" : "Send recovery link"}
-              onSubmit={async (f) => {
-                if (!token) throw new Error(errors.verification_required);
-                try {
-                  const r = await api(
-                    section === "login" ? "auth/login" : "auth/recover",
-                    { ...f, token },
-                  );
-                  if (r.redirect) window.location.assign(r.redirect);
-                  return r;
-                } finally {
-                  setToken("");
-                  setTokenKey((k) => k + 1);
-                }
-              }}
-            >
-              <Field name="email" title="Email address" type="email" />
-              {section === "login" && (
-                <Field name="password" title="Password" type="password" />
-              )}
-              <Turnstile key={tokenKey} onToken={setToken} />
-              {!token && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-                <div>
-                  <p className="portal-small" role="status">
-                    Complete the security check before continuing. If it fails,
-                    retry verification or reload this page.
-                  </p>
-                  <button
-                    type="button"
-                    className="portal-button"
-                    onClick={() => {
-                      setToken("");
-                      setTokenKey((k) => k + 1);
-                    }}
-                  >
-                    Retry verification
-                  </button>
-                </div>
-              )}
-              {!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-                <p role="alert">
-                  Security verification is not configured. Sign-in is
-                  unavailable.
-                </p>
-              )}
-            </Form>
-            <Link
-              href={`/client-portal/${section === "login" ? "forgot-password" : "login"}`}
-            >
-              {section === "login" ? "Forgot password?" : "Back to sign in"}
-            </Link>
-            <p className="portal-small">
-              Accounts are created by StackEndBox. For access, contact your
-              project lead.
-            </p>
-          </section>
-        </div>
-      </main>
-    );
+  if (publicPage) return <PortalAuth key={section} recovery={section === "forgot-password"}/>;
   if (section === "reset-password") return <main id="main" className="portal-auth">
     <Link href="/client-portal" className="portal-brand">StackEndBox<span>CLIENT PORTAL</span></Link>
     <div className="portal-auth-grid">

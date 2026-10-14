@@ -40,7 +40,6 @@ import { saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { adminTables, clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 import { checkPassword } from "@/lib/portal/password-check";
-import { readRegistrant } from "@/lib/portal/registrant";
 import { registrarAcceptance } from "@/lib/portal/registrar-acceptance";
 import {editClient,sendClientAccess} from "@/lib/portal/client-operations";
 import {createServiceInvoice,transitionServiceInvoice} from "@/lib/portal/invoices";
@@ -527,7 +526,7 @@ async function handle(req: NextRequest, context: Context) {
       if (path[1] === "domains" && path[2] && path[3] === "manage" && path.length === 4 && req.method === "GET")
         return reply(await readDomainState(domainName(path[2])));
       if (path[1] === "domains" && path[2] && path[3] === "registrant" && path.length === 4 && req.method === "GET")
-        return reply(await readRegistrant(domainName(path[2])));
+        return reply(await (await import("@/lib/portal/domain-handoff")).inspectDomainHandoff(domainName(path[2])));
       if (route === "admin/data" && req.method === "GET") {
         const names = [
           "accounts",

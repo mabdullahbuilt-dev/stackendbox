@@ -4,10 +4,15 @@ const state=vi.hoisted(()=>({records:{} as Record<string,unknown>,rpc:vi.fn(),im
 vi.mock("@/lib/portal/server",()=>({adminDb:()=>({from:(name:string)=>{const chain={select:()=>chain,eq:()=>chain,maybeSingle:async()=>({data:state.records[name]??null,error:null}),single:async()=>({data:state.records[name]??null,error:null})};return chain;},rpc:state.rpc}),audit:state.audit,checkDb:(error:unknown)=>{if(error)throw Error("database_failed");}}));
 vi.mock("@/lib/portal/services",()=>({importDomain:state.importDomain,notifyClient:state.notifyClient}));
 vi.mock("@/lib/portal/provisioning",()=>({provisionClient:state.provisionClient}));
-vi.mock("@/lib/portal/registrant",()=>({verifyPortalAssignment:async()=>({holder:"Verified agency holder"})}));
-import {activateDomainClient,previewDomainHandoff} from "../lib/portal/domain-handoff";
+vi.mock("@/lib/portal/registrant",()=>({readRegistrant:async()=>({holder:"Verified agency holder",domain:"example.net"}),verifyPortalAssignment:async()=>({holder:"Verified agency holder"})}));
+import {activateDomainClient,previewDomainHandoff,inspectDomainHandoff} from "../lib/portal/domain-handoff";
 const input={idempotency_key:"aaaaaaaa-0000-4000-8000-000000000001",domain:"example.net",email:"client@example.test",name:"Test Client",initial_password:"fixture-password-only",holder_arrangement:"licensed",rights_confirmed:true};
 beforeEach(()=>{vi.clearAllMocks();state.records={};state.rpc.mockResolvedValue({error:null});state.importDomain.mockResolvedValue({domain:{id:"verified-domain",name:"example.net",lifecycle_status:"registered",expiration_date:"2027-10-13"}});});
+it("reports real custody without adopting or importing an unassigned domain",async()=>{
+  const evidence=await inspectDomainHandoff("example.net");
+  expect(evidence.portal_assignment).toBeNull();expect(evidence.portal_inventory_verified).toBe(false);
+  for(const method of [state.importDomain,state.provisionClient,state.notifyClient,state.rpc,state.audit])expect(method).not.toHaveBeenCalled();
+});
 it("passes a new client to durable password provisioning without a purchase or invoice",async()=>{
   await activateDomainClient("admin",input);
   expect(state.provisionClient).toHaveBeenCalledWith("admin",expect.objectContaining({credential_mode:"initial_password",temporary_password:input.initial_password,domain_id:"verified-domain"}));

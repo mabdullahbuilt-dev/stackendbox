@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "rewrites": [
+    {"source":"/client-portal/:path*","destination":"https://stackendbox-production.stackendbox.workers.dev/client-portal/:path*"},
+    {"source":"/admin/:path*","destination":"https://stackendbox-production.stackendbox.workers.dev/admin/:path*"}
+  ],
+  "headers": [
+    {"source":"/client-portal/:path*","headers":[{"key":"x-vercel-enable-rewrite-caching","value":"0"},{"key":"Cache-Control","value":"private, no-store"}]},
+    {"source":"/admin/:path*","headers":[{"key":"x-vercel-enable-rewrite-caching","value":"0"},{"key":"Cache-Control","value":"private, no-store"}]}
+  ]
+}

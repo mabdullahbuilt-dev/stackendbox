@@ -4,6 +4,7 @@ type Env = Parameters<typeof gateway.fetch>[1];
 const assetPaths = new Map([
   ["/client-portal/_assets/portal.js", "/portal.js"],
   ["/client-portal/_assets/portal.css", "/portal.css"],
+  ["/client-portal/_assets/release.json", "/release.json"],
   ["/client-portal/_assets/fonts/geist.woff2", "/fonts/geist.woff2"],
   ["/client-portal/_assets/fonts/geist-mono.woff2", "/fonts/geist-mono.woff2"],
 ]);

@@ -3,9 +3,11 @@ import { mkdir, writeFile, cp, stat, readFile } from 'node:fs/promises';
 import { parseEnv } from 'node:util';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {execFileSync} from 'node:child_process';
 import { materializePublicAssets } from './cloudflare-public-assets.ts';
 
 const root = process.cwd();
+const releaseCommit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
 const productionBuild = process.argv.includes('--production');
 const candidateBuild = process.argv.includes('--candidate');
 const backendOnly = process.argv.includes('--backend-only');
@@ -21,7 +23,7 @@ const edgeAliases = { name: 'edge-boundary', setup(b) {
   b.onLoad({ filter: /.*/, namespace: 'empty' }, () => ({ contents: 'export {}' }));
 } };
 await mkdir('dist/edge', { recursive: true });
-const edgeBuild = await build({ entryPoints: ['platform/edge/handler.ts'], outfile: 'dist/edge/handler.mjs', bundle: true, platform: 'node', format: 'esm', target: 'es2022', minify: true, metafile:true, plugins: [edgeAliases], define: { 'process.env': 'globalThis.STACKENDBOX_RUNTIME_ENV' }, banner: { js: 'import process from "node:process"; import {Buffer} from "node:buffer"; globalThis.STACKENDBOX_RUNTIME_ENV ??= process.env;' } });
+const edgeBuild = await build({ entryPoints: ['platform/edge/handler.ts'], outfile: 'dist/edge/handler.mjs', bundle: true, platform: 'node', format: 'esm', target: 'es2022', minify: true, metafile:true, plugins: [edgeAliases], define: { 'process.env': 'globalThis.STACKENDBOX_RUNTIME_ENV','process.env.PORTAL_RELEASE_COMMIT':JSON.stringify(releaseCommit) }, banner: { js: 'import process from "node:process"; import {Buffer} from "node:buffer"; globalThis.STACKENDBOX_RUNTIME_ENV ??= process.env;' } });
 const excluded = Object.keys(edgeBuild.metafile.inputs).filter(p => /node_modules\/(?:vinext|@vinext|braces|satori|@vercel\/og)\//.test(p));
 if (excluded.length) throw Error('Unexpected framework dependency in Edge runtime');
 await writeFile('dist/edge/dependency-evidence.json', JSON.stringify({ forbiddenFrameworkInputs:excluded, inputs:Object.keys(edgeBuild.metafile.inputs) },null,2));

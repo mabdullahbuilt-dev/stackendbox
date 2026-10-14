@@ -1,0 +1,34 @@
+{
+  "state": "PREPARED_NOT_APPLIED",
+  "observed": {
+    "wwwClientPortal": 404,
+    "wwwAdmin": 404,
+    "apexClientPortal": {"status":308,"location":"https://www.stackendbox.com/client-portal"},
+    "ordinaryHttps": true
+  },
+  "publicBranchBaseline": "a00db027ac60d22e22e19c1846055e692e5f3514",
+  "smallestTechnicalChange": "Two external path rewrites in the original public application's vercel.json, with rewrite caching disabled for those paths. No portal application code is merged into the public website.",
+  "exactConfiguration": "platform/routing/vercel.production-portals.proposed.json",
+  "upstream": "Existing stackendbox-production Worker and existing stackendbox-production Supabase function, prepared to serve only portal paths using platform/routing/wrangler.production-portals.proposed.jsonc.",
+  "beforeActivation": [
+    "Confirm the existing Vercel account has a commercially permitted agreement. Current Hobby terms do not permit this business portal. No exception or subscription change is assumed.",
+    "Record the actual current public Vercel deployment ID and its source commit immediately before release. Historical rollback IDs are not treated as the current deployment.",
+    "Build only committed portal frontend and Edge backend sources, then verify their public release metadata and backend release header agree.",
+    "Review deployment of the portals-only assets/gateway to the existing production-candidate Worker, keeping its current private bridge secret. No new Worker or hosting service is needed.",
+    "Use the production backend profile with PORTAL_APP_URL https://www.stackendbox.com. Remove its temporary STACKENDBOX_PRODUCTION_TEST_ORIGIN override only during approved activation. Acceptance configuration stays independent.",
+    "Preserve existing separate provider secrets. Keep real payments, purchases, renewals and all ordinary registrar mutations disabled. Keep production scheduled dispatch disabled until its recipient scope is separately reviewed.",
+    "Verify the existing Turnstile widget includes www.stackendbox.com and the Supabase redirect allowlist includes https://www.stackendbox.com/client-portal/auth/callback. Add only missing entries if approved.",
+    "Deploy the routing-only change from the frozen public branch baseline, with no portal code merge, public source edits, DNS changes or new cron jobs.",
+    "Test actual company-domain TLS, private cookies, password login, MFA, callbacks, assigned records, billing and support before distributing customer links. Then send production invitations using the fixed company origin."
+  ],
+  "rollback": [
+    "Restore the original public Vercel deployment or remove only the two rewrites and associated cache headers. The baseline configuration contains only $schema and framework nextjs.",
+    "Keep all customer database records. Do not undo successful assignments or delete Auth identities as part of routing rollback.",
+    "If production backend/candidate configuration needs rollback, restore its recorded prior Worker/function version and temporary candidate origin without changing acceptance or the public website.",
+    "Verify the public homepage and contact form on the original deployment, then keep portal access on the acceptance hostname until an approved corrected release."
+  ],
+  "unapprovedChanges": ["Vercel production routing-only deployment", "production portal Worker/function activation and fixed origin"],
+  "excluded": ["DNSSEC", "DS", "nameservers", "DNS zone", "public homepage source", "public contact integration", "hosting purchase", "ownership transfer", "live financial operations"],
+  "policyBlocker": "The required commercial same-host paths traverse Vercel. No documented Hobby exemption for proxying a business portal to Workers exists. Under the unchanged $0, no-upgrade, no-exception and frozen-DNS constraints, this plan cannot be called commercially permitted or activated.",
+  "sources": ["https://vercel.com/docs/routing/rewrites", "https://vercel.com/docs/limits/fair-use-guidelines"]
+}

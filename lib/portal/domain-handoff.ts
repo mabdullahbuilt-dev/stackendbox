@@ -3,11 +3,20 @@ import {z} from "zod";
 import {adminDb,audit,checkDb} from "./server";
 import {assertCustomerDomain,domainName,PortalError} from "./rules";
 import {importDomain,notifyClient} from "./services";
-import {verifyPortalAssignment} from "./registrant";
+import {readRegistrant,verifyPortalAssignment} from "./registrant";
 import {provisionClient} from "./provisioning";
 
 const accountSelection={account_mode:z.enum(["existing","new"]).optional(),client_id:z.uuid().optional(),credential_mode:z.enum(["initial_password","invitation"]).optional()};
 export const handoffSchema=z.object({idempotency_key:z.uuid(),domain:z.string().max(253),email:z.email().max(254),name:z.string().trim().min(1).max(100),business_name:z.string().trim().max(150).optional(),initial_password:z.string().min(8).max(128).optional(),holder_arrangement:z.enum(["client_owned","licensed"]),rights_confirmed:z.literal(true),...accountSelection}).strict();
+export async function inspectDomainHandoff(raw:string){
+  const name=domainName(raw);assertCustomerDomain(name);
+  const db=adminDb();
+  const saved=await db.from("portal_domains").select("id,protected").eq("name",name).eq("provider","spaceship").eq("provider_account","primary").maybeSingle();checkDb(saved.error);
+  assertCustomerDomain(name,saved.data?.protected);
+  const evidence=await readRegistrant(name);
+  const assigned=saved.data?await db.from("portal_domain_assignments").select("client_id,holder_arrangement,portal_clients(name,business_name,status)").eq("domain_id",saved.data.id).maybeSingle():{data:null,error:null};checkDb(assigned.error);
+  return {...evidence,portal_inventory_verified:!!saved.data,portal_assignment:assigned.data};
+}
 async function resolveClient(db:ReturnType<typeof adminDb>,email:string,mode?:"existing"|"new",selected?:string){
   const account=await db.from("portal_accounts").select("user_id,role,active").eq("approved_email",email).maybeSingle();checkDb(account.error);
   if(!account.data){if(mode==="existing"||selected)throw new PortalError("existing_client_required",409);return undefined;}
