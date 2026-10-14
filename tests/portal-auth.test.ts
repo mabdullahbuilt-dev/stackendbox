@@ -23,6 +23,17 @@ import {notifyClient} from "@/lib/portal/services";
 import { PortalError } from "@/lib/portal/rules";
 import { adminTables, clientTables } from "@/lib/portal/data-scope";
 
+describe("reviewed domain handoff gate",()=>{
+  it("requests fresh MFA before executing activation",async()=>{
+    const auth={user:{id:"fixture",app_metadata:{}},account:{role:"super_admin"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>;
+    vi.mocked(identity).mockResolvedValue(auth);
+    vi.mocked(superAdmin).mockRejectedValueOnce(new PortalError("administrator_fresh_mfa_required",403));
+    const response=await POST(new NextRequest("https://portal.example/api/portal/admin/activate-domain-client",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}),{params:Promise.resolve({path:["admin","activate-domain-client"]})});
+    expect(response.status).toBe(403);
+    expect(vi.mocked(superAdmin).mock.lastCall).toEqual([auth,true]);
+  });
+});
+
 describe("static portal identity boundary", () => {
   it("returns identity and explicit password policy without querying tenant records", async () => {
     const from=vi.fn();

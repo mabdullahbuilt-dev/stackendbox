@@ -66,6 +66,10 @@ const date = (value: unknown) =>
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 const errors: Record<string, string> = {
+  administrator_fresh_mfa_required: "Verify your existing authenticator in Account Settings, then retry this same activation within 10 minutes.",
+  use_reviewed_domain_handoff: "Open Domains and use Verify and review before activating client access.",
+  client_selection_changed: "The selected client's approved email or membership changed. Reload and select the client again.",
+  client_email_already_exists_select_existing: "This approved email already has an account. Choose Existing client to preserve its credentials.",
   registrant_contact_unavailable: "Spaceship didn't return a registrant contact ID. Assignment needs verified holder details.",
   spaceship_404: "This domain wasn't found in the configured Spaceship account. Check the registrar account and API key scope.",
   payment_acceptance_pending: "Online payments aren't available yet. Contact StackEndBox to arrange payment.",
@@ -1408,47 +1412,8 @@ function Admin({
         </section>
         <section className="portal-panel">
           <h2>Assign a domain</h2>
-          <Form
-            button="Assign domain"
-            onSubmit={async (f) => {
-              const r = await api("admin/assign", {...f,rights_confirmed:f.rights_confirmed==="on"});
-              await reload();
-              return r;
-            }}
-          >
-            {clientSelect}
-            <label>
-              Domain
-              <select name="domain_id" required>
-                {rows(data, "domains")
-                  .filter(
-                    (d) =>
-                      !d.protected &&
-                      !rows(data, "domain_assignments").some(
-                        (a) => a.domain_id === d.id,
-                      ),
-                  )
-                  .map((d) => (
-                    <option key={str(d.id)} value={str(d.id)}>
-                      {str(d.name)}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <p>The actual registrar holder is read from Spaceship. This action grants portal management access only.</p>
-            <label>
-              Arrangement
-              <select name="holder_arrangement">
-                <option value="client_owned">
-                  Client-owned, managed by StackEndBox
-                </option>
-                <option value="licensed">
-                  StackEndBox-owned, licensed to client
-                </option>
-              </select>
-            </label>
-            <label className="portal-check"><input type="checkbox" name="rights_confirmed" required/>I verified the contractual rights and accurate legal-holder arrangement.</label>
-          </Form>
+          <p>Select the client, verify the purchased domain, and review access before activation.</p>
+          <Link className="portal-button" href="/admin/domains#domain-handoff">Open domain handoff</Link>
         </section>
         <section className="portal-panel">
           <h2>Add a website</h2>

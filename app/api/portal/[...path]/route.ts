@@ -40,7 +40,7 @@ import { saveExternalPayment } from "@/lib/portal/agency";
 import { assignWebsite, assignService } from "@/lib/portal/website-assignments";
 import { adminTables, clientSections, clientTables, portalTables } from "@/lib/portal/data-scope";
 import { checkPassword } from "@/lib/portal/password-check";
-import { readRegistrant, verifyPortalAssignment } from "@/lib/portal/registrant";
+import { readRegistrant } from "@/lib/portal/registrant";
 import { registrarAcceptance } from "@/lib/portal/registrar-acceptance";
 import {editClient,sendClientAccess} from "@/lib/portal/client-operations";
 import {createServiceInvoice,transitionServiceInvoice} from "@/lib/portal/invoices";
@@ -490,7 +490,7 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ url: data?.signedUrl });
     }
     if (path[0] === "admin") {
-      const admin = await superAdmin(auth),
+      const admin = await superAdmin(auth,route === "admin/activate-domain-client" && req.method === "POST"),
         db = adminDb();
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined));
@@ -499,6 +499,7 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions());
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
+      if (route === "admin/domain-handoff-preview" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).previewDomainHandoff(body));
       if(path[1]==="domains"&&path[2]&&path[3]==="dns-acceptance"&&path.length===4){
         const acceptance=await import("@/lib/portal/dns-acceptance");
         if(req.method==="GET")return reply(await acceptance.readDnsAcceptance(domainName(path[2]),admin.user.id));
@@ -566,6 +567,7 @@ async function handle(req: NextRequest, context: Context) {
         });
       }
       if (route === "admin/clients" && req.method === "POST") {
+        if(body.domain_id)throw new PortalError("use_reviewed_domain_handoff",409);
         return reply(await provisionClient(admin.user.id,body));
       }
       if (route === "admin/account-status" && req.method === "POST") {
@@ -588,39 +590,7 @@ async function handle(req: NextRequest, context: Context) {
         return reply({ message: "Account access updated." });
       }
       if (route === "admin/assign" && req.method === "POST") {
-        const input = z
-          .object({
-            domain_id: uuid,
-            client_id: uuid,
-            legal_holder: text.max(160).optional(),
-            holder_arrangement: z.enum(["client_owned", "licensed"]),
-            rights_confirmed: z.literal(true),
-          })
-          .parse(body);
-        const { data: d, error } = await db
-          .from("portal_domains")
-          .select("*")
-          .eq("id", input.domain_id)
-          .single();
-        checkDb(error);
-        assertCustomerDomain(d.name, d.protected);
-        const holderEvidence = await verifyPortalAssignment(d.name);
-        const verified = await importDomain(admin.user.id, d.name);
-        if (verified.domain.lifecycle_status !== "registered" || !verified.domain.expiration_date)
-          throw new PortalError("domain_registration_unverified", 409);
-        checkDb(
-          (await db.rpc("portal_assign_verified_domain", { p_domain: input.domain_id, p_client: input.client_id, p_holder: holderEvidence.holder, p_arrangement: input.holder_arrangement, p_actor: admin.user.id })).error,
-        );
-        await audit(admin.user.id, "assignment_registrant_verified", input.domain_id, {
-          contact_id: holderEvidence.contact_id,
-          verification_status: holderEvidence.verification_status,
-          checked_at: holderEvidence.checked_at,
-          registrar_custody_unchanged: true,
-          ownership_transfer_performed: false,
-        });
-        return reply({
-          message: "Management access assigned. The official holder was recorded separately. No ownership transfer or registrar change was performed.",
-        });
+        throw new PortalError("use_reviewed_domain_handoff",410);
       }
       if (route === "admin/websites" && req.method === "POST") {
         return reply(await assignWebsite(admin.user.id, body));

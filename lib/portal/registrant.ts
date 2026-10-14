@@ -2,6 +2,7 @@ import "server-only";
 import { domainName, PortalError } from "./rules";
 import { spaceship } from "./spaceship";
 import { rateLimit } from "./server";
+import {requireVerifiedExpiration} from "./domain-snapshot";
 
 // Called only after super-admin authorization. Contact PII is never returned in client data.
 export async function readRegistrant(name: string) {
@@ -20,7 +21,9 @@ export async function readRegistrant(name: string) {
     verification_status: detail.verificationStatus ?? null,
     verification_reported: detail.verificationStatus !== undefined,
     lifecycle_status: detail.lifecycleStatus,
-    expiration_date: detail.expirationDate ?? null,
+    expiration_date: requireVerifiedExpiration(detail.lifecycleStatus,detail.expirationDate),
+    auto_renew: detail.autoRenew,
+    nameservers: detail.nameservers?.hosts ?? [],
     suspensions: detail.suspensions || [],
     checked_at: new Date().toISOString(),
     custody: "Dedicated StackEndBox Spaceship account",

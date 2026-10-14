@@ -27,4 +27,14 @@ describe("private administrator gate", () => {
     expect(await superAdmin(auth)).toBe(auth);
     expect(assurance).toHaveBeenCalledTimes(1);
   });
+  it.each([undefined,[],["totp"],[{method:"password",timestamp:Date.now()/1000}],[{method:"totp",timestamp:Date.now()/1000-601}],[{method:"totp",timestamp:Date.now()/1000+60}]])("rejects missing, stale or invalid MFA timestamps for handoff",async methods=>{
+    const {auth,assurance}=fixture("super_admin","aal2");
+    assurance.mockResolvedValue({data:{currentLevel:"aal2",currentAuthenticationMethods:methods},error:null});
+    await expect(superAdmin(auth,true)).rejects.toThrow("administrator_fresh_mfa_required");
+  });
+  it.each(["totp","mfa/totp"])("accepts fresh %s verification",async method=>{
+    const {auth,assurance}=fixture("super_admin","aal2");
+    assurance.mockResolvedValue({data:{currentLevel:"aal2",currentAuthenticationMethods:[{method,timestamp:Date.now()/1000-30}]},error:null});
+    expect(await superAdmin(auth,true)).toBe(auth);
+  });
 });

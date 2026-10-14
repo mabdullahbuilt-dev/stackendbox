@@ -1,0 +1,58 @@
+{
+  "scope": "Portal-only acceptance. Public website, Vercel, DNS and provider credentials unchanged.",
+  "branch": "feature/cloudflare-workers-proof",
+  "workerVersion": "deb63c2e-94ae-488d-bb9e-87b115865f6f",
+  "deployedBrowserSha256": "92983715c8c3dd5d49c96ffd446c0f11a483e339f65d896752ba9183eb8d0d52",
+  "urls": {
+    "admin": "https://stackendbox-static-acceptance.stackendbox.workers.dev/admin/domains",
+    "client": "https://stackendbox-static-acceptance.stackendbox.workers.dev/client-portal/login",
+    "companyDomain": "Not deployed or authorized by this change"
+  },
+  "implemented": [
+    "One shared handoff from Domains and Client profiles, with selected-customer consistency checks",
+    "Existing-client credentials preserved, initial-password and invitation onboarding supported",
+    "Read-only review before activation, separate domain verification without customer identity",
+    "Activation requires administrator TOTP verification within ten minutes",
+    "Legacy direct assignment endpoint retired, standalone client creation cannot bypass domain review",
+    "Existing-client request ID, assignment and immutable operation evidence committed atomically",
+    "New-client retries recover the existing provisioning request instead of creating another identity",
+    "Duplicate notifications retain the existing per-domain/client deduplication key"
+  ],
+  "database": {
+    "additiveMigrationApplied": "202610140001_domain_handoff_requests",
+    "rlsEnabled": true,
+    "authenticatedReadAndExecuteDenied": true,
+    "existingBackupReaderAccessVerified": true,
+    "customerDataModified": false,
+    "isolatedPostgresTests": ["atomic assignment", "same-request replay", "input conflict", "wrong approved email", "RPC privilege boundary", "immutable ledger grants"]
+  },
+  "browserEvidence": {
+    "administratorMfaSession": "Verified by owner, admin page accessible",
+    "profileEntryPoint": "Existing client profile opens shared form with correct approved client selected",
+    "mobile": "390px viewport, document content 375px, no horizontal overflow",
+    "clientAdminAccess": "Client session denied before owner admin sign-in",
+    "invitationMode": "Password controls hidden, no notification submitted",
+    "existingTestReview": "Provider-backed test123.buzz review returned already assigned, with no activation action. No assignment or TXT mutation repeated.",
+    "realDomain": {
+      "name": "dubaicarrecovery.site",
+      "source": "Dedicated Spaceship server-side detail and registrant contact reads",
+      "status": "registered",
+      "expiryDate": "2027-10-13",
+      "autoRenew": false,
+      "nameservers": ["launch2.spaceship.net", "launch1.spaceship.net"],
+      "contactVerification": "success",
+      "observedAtLocal": "2026-10-14 14:25:34 Asia/Karachi",
+      "importedOrAssigned": false,
+      "registrarMutations": false
+    }
+  },
+  "verification": {"focusedTests": 79, "typeScript": "passed", "scopedEslint": "passed", "portalAndEdgeBuilds": "passed", "privateAnonymousApi": 401, "homepageAndContactOnPortalOrigin": 404},
+  "remaining": [
+    "Final real customer identity, onboarding method and consent are entered by the administrator in the secure form, not hardcoded or supplied in chat",
+    "No real customer activation or post-activation login is claimed in this evidence",
+    "Legal registrant transfer execution and per-assignment granular write permissions remain unfinished and disabled",
+    "Renewal financial/registrar execution remains disabled",
+    "Final company-domain rewrites remain unapplied pending a commercially permitted hosting decision and separate production-routing approval",
+    "Existing provider payment/email acceptance was not repeated"
+  ]
+}

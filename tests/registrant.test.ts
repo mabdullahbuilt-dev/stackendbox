@@ -11,6 +11,10 @@ beforeEach(() => {
   vi.mocked(spaceship.contact).mockResolvedValue({ firstName: "Authorized", lastName: "Client", email: "fixture@example.com", address1: "1 Test Street", city: "Test City", country: "US", phone: "+1.123456789" });
 });
 describe("provider-backed holder evidence", () => {
+  it("rejects a malformed expiry rather than displaying it as verified",async()=>{
+    vi.mocked(spaceship.detail).mockResolvedValue({...detail,expirationDate:"invalid"});
+    await expect(readRegistrant("example.com")).rejects.toThrow("registrar_expiration_unverified");
+  });
   it("reads the domain's own official contact ID", async () => {
     const evidence = await readRegistrant("Example.COM");
     expect(evidence.holder).toBe("Authorized Client");

@@ -5,6 +5,7 @@ type Evidence = {
   holder: string; contact_id: string; custody: string; checked_at: string;
   verification_status: string | null; verification_reported: boolean;
   contact: { email: string; country: string };
+  lifecycle_status:string;expiration_date:string|null;auto_renew:boolean;nameservers:string[];
 };
 export function RegistrantCheck({ name }: { name: string }) {
   const [result, setResult] = useState<Evidence | null>(null);
@@ -22,6 +23,11 @@ export function RegistrantCheck({ name }: { name: string }) {
     <button className="portal-button" disabled={busy} onClick={() => void check()}>{busy ? "Checking registrar" : "Verify registered holder"}</button>
     {error && <p role="alert" className="portal-error">{error}</p>}
     {result && <dl>
+      <dt>Domain</dt><dd>{name}</dd>
+      <dt>Registration status</dt><dd>{result.lifecycle_status}</dd>
+      <dt>Expiration</dt><dd>{result.expiration_date?new Date(result.expiration_date).toLocaleString():"Not confirmed"}</dd>
+      <dt>Registrar auto-renew</dt><dd>{result.auto_renew?"On":"Off"}</dd>
+      <dt>Authoritative nameservers reported by registrar</dt><dd>{result.nameservers.join(", ")||"Not reported"}</dd>
       <dt>Recorded registrant</dt><dd>{result.holder}</dd>
       <dt>Official contact ID</dt><dd>{result.contact_id}</dd>
       <dt>Registrant email</dt><dd>{result.contact.email}</dd>

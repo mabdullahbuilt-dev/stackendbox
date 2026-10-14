@@ -76,13 +76,18 @@ export async function identity(verified?:{db:Awaited<ReturnType<typeof sessionDb
     throw new PortalError("account_not_authorized", 403);
   return { db, user, account: account as Account };
 }
-export async function superAdmin(existing?: Awaited<ReturnType<typeof identity>>) {
+export async function superAdmin(existing?: Awaited<ReturnType<typeof identity>>, requireFreshMfa=false) {
   const auth = existing || await identity();
   if (auth.account.role !== "super_admin")
     throw new PortalError("administrator_required", 403);
   const { data, error } = await auth.db.auth.mfa.getAuthenticatorAssuranceLevel();
   if (error || data?.currentLevel !== "aal2")
     throw new PortalError("administrator_mfa_required", 403);
+  if(requireFreshMfa){
+    const now=Date.now()/1000;
+    const fresh=data.currentAuthenticationMethods?.some(method=>typeof method!=="string"&&["totp","mfa/totp"].includes(method.method)&&Number.isFinite(method.timestamp)&&method.timestamp<=now+30&&now-method.timestamp<=600);
+    if(!fresh)throw new PortalError("administrator_fresh_mfa_required",403);
+  }
   return auth;
 }
 export async function clientAccess(id: string, existing?: Awaited<ReturnType<typeof identity>>) {

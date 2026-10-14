@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { api, type Data } from "./Portal";
+import { api } from "./Portal";
 import { generateTemporaryPassword, validatePassword } from "@/lib/portal/password-policy";
 type Client = {
   id: string;
@@ -51,7 +51,6 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   const [finished,setFinished]=useState(false);
   const createForm=useRef<HTMLFormElement>(null);
   const [attempt, setAttempt] = useState<Record<string, unknown> | null>(null);
-  const [assets,setAssets] = useState<Data|null>(null),[domainId,setDomainId]=useState("");
   const [search,setSearch]=useState("");
   const activeSearch=useRef("");
   const loadVersion=useRef(0);
@@ -85,7 +84,6 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
   },[clientId]);
   useEffect(() => {
     if (!create) void load();
-    else void api("admin/workspace").then(setAssets).catch(e=>setError(e.message));
   }, [create,load]);
   async function provision(input: Record<string, unknown>) {
     setBusy(true);
@@ -135,7 +133,6 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               email: fields.email,
               status: fields.status,
               credential_mode: credentialMode,
-              ...(fields.domain_id ? {domain_id:fields.domain_id,holder_arrangement:fields.holder_arrangement,legal_holder:fields.legal_holder,rights_confirmed:fields.rights_confirmed==="on"} : {}),
               ...(fields.website_url
                 ? {
                     website: {
@@ -182,8 +179,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               Website name, optional
               <input name="website_name" maxLength={120} />
             </label>
-            <label>Assigned domain, optional<select name="domain_id" value={domainId} onChange={e=>setDomainId(e.target.value)}><option value="">Assign later</option>{((assets?.domains||[]) as Record<string,unknown>[]).filter(d=>!d.protected&&!d.reconciliation_required&&d.lifecycle_status==="registered"&&!((assets?.domain_assignments||[]) as Record<string,unknown>[]).some(a=>a.domain_id===d.id)).map(d=><option key={String(d.id)} value={String(d.id)}>{String(d.name)}</option>)}</select></label>
-            {domainId&&<><p>The actual registrar holder is read from Spaceship. Portal assignment doesn&apos;t transfer ownership.</p><label>Contractual arrangement<select name="holder_arrangement"><option value="licensed">Managed or licensed access, holder unchanged</option><option value="client_owned">Client ownership agreement, separate registrar handoff</option></select></label><label className="portal-check"><input name="rights_confirmed" type="checkbox" required/>Client consent and contractual management rights verified.</label></>}
+            <p>To create a client and assign a domain together, use <Link href="/admin/domains#domain-handoff">the reviewed domain handoff</Link>.</p>
             <label>
               Website URL, optional
               <input name="website_url" type="url" placeholder="https://" />
@@ -211,7 +207,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
           </p>
         )}
         {message && <p role="status">{message}</p>}
-        {finished&&<button className="portal-button" onClick={()=>{createForm.current?.reset();setAttempt(null);setFinished(false);setTemporaryPassword("");setShowPassword(false);setDomainId("");setRequestId(crypto.randomUUID());setMessage("");}}>Create another client</button>}
+        {finished&&<button className="portal-button" onClick={()=>{createForm.current?.reset();setAttempt(null);setFinished(false);setTemporaryPassword("");setShowPassword(false);setRequestId(crypto.randomUUID());setMessage("");}}>Create another client</button>}
         <p>
           <Link href="/admin/clients">
             View saved clients and setup-email status
@@ -294,6 +290,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
                 );
               })}
               <h3>Domains</h3>
+              <p><Link className="portal-button" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain to this client</Link></p>
               {c.portal_domain_assignments.length ? (
                 c.portal_domain_assignments.map((d) => (
                   <p key={d.domain_id}>

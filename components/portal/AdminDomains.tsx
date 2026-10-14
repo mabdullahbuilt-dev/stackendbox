@@ -23,6 +23,7 @@ export function AdminDomains({
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
+  const [lookup,setLookup]=useState("");
   async function run(action: () => Promise<{ message?: string }>) {
     setBusy(true);
     setMessage("");
@@ -40,19 +41,6 @@ export function AdminDomains({
   const clients = rows(data, "clients").filter((c) => c.status === "active"),
     inventory = rows(data, "domains");
   const assignments = rows(data, "domain_assignments");
-  const clientSelect = (
-    <label>
-      Client business
-      <select name="client_id" required>
-        <option value="">Select a client</option>
-        {clients.map((c) => (
-          <option key={text(c.id)} value={text(c.id)}>
-            {text(c.business_name)}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
   const fields = (e: FormEvent<HTMLFormElement>) =>
     Object.fromEntries(new FormData(e.currentTarget));
   const selected = domain
@@ -78,7 +66,7 @@ export function AdminDomains({
                 ? "Inventory reconciliation required."
                 : ""}
             </p>
-            <DnsAcceptance name={text(selected.name)}/>
+            <details className="portal-panel"><summary>Authorized DNS acceptance tools</summary><DnsAcceptance name={text(selected.name)}/></details>
             {(["dns", "nameservers", "privacy"] as const).map((panel) => (
               <section className="portal-panel" key={panel}>
                 <h2>
@@ -119,7 +107,8 @@ export function AdminDomains({
           {message}
         </p>
       )}
-      <DomainHandoff reload={reload}/>
+      <DomainHandoff reload={reload} domains={inventory.filter(d=>!d.protected&&!d.reconciliation_required&&d.lifecycle_status==="registered"&&!assignments.some(a=>a.domain_id===d.id)).map(d=>text(d.name))}/>
+      <details className="portal-panel"><summary>Verify a purchased domain without assigning it</summary><form onSubmit={e=>{e.preventDefault();setLookup(String(new FormData(e.currentTarget).get("domain")||"").trim().toLowerCase());}}><label>Domain to check<input name="domain" required maxLength={253}/></label><button>Open read-only verification</button></form>{lookup&&<RegistrantCheck key={lookup} name={lookup}/>}</details>
       <section className="portal-panel">
         <h2>Client-domain registrar inventory</h2>
         <p>Use the dedicated StackEndBox client-domains Spaceship account. Keep personal domains outside this integration.</p>
@@ -216,65 +205,6 @@ export function AdminDomains({
             </table>
           </div>
         )}
-      </section>
-      <section className="portal-panel">
-        <h2>Assign a verified domain</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = fields(e);
-            void run(() =>
-              api("admin/assign", {
-                ...f,
-                rights_confirmed: f.rights_confirmed === "on",
-              }),
-            );
-          }}
-        >
-          {clientSelect}
-          <label>
-            Unassigned domain
-            <select name="domain_id" required>
-              <option value="">Select a verified domain</option>
-              {inventory
-                .filter(
-                  (d) =>
-                    !d.protected &&
-                    !d.reconciliation_required &&
-                    d.lifecycle_status === "registered" &&
-                    !assignments.some((a) => a.domain_id === d.id),
-                )
-                .map((d) => (
-                  <option key={text(d.id)} value={text(d.id)}>
-                    {text(d.name)}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <p>The actual registered holder is fetched from Spaceship and recorded separately. You don&apos;t need to change it to grant client management access.</p>
-          <label>
-            Contractual arrangement
-            <select name="holder_arrangement">
-              <option value="client_owned">
-                Client ownership agreement, separate registrar handoff
-              </option>
-              <option value="licensed">
-                Managed or licensed access, holder unchanged
-              </option>
-            </select>
-          </label>
-          <label className="portal-check">
-            <input name="rights_confirmed" type="checkbox" required />I verified
-            the contractual rights and accurate holder arrangement.
-          </label>
-          <button className="portal-button" disabled={busy || !clients.length}>
-            Verify and assign domain
-          </button>
-        </form>
-        <p>
-          The registrar record is fetched again before assignment. Assignment
-          grants portal access and doesn&apos;t change registrar ownership.
-        </p>
       </section>
     </>
   );
