@@ -1,0 +1,91 @@
+{
+  "definitionOfSuccessMet": false,
+  "readiness": {"ownerOperatedCandidate":"PARTIALLY_VERIFIED", "restrictedHiredStaffOperation":"NOT_READY", "integrationReady":"PARTIAL", "productionEnabled":false},
+  "applicationCommit":"c52952449511ad9c50c2c2f3621e4a1c3feef0f5",
+  "branch":"feature/cloudflare-workers-proof",
+  "deployments": {
+    "candidate":{"origin":"https://stackendbox-production.stackendbox.workers.dev","workerVersion":"747a86a8-66d7-444a-94c6-fdf6cba232f2"},
+    "acceptance":{"origin":"https://stackendbox-static-acceptance.stackendbox.workers.dev","workerVersion":"a9a83f31-a623-44d6-9674-dc3b92a0bd1f"},
+    "publicArtifactsPreserved":28,
+    "providerCredentialsChanged":false,
+    "companyDomainBindingsChanged":false
+  },
+  "newAdministratorWork": [
+    "Operations, Check delivery status, calls the official Brevo event API with the existing separate portal key and exact message ID plus recipient correlation",
+    "Delivered, bounced, deferred, failed and accepted evidence is saved without returning provider payloads or resending",
+    "Missing send references and missing matching events preserve saved state and cannot authorize a resend",
+    "Operations exposes the existing atomic known-predispatch recovery RPC only for the exact documented missing-sender failure, with fresh MFA and confirmation",
+    "Reserved initial-password provisioning now offers a secure transient password input for recovery without storing it in retry records or resetting an existing identity",
+    "Client sign-in enable/disable can target only client identities and rejects missing, staff and owner targets instead of falsely reporting success",
+    "Fresh MFA now guards account access, client edits, access-email generation, manual payment recording and notification recovery",
+    "An administrator operating guide is available directly inside Operations"
+  ],
+  "hostedBrowserEvidence": {
+    "environment":"Existing acceptance owner session and existing labelled test notification. Not an isolated full operator exercise.",
+    "notificationSubject":"TEST ONLY scheduled portal notification acceptance",
+    "before":"accepted",
+    "officialProviderResult":"delivered",
+    "afterRefresh":"delivered",
+    "newMessagesSent":0,
+    "newCustomersCreated":0,
+    "domainAssignmentsChanged":0,
+    "guideVisible":true,
+    "desktopViewportWidth":1280,
+    "desktopContentWidth":1265,
+    "screenshot":"dist/portal-evidence/operator-delivery-verified.png",
+    "recoveryLimit":"No qualifying current unsent row was manufactured. The recovery wrapper and replay rejection passed targeted tests, but a new real recovery was not executed. Reserved password recovery UI was built and type/lint checked, not exercised with a new hosted Auth identity."
+  },
+  "customerOperations": {
+    "checkedAtUtc":"2026-10-14T20:56:32.983Z",
+    "tenant":"One existing authorized test client",
+    "passed":["Own domain and stored website/support records","Private response allowlist","Unassigned domain denial","Administrator API denial","Direct RLS","Invoice receipt download","Live changes disabled"],
+    "newEndpointNegativeChecks":"Customer POST to notification reconciliation, notification recovery and account-status APIs returned 403 before any administrative side effect",
+    "evidence":"dist/portal-evidence/customer-contract-operator-release.json"
+  },
+  "officialSpaceshipMatrix":"spaceship-capability-matrix-2026-10-15.json",
+  "paymentAndRenewal": {
+    "preserved":"Prior genuine Whop Sandbox payment, signed event and receipt evidence. No duplicate Sandbox checkout was run.",
+    "implementedBaseline":"Environment-separated provider adapter, signed event verification, persisted payment/order correlation, refund/dispute reconciliation code, guarded registrar renewal contract and async lookup",
+    "newRealRenewalPerformed":false,
+    "unverified":"Complete staff-operated real payment-to-supplier renewal, verified new expiration, full recovery exercise and live merchant eligibility. Payment never substitutes for registrar postcondition evidence.",
+    "activation":"Live charges, paid links, registrar renewals and other real mutations remain disabled. Require separate founder approval and complete financial/registrar acceptance."
+  },
+  "brevo": {
+    "officialApi":"GET https://api.brevo.com/v3/smtp/statistics/events",
+    "documentation":"https://developers.brevo.com/reference/get-email-event-report",
+    "newDeliveryEvidence":"Real authenticated provider read through the new administrator browser action, persisted across refresh",
+    "recovery":"Only exact known failure before dispatch is requeueable. An ambiguous send, absent event or failed provider read never triggers a resend.",
+    "publicWebsiteKey":"Unchanged and never used by the new portal reconciliation function"
+  },
+  "staffAndSecurity": {
+    "currentBoundary":"Only database-approved super_admin with AAL2 can enter administrator APIs. Existing staff and client roles remain denied.",
+    "newFix":"Client account-status API no longer updates another privileged account. It requires a fresh MFA timestamp and a client-role update filter.",
+    "tests":"26 targeted tests passed across notification evidence/recovery, client sign-in controls, client edit validation and administrator role/MFA boundaries. TypeScript and changed-file lint passed.",
+    "notImplemented":"Owner-managed granular Operations, Domain, Billing, Support and Auditor roles with corresponding database/RLS policies and staff provisioning. Do not give a hired staff member the owner identity as a workaround."
+  },
+  "backgroundOperations": {
+    "production":"Disabled, unchanged",
+    "acceptance":"Existing fixture-scoped hosted cron retained without expanding scope or adding a schedule",
+    "activationAndRollback":"production-scheduler-activation.json",
+    "remaining":"Proactive alert delivery, broader delivery reconciliation scheduling, stuck payment/registrar operation recovery and approved production scheduled acceptance remain incomplete",
+    "backups":"Existing encrypted hosted backup arrangement preserved. No recovery keys or backup credentials read or changed."
+  },
+  "operatorOnlyExercise": {
+    "completed":false,
+    "reason":"The required restricted staff roles and fully isolated UI payment/renewal/recovery exercise aren't ready. Existing owner/test browser journeys and mocked provider tests must not be presented as the requested sixteen-step staff-only exercise.",
+    "additionalGaps":["Ticket urgency, staff assignment, escalation and staff-only notes","Service start/renewal dates, billing arrangement and internal-note management","General failed-provisioning and ambiguous-notification recovery beyond the narrow supported cases","Permitted operator exports","Complete renewal approval/execution controls"]
+  },
+  "runbook": {
+    "where":"Admin Operations, Administrator operating guide",
+    "source":"lib/portal/operator-guide.ts",
+    "coverage":["Onboarding","Existing-client handoff","Website/service assignment","Invoices and payment escalation","Renewal safety","Support","Delivery checks and safe recovery","Client suspension","Security and backup-health escalation"],
+    "limits":"The guide names current controls and explicitly identifies missing workflows. It doesn't instruct staff to use SQL, a terminal or developer-only APIs."
+  },
+  "performanceAndQuota": {
+    "latestReadOnlySample":{"dataMedianMs":622,"dataMaximumMs":1880},
+    "qualification":"One hosted fixture using an SDK email-token session. Not a password-login load test or multi-tenant performance claim. No new 10/25/50 tests or billing-meter extrapolation.",
+    "priorDetailedTrace":"performance-and-launch-review-2026-10-15.json"
+  },
+  "founderApprovalsStillRequired":["Exact company-domain nameserver delegation after the time gate and healthy fresh checks","Separate Worker company-domain cutover and final Auth origin activation","Approved real customer/domain pairing entered in the secure form with fresh MFA","Production notification scheduling after delivery/alert acceptance","Live financial and registrar activation after their acceptance"],
+  "dns":"Frozen. No new nameserver, DS, DNSSEC, DNS record or routing operation. The minimum review gate remains 2026-10-15T19:00:10.186Z, October 16 at 00:00:10.186 Pakistan time. No Codex wakeup task was created."
+}

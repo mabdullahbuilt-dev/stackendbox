@@ -48,6 +48,7 @@ try{
   if(live.changesEnabled!==false||!live.detail.expirationDate)throw Error('domain_gate_invalid');
   stage='authorization';
   await request('admin/workspace',undefined,403);
+  for(const action of ['notification-reconcile','notification-recover','account-status'])await request(`admin/${action}`,{id:'11111111-1111-4111-8111-111111111111',confirmed:true,user_id:member.data.user_id,active:false},403);
   await request('domains/dubaicarrecovery.site',undefined,404);
   await request('domains/test123.buzz/unrecognized',undefined,404);
   const other=await session.from('portal_domains').select('id').eq('name','dubaicarrecovery.site');
