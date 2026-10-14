@@ -342,7 +342,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
                   <small>{p.id}</small>
                   {p.state === "reserved" && (
                     <div>
-                    {["initial_password","temporary_password"].includes(String(p.input.credential_mode))&&<label>Initial password if the identity still needs creating<input type="password" autoComplete="new-password" minLength={8} maxLength={128} value={resumePasswords[p.id]||""} onChange={event=>setResumePasswords({[p.id]:event.target.value})}/><small>Existing passwords are never reset by resuming. Passwords aren't saved in retry records.</small></label>}
+                    {["initial_password","temporary_password"].includes(String(p.input.credential_mode))&&<label>Initial password if the identity still needs creating<input type="password" autoComplete="new-password" minLength={8} maxLength={128} value={resumePasswords[p.id]||""} onChange={event=>setResumePasswords({[p.id]:event.target.value})}/><small>Existing passwords are never reset by resuming. Passwords aren&apos;t saved in retry records.</small></label>}
                     <button
                       disabled={busy}
                       onClick={() =>
