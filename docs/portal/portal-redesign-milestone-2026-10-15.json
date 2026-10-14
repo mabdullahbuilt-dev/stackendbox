@@ -1,0 +1,79 @@
+{
+  "applicationCommit": "d1632edb1aff1769c80290000a6dde4f9158fce1",
+  "branch": "feature/cloudflare-workers-proof",
+  "status": "Verified UI and service-management milestone. Full independent staff operations remain incomplete.",
+  "deployments": {
+    "candidate": {"origin": "https://stackendbox-production.stackendbox.workers.dev", "workerVersion": "a7bbea23-202c-4f25-a1fd-6a93ec37b10d"},
+    "acceptance": {"origin": "https://stackendbox-static-acceptance.stackendbox.workers.dev", "workerVersion": "0934ea89-36a5-4b80-a67e-6ce36f9b7b4d"}
+  },
+  "implemented": [
+    "Portal-only tokens, page headers, icon navigation, metrics, status badges, searchable tables, accessible tabs, native detail drawers, loading and empty states",
+    "Operations queue tabs and compact notification tables, with references and diagnostics in drawers and operator help outside the daily overview",
+    "Database-backed operations counts and a shared review-state contract for counts and visible rows",
+    "Customer/test-scoped admin Overview with six metrics and actionable follow-up links. Operations explicitly opens global queues, including labelled tests.",
+    "Structured client directory with approved email, real assigned-domain/service counts and last sign-in",
+    "Client profiles split into Overview, Domains, Websites & Services, and Account",
+    "Customer overview metrics and domain cards showing saved provider-confirmed expiry, auto-renew state and accurate renewal availability",
+    "Dedicated Websites & Services workspace with existing idempotent creation APIs and new client-bound edit APIs",
+    "Server validation of safe HTTPS website URLs and service-to-website client ownership during edits"
+  ],
+  "verification": {
+    "targetedTests": {"passed": 55, "files": 6, "additionalQueueContractTestsPassed": 2},
+    "typeScript": "passed",
+    "eslintChangedSources": "passed",
+    "portalAndEdgeProductionBuilds": "passed",
+    "publicArtifacts": {"unchangedFiles": 28, "comparison": "SHA-256 before/after portal-only deployment, all identical"},
+    "hostedBrowser": [
+      "Existing administrator MFA session opened Operations and exact count queries successfully",
+      "Notification table displayed accepted and delivered as separate states",
+      "Native drawer opened with focus on Close details, Escape closed it and returned focus to View details",
+      "ArrowRight selected the next operation tab",
+      "Client directory and profile tabs displayed persisted test-client/domain/website records",
+      "Customer reporting excluded labelled test accounts, and the test selector displayed the existing test client",
+      "Mobile menu opened and route navigation closed it",
+      "Existing labelled test website was saved through the new hosted editor with unchanged name, URL and client",
+      "Service create form opened with only that client's eligible website options. No new service record was created in the hosted database.",
+      "Existing customer billing screen retained its explicitly labelled Whop Sandbox receipt"
+    ],
+    "responsive": {"widths": [390,768,1280,1440], "pageLevelHorizontalOverflow": false, "scope": "Sampled redesigned Operations, Overview, profile and client domain/overview views. Not a claim that every portal page has finished accessibility acceptance."},
+    "hostedCustomerContract": {"artifact": "dist/portal-evidence/customer-contract-redesign-services.json", "commit": "54cef0f1660e0d08e9c2a16ca43561b9bf8218ba", "tenantIsolation": true, "directRls": true, "privateFieldsAbsent": true, "receiptDownload": true, "administratorActionsDenied": true, "newWebsiteAndServiceEditsDenied": true},
+    "performance": {"medianDataMs": 582, "maxDataMs": 2006, "scope": "One existing authorized test tenant, read-only requests. No multi-tenant capacity or password-login benchmark claim."}
+  },
+  "screenshots": {
+    "administratorBefore": "dist/portal-evidence/redesign-admin-before.png",
+    "administratorAfter": "dist/portal-evidence/redesign-admin-after.png",
+    "clientBefore": "dist/portal-evidence/redesign-client-before.png",
+    "clientAfter": "dist/portal-evidence/redesign-client-after.png",
+    "services": "dist/portal-evidence/redesign-services-after.png",
+    "mobileAdmin": "dist/portal-evidence/redesign-admin-mobile.png",
+    "mobileClient": "dist/portal-evidence/redesign-client-mobile.png"
+  },
+  "preserved": {
+    "publicWebsiteSourceAndAssets": true,
+    "vercelFallback": true,
+    "providerCredentials": true,
+    "existingCustomerCredentialsAndAssignments": true,
+    "encryptedBackupConfiguration": true,
+    "existingAcceptanceFixtureSchedules": true,
+    "productionSchedulingDisabled": true,
+    "liveChargesAndRegistrarMutationsDisabled": true,
+    "dnsAndCompanyDomainBindingsChanged": false,
+    "realCustomerHandoffPerformed": false
+  },
+  "remainingEngineering": [
+    "Granular staff provisioning, role-specific API/RLS enforcement, owner-controlled activation/revocation and non-owner operator acceptance",
+    "Support staff assignment, urgency, escalation and strictly private internal-note persistence",
+    "Service start/renewal dates and structured billing arrangements",
+    "Remaining support, billing and domain detail screen-specific redesign and full keyboard/error-state acceptance",
+    "Broader renewal operation and recovery acceptance before live financial or registrar execution",
+    "Services list uses the existing bounded workspace read model. Beyond 500 saved records per type it needs dedicated pagination."
+  ],
+  "founderApprovalsStillReserved": [
+    "Any real customer/domain assignment",
+    "Activation of newly implemented staff security permissions after role-specific tests",
+    "Live financial transactions or registrar mutations",
+    "Production customer-affecting schedules",
+    "Nameserver delegation and later company-domain application cutover, each separately"
+  ],
+  "freshSpaceshipWhopBrevoAcceptance": "Previously verified evidence retained. No new registrar mutation, checkout, notification dispatch or backup-recovery test was performed for this UI milestone."
+}
