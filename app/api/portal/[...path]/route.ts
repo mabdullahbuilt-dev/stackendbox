@@ -229,8 +229,6 @@ async function handle(req: NextRequest, context: Context) {
       checkDb(membershipError);
       checkDb(factorsError);
       const clientIds = scopedClient ? [scopedClient] : (memberships || []).map((m) => m.client_id);
-      const { data: assigned, error: assignmentError } = (adminMode && !scopedClient) || !clientIds.length || !selected.has("domains") ? { data: [], error: null } : await auth.db.from("portal_domain_assignments").select("domain_id").in("client_id", clientIds);
-      checkDb(assignmentError);
       const tables = portalTables;
       const results = await Promise.all(
         tables.map((t) => {
@@ -238,9 +236,10 @@ async function handle(req: NextRequest, context: Context) {
           if (!selected.has(t)) return {data:[],error:null};
           if (!adminMode && !clientIds.length) return { data: [], error: null };
           const columns = adminMode ? (t === "external_payments" ? "id,client_id,acquisition_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at" : "*") : clientColumns(t);
-          let query = auth.db.from(`portal_${t}`).select(columns).limit(500);
+          const scopedDomains=t==="domains"&&(!adminMode||!!scopedClient);
+          let query = auth.db.from(`portal_${t}`).select(columns+(scopedDomains?",portal_domain_assignments!inner(client_id)":"")).limit(500);
           if (!adminMode || scopedClient) {
-            if (t === "domains") query = query.in("id", (assigned || []).map((a) => a.domain_id));
+            if (t === "domains") query = query.in("portal_domain_assignments.client_id", clientIds);
             else if (t === "clients") query = query.in("id", clientIds);
             else if (t === "memberships") query = query.eq("user_id", auth.user.id);
             else query = query.in("client_id", clientIds);
@@ -250,7 +249,7 @@ async function handle(req: NextRequest, context: Context) {
       );
       results.forEach((r) => checkDb(r.error));
       return reply({
-        account: auth.account,
+        account: adminMode ? auth.account : {user_id:auth.account.user_id,name:auth.account.name,approved_email:auth.account.approved_email,role:auth.account.role},
         sandbox_checkout_enabled: sandboxCheckoutEnabled(),
         factors:
           factors?.totp.map((f) => ({ id: f.id, status: f.status })) || [],
@@ -262,7 +261,10 @@ async function handle(req: NextRequest, context: Context) {
       await authorizedDomain(name, auth);
       if (req.method === "GET" && req.nextUrl.searchParams.has("operation")) return reply(await domainOperationStatus(name,req.nextUrl.searchParams.get("operation")!,auth));
       if (req.method === "GET") return reply(clientDomainState(await readDomainState(name)));
-      if (req.method === "POST") return reply(await changeDomain(name, body, auth));
+      if (req.method === "POST") {
+        if(body.change && typeof body.change === "object" && "kind" in body.change && body.change.kind === "nameservers") throw new PortalError("domain_change_requires_support",403);
+        return reply(await changeDomain(name, body, auth));
+      }
     }
     if (path[0] === "domains" && path[1] && req.method === "GET" && (path.length === 2 || (path.length === 3 && path[2] === "dns"))) {
       const name = domainName(path[1]);
@@ -299,7 +301,7 @@ async function handle(req: NextRequest, context: Context) {
       await clientAccess(input.client_id, auth);
       if (input.kind === "registration") await superAdmin(auth);
       return reply(
-        await createQuote(input.client_id, input.domain, input.kind),
+        clientRow("quotes",await createQuote(input.client_id, input.domain, input.kind)),
       );
     }
     if (route === "orders" && req.method === "POST") {
@@ -341,7 +343,7 @@ async function handle(req: NextRequest, context: Context) {
         .single();
       checkDb(oe);
       await audit(auth.user.id, "order_created", o.id);
-      return reply(o);
+      return reply(clientRow("orders",o));
     }
     if (
       path[0] === "orders" &&
@@ -430,7 +432,7 @@ async function handle(req: NextRequest, context: Context) {
       checkDb(error);
       if(!data||data.created_by!==auth.user.id||data.client_id!==input.client_id||data.subject!==input.subject||data.description!==input.description||data.category!==input.category)throw new PortalError("idempotency_conflict",409);
       await audit(auth.user.id, "support_request_created", data.id);
-      return reply(data);
+      return reply(clientRow("requests",data));
     }
     if (
       path[0] === "requests" &&
@@ -501,7 +503,7 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined));
       if (route === "admin/operations" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsData());
-      if (route === "admin/summary" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsSummary());
+      if (route === "admin/summary" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsSummary(z.enum(["customers","test"]).parse(req.nextUrl.searchParams.get("scope")||"customers")));
       if(route === "admin/ownership-tasks" && req.method === "GET") return reply(await (await import("@/lib/portal/ownership-tasks")).ownershipTasks());
       if(route === "admin/ownership-tasks" && req.method === "POST") return reply(await (await import("@/lib/portal/ownership-tasks")).createOwnershipTask(admin.user.id,body));
       if(route === "admin/ownership-progress" && req.method === "POST") return reply(await (await import("@/lib/portal/ownership-tasks")).progressOwnershipTask(admin.user.id,body));
@@ -701,7 +703,11 @@ async function handle(req: NextRequest, context: Context) {
     }
     throw new PortalError("not_found", 404);
   } catch (e) {
-    if (e instanceof PortalError) return reply({ error: administratorRoute ? e.code : customerErrorCode(e.code) }, e.status);
+    if (e instanceof PortalError) {
+      const safeCode=customerErrorCode(e.code);
+      if(safeCode!==e.code)console.warn(JSON.stringify({event:"portal_provider_request_failed",code:e.code}));
+      return reply({ error: administratorRoute ? e.code : safeCode }, e.status);
+    }
     if (e instanceof z.ZodError || e instanceof SyntaxError)
       return reply({ error: "invalid_input" }, 422);
     return reply({ error: "service_temporarily_unavailable" }, 503);

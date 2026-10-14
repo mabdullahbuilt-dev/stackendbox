@@ -22,7 +22,8 @@ const fields = {
 
 export const clientColumns = (table: PortalTable) => fields[table];
 export function customerErrorCode(code: string) {
-  return /^(spaceship_|registrant_|registrar_)/.test(code) ? "domain_information_unavailable" : code;
+  if (/^(spaceship_|registrant_|registrar_)/.test(code)) return "domain_information_unavailable";
+  return /^(configuration_required:|brevo_|whop_|provider_|database_)/.test(code) ? "service_temporarily_unavailable" : code;
 }
 const object = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 export function clientRow(table: PortalTable, value: unknown) {

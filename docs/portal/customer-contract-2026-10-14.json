@@ -1,0 +1,114 @@
+{
+  "at": "2026-10-14T17:58:27.625Z",
+  "origin": "https://stackendbox-production.stackendbox.workers.dev",
+  "commit": "e1cf0775611ab41e7a4bc381e095bb7051ae04f6",
+  "customerDtoPassed": true,
+  "privateFieldsAbsent": true,
+  "assignedDomainPresent": true,
+  "storedWebsiteAndSupportPresent": true,
+  "unassignedDomainDenied": true,
+  "adminDenied": true,
+  "directRlsPassed": true,
+  "receiptDownload": true,
+  "liveChangesDisabled": true,
+  "artifacts": {
+    "portal.js": "50fca5864a99ed2c032e4c83bcc96bd3c12fe1e906292214c31f06b44afbb9e2",
+    "portal.css": "6a962d31e9e0ebf2a911f167026acc01bca7d19cfb9f67407893fd478c54cd38",
+    "release.json": "3c2c050910a6bfe3a4b247aec94e2e85d8af795e52262282ce4e5050c58cb057"
+  },
+  "medianDataMs": 916,
+  "maxDataMs": 2524,
+  "metrics": [
+    {
+      "path": "auth/session",
+      "status": 200,
+      "ms": 1642,
+      "bytes": 44
+    },
+    {
+      "path": "data?section=dashboard",
+      "status": 200,
+      "ms": 2524,
+      "bytes": 2044
+    },
+    {
+      "path": "data?section=domains",
+      "status": 200,
+      "ms": 931,
+      "bytes": 1631
+    },
+    {
+      "path": "data?section=websites",
+      "status": 200,
+      "ms": 723,
+      "bytes": 1217
+    },
+    {
+      "path": "data?section=renewals",
+      "status": 200,
+      "ms": 1030,
+      "bytes": 1550
+    },
+    {
+      "path": "data?section=billing",
+      "status": 200,
+      "ms": 846,
+      "bytes": 1206
+    },
+    {
+      "path": "data?section=requests",
+      "status": 200,
+      "ms": 916,
+      "bytes": 2876
+    },
+    {
+      "path": "data?section=documents",
+      "status": 200,
+      "ms": 712,
+      "bytes": 897
+    },
+    {
+      "path": "data?section=settings",
+      "status": 200,
+      "ms": 828,
+      "bytes": 897
+    },
+    {
+      "path": "domains/test123.buzz",
+      "status": 200,
+      "ms": 917,
+      "bytes": 414
+    },
+    {
+      "path": "domains/test123.buzz/manage",
+      "status": 200,
+      "ms": 1730,
+      "bytes": 325
+    },
+    {
+      "path": "admin/workspace",
+      "status": 403,
+      "ms": 952,
+      "bytes": 34
+    },
+    {
+      "path": "domains/dubaicarrecovery.site",
+      "status": 404,
+      "ms": 708,
+      "bytes": 28
+    },
+    {
+      "path": "domains/test123.buzz/unrecognized",
+      "status": 404,
+      "ms": 591,
+      "bytes": 21
+    },
+    {
+      "path": "invoices/96d4599a-44c8-4d42-b962-8a57a3ae6030/download",
+      "status": 200,
+      "ms": 677,
+      "bytes": 410
+    }
+  ],
+  "scope": "One existing authorized test tenant, one SDK email-token session, read-only hosted requests. No password-login load claim, new accounts, notifications or registrar mutations."
+}

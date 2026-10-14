@@ -69,6 +69,7 @@ const errors: Record<string, string> = {
   invalid_input: "Check the entered values and try again. Your existing records haven't been changed.",
   too_many_requests: "Too many requests. Please wait a few minutes before trying again.",
   domain_information_unavailable: "Domain information is temporarily unavailable. Your saved records are unchanged. Please try again later or contact support.",
+  domain_change_requires_support: "Contact StackEndBox to review this domain change.",
   domain_change_requires_reconciliation: "This change needs a support review. Don't submit it again until its saved result has been checked.",
   domain_state_changed: "These settings changed. Refresh them before making another change.",
   external_authoritative_dns: "DNS changes are managed separately for this domain. Contact StackEndBox for help.",
@@ -401,10 +402,11 @@ export function PortalContent({
           <h1>Overview</h1>
           <p>{str(clients[0]?.business_name || data.account.name)}</p>
         </div>
-        {(domains.length > 0 || websites.length > 0 || requests.length > 0) && <div className="portal-stats">
+        {(domains.length > 0 || websites.length > 0 || requests.length > 0 || rows(data,"invoices").length > 0) && <div className="portal-stats">
           {[
             ["My domains", domains.length],
             ["My websites", websites.length],
+            ["Outstanding invoices", rows(data,"invoices").filter(i=>i.status==="issued").length],
             [
               "Renewals within 60 days",
               domains.filter(
@@ -436,6 +438,11 @@ export function PortalContent({
         <DomainList domains={domains} quotes={rows(data,"quotes")} websites={websites} />
         {!!rows(data,"service_entitlements").length&&<section className="portal-panel"><h2>Your agreed services</h2>{rows(data,"service_entitlements").map(s=><p key={str(s.id)}>{str(s.service)} · {str(s.description)} · {label(s.status)}</p>)}</section>}
         <div className="portal-columns">
+          <section className="portal-panel"><h2>Billing & support</h2>
+            <p><Link href="/client-portal/billing">View invoices and receipts</Link></p>
+            {rows(data,"invoices").filter(i=>i.status==="issued").slice(0,3).map(i=><p key={str(i.id)}>{str(i.description)} · {money(i.amount_minor)} outstanding</p>)}
+            {requests.length ? [...requests].sort((a,b)=>str(b.updated_at).localeCompare(str(a.updated_at))).slice(0,3).map(r=><p key={str(r.id)}><Link href="/client-portal/requests">{str(r.subject)}</Link> · {label(r.status)}</p>) : <p>No support requests yet.</p>}
+          </section>
           <section className="portal-panel">
             <h2>Your websites</h2>
             {websites.length ? (
@@ -1126,17 +1133,17 @@ function DomainDetail({ domain: d, data }: { domain: Row; data: Data }) {
             <h2>Registration details</h2>
             <dl className="portal-details">
               <dt>Status</dt>
-              <dd>{label(d.lifecycle_status)}</dd>
+              <dd>{d.lifecycle_status==="registered"?"Active":label(d.lifecycle_status)}</dd>
               <dt>Registered</dt>
               <dd>{date(d.registration_date)}</dd>
               <dt>Expiration</dt>
               <dd>{date(d.expiration_date)}</dd>
               <dt>Verification</dt>
-              <dd>{label(d.verification_status)}</dd>
+              <dd>{d.verification_status==="success"?"Verified":label(d.verification_status)}</dd>
               <dt>Time remaining</dt>
               <dd>{d.expiration_date && Number.isFinite(Date.parse(str(d.expiration_date))) ? `${Math.max(0, Math.ceil((Date.parse(str(d.expiration_date)) - now) / 86400000))} days` : "Not verified"}</dd>
               <dt>Privacy</dt>
-              <dd>{security?.privacy?.level || "Not reported"}</dd>
+              <dd>{security?.privacy?.level==="high"?"Private":security?.privacy?.level==="public"?"Public":"Not reported"}</dd>
               <dt>Renewal quote</dt>
               <dd>{latestRenewal ? `${money(latestRenewal.retail_minor)} for one year, valid until ${new Date(str(latestRenewal.valid_until)).toLocaleString()}` : "Request a current verified quote under Renewal & Billing"}</dd>
               <dt>Associated website</dt>

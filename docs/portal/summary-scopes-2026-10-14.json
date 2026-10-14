@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-14T18:04:41.001Z",
+  "scopes": {
+    "customers": {
+      "active_clients": 0,
+      "assigned_domains": 0,
+      "expires_30_days": 0,
+      "unpaid_invoices": 0,
+      "open_support": 0
+    },
+    "test": {
+      "active_clients": 1,
+      "assigned_domains": 1,
+      "expires_30_days": 0,
+      "unpaid_invoices": 0,
+      "open_support": 1
+    }
+  },
+  "activeClientPartitionVerified": true,
+  "readOnly": true,
+  "hostedAdminMfaRetested": false
+}

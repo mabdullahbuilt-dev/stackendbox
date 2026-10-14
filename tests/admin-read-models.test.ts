@@ -23,6 +23,12 @@ it("loads the overview with count-only queries and no client or message payloads
   expect(state.calls.filter(call=>call.method==="select")).toHaveLength(5);
   for(const call of state.calls.filter(call=>call.method==="select"))expect(call.args[1]).toEqual({count:"exact",head:true});
   expect(state.calls.some(call=>["auth.users","portal_messages","portal_email_outbox"].includes(call.table))).toBe(false);
+  expect(result.scope).toBe("customers");
+  expect(state.calls.filter(call=>call.method==="not"&&call.args[1]==="ilike")).toHaveLength(5);
+});
+it("counts labelled test accounts separately instead of mixing them into customer totals",async()=>{
+  expect((await operationsSummary("test")).scope).toBe("test");
+  expect(state.calls.filter(call=>call.method==="ilike"&&call.args[1]==="TEST ONLY %")).toHaveLength(5);
 });
 it("paginates renewal domains and scopes saved history without exposing email payloads",async()=>{
   state.results.portal_domains=Array.from({length:51},(_,i)=>({id:String(i),name:`fixture${i}.invalid`,portal_domain_assignments:[{client_id:"client"}]}));

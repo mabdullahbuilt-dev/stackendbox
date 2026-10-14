@@ -20,5 +20,7 @@ describe("customer response contracts",()=>{
     expect(customerErrorCode("spaceship_403")).toBe("domain_information_unavailable");
     expect(customerErrorCode("registrant_contact_unavailable")).toBe("domain_information_unavailable");
     expect(customerErrorCode("quote_expired")).toBe("quote_expired");
+    expect(customerErrorCode("configuration_required:INTERNAL_SECRET_NAME")).toBe("service_temporarily_unavailable");
+    expect(customerErrorCode("whop_403")).toBe("service_temporarily_unavailable");
   });
 });

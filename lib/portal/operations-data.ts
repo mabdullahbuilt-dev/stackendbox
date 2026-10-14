@@ -1,18 +1,20 @@
 import "server-only";
 import {adminDb,checkDb} from "./server";
 
-export async function operationsSummary(){
+export async function operationsSummary(scope:"customers"|"test"="customers"){
   const db=adminDb(),now=new Date(),at=now.toISOString();
   const count=(table:string)=>db.from(`portal_${table}`).select("*",{count:"exact",head:true});
+  const clientCount=(table:string)=>db.from(`portal_${table}`).select("client_id,portal_clients!inner(business_name)",{count:"exact",head:true});
+  const filter=<T extends {ilike:(key:string,value:string)=>T;not:(key:string,operator:string,value:string)=>T}>(query:T,key:string)=>scope==="test"?query.ilike(key,"TEST ONLY %"):query.not(key,"ilike","TEST ONLY %");
   const queries={
-    active_clients:count("clients").eq("status","active"),
-    assigned_domains:count("domain_assignments"),
-    expires_30_days:count("domains").eq("protected",false).gte("expiration_date",at).lte("expiration_date",new Date(now.getTime()+30*86400000).toISOString()),
-    unpaid_invoices:count("invoices").eq("status","issued"),
-    open_support:count("requests").not("status","in","(completed,closed)"),
+    active_clients:filter(count("clients").eq("status","active"),"business_name"),
+    assigned_domains:filter(clientCount("domain_assignments"),"portal_clients.business_name"),
+    expires_30_days:filter(db.from("portal_domains").select("id,portal_domain_assignments!inner(portal_clients!inner(business_name))",{count:"exact",head:true}).eq("protected",false).gte("expiration_date",at).lte("expiration_date",new Date(now.getTime()+30*86400000).toISOString()),"portal_domain_assignments.portal_clients.business_name"),
+    unpaid_invoices:filter(clientCount("invoices").eq("status","issued"),"portal_clients.business_name"),
+    open_support:filter(clientCount("requests").not("status","in","(completed,closed)"),"portal_clients.business_name"),
   };
   const names=Object.keys(queries),results=await Promise.all(Object.values(queries));results.forEach(result=>checkDb(result.error));
-  return {checked_at:at,counts:Object.fromEntries(names.map((name,index)=>[name,results[index].count]))};
+  return {checked_at:at,scope,counts:Object.fromEntries(names.map((name,index)=>[name,results[index].count]))};
 }
 
 /** Admin-only snapshot. No registrar calls, writes, password or provider payloads. */

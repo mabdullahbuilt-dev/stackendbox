@@ -22,6 +22,14 @@ import { adminDb, identity, sessionDb, superAdmin, turnstile } from "@/lib/porta
 import {notifyClient} from "@/lib/portal/services";
 import { PortalError } from "@/lib/portal/rules";
 import { adminTables, clientTables } from "@/lib/portal/data-scope";
+import {changeDomain} from "@/lib/portal/domain-operations";
+
+it("rejects nameserver changes on the customer management endpoint before provider execution",async()=>{
+  vi.mocked(identity).mockResolvedValue({user:{id:"fixture",app_metadata:{}},account:{role:"client"},db:{}} as unknown as Awaited<ReturnType<typeof identity>>);
+  vi.mocked(changeDomain).mockClear();
+  const response=await POST(new NextRequest("https://portal.example/api/portal/domains/fixture.invalid/manage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({change:{kind:"nameservers",hosts:["ns1.example.invalid","ns2.example.invalid"]}})}),{params:Promise.resolve({path:["domains","fixture.invalid","manage"]})});
+  expect(response.status).toBe(403);expect(await response.json()).toEqual({error:"domain_change_requires_support"});expect(changeDomain).not.toHaveBeenCalled();
+});
 
 describe("reviewed domain handoff gate",()=>{
   it.each(["activate-domain-client","domain-handoff-review"])("requests fresh MFA before %s",async operation=>{
@@ -128,10 +136,10 @@ describe("page-scoped client queries", () => {
     vi.mocked(identity).mockResolvedValue({user:{id:"fixture"},account:{role:"client"},db:{from,auth:{mfa:{listFactors:factors}}}} as unknown as Awaited<ReturnType<typeof identity>>);
     const response=await GET(new NextRequest(`https://portal.example/api/portal/data?section=${section}`),{params:Promise.resolve({path:["data"]})});
     expect(response.status).toBe(200);
-    const expected=["portal_memberships",...(clientTables(section).includes("domains")?["portal_domain_assignments"]:[]),...clientTables(section).map(t=>`portal_${t}`)];
+    const expected=["portal_memberships",...clientTables(section).map(t=>`portal_${t}`)];
     expect(queried).toEqual(expected);
     expect(factors).toHaveBeenCalledTimes(section==="settings"?1:0);
-    for(const table of clientTables(section))expect(filters).toContainEqual([`portal_${table}`,table==="domains"||table==="clients"?"id":"client_id",table==="domains"?["assigned-domain"]:[clientId]]);
+    for(const table of clientTables(section))expect(filters).toContainEqual([`portal_${table}`,table==="domains"?"portal_domain_assignments.client_id":table==="clients"?"id":"client_id",[clientId]]);
   });
   it("does not expose admin-only tables in any client section",()=>{
     for(const section of ["dashboard","domains","websites","renewals","billing","requests","documents","settings","reset-password"] as const){
