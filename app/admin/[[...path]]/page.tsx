@@ -11,7 +11,7 @@ export default async function AdminPage({
   params: Promise<{ path?: string[] }>;
 }) {
   const { path = [] } = await params;
-  const section = path[0] || "operations";
+  const section = path[0] || "overview";
   if (!portalPageRoute(`/admin/${path.join("/")}`)) notFound();
   try {
     await superAdmin();

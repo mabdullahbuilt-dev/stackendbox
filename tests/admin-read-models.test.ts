@@ -7,9 +7,16 @@ vi.mock("@/lib/portal/server",()=>({checkDb:(error:unknown)=>{if(error)throw Err
   return builder;
 }})}));
 import {clientDirectory,operationalHealth} from "../lib/portal/admin-data";
-import {operationsData} from "../lib/portal/operations-data";
+import {operationsData,operationsSummary} from "../lib/portal/operations-data";
 import {renewalMonitor} from "../lib/portal/renewal-monitor";
 beforeEach(()=>{state.calls=[];state.results={};});
+it("loads the overview with count-only queries and no client or message payloads",async()=>{
+  const result=await operationsSummary();
+  expect(result.counts).toEqual({active_clients:3,assigned_domains:3,expires_30_days:3,unpaid_invoices:3,open_support:3});
+  expect(state.calls.filter(call=>call.method==="select")).toHaveLength(5);
+  for(const call of state.calls.filter(call=>call.method==="select"))expect(call.args[1]).toEqual({count:"exact",head:true});
+  expect(state.calls.some(call=>["auth.users","portal_messages","portal_email_outbox"].includes(call.table))).toBe(false);
+});
 it("paginates renewal domains and scopes saved history without exposing email payloads",async()=>{
   state.results.portal_domains=Array.from({length:51},(_,i)=>({id:String(i),name:`fixture${i}.invalid`,portal_domain_assignments:[{client_id:"client"}]}));
   state.results.portal_email_outbox=[{id:"mail",dedupe_key:"renewal:fixture0.invalid:expiry:30:private@example.invalid",status:"accepted"}];

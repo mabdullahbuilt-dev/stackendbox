@@ -1,6 +1,20 @@
 import "server-only";
 import {adminDb,checkDb} from "./server";
 
+export async function operationsSummary(){
+  const db=adminDb(),now=new Date(),at=now.toISOString();
+  const count=(table:string)=>db.from(`portal_${table}`).select("*",{count:"exact",head:true});
+  const queries={
+    active_clients:count("clients").eq("status","active"),
+    assigned_domains:count("domain_assignments"),
+    expires_30_days:count("domains").eq("protected",false).gte("expiration_date",at).lte("expiration_date",new Date(now.getTime()+30*86400000).toISOString()),
+    unpaid_invoices:count("invoices").eq("status","issued"),
+    open_support:count("requests").not("status","in","(completed,closed)"),
+  };
+  const names=Object.keys(queries),results=await Promise.all(Object.values(queries));results.forEach(result=>checkDb(result.error));
+  return {checked_at:at,counts:Object.fromEntries(names.map((name,index)=>[name,results[index].count]))};
+}
+
 /** Admin-only snapshot. No registrar calls, writes, password or provider payloads. */
 export async function operationsData() {
   const db=adminDb(),now=new Date(),at=now.toISOString();

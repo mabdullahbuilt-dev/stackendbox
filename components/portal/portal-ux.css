@@ -9,6 +9,9 @@
 .portal-root .portal-auth-compact .portal-form { gap:16px; }
 .portal-root .portal-auth-compact .portal-button { justify-self:start; }
 .portal-root .portal-verification:empty { display:none; }
+.portal-root .portal-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:20px 0; }
+.portal-root .portal-overview-stats { grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; background:none; border:0; }
+.portal-root .portal-overview-stats .portal-panel { margin:0; padding:20px; }
 .portal-root .portal-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
 .portal-root .portal-tabs a { padding:9px 14px; border:1px solid var(--border); border-radius:8px; }
 .portal-root .portal-tabs [aria-current="page"], .portal-root .portal-tabs [aria-pressed="true"] { color:var(--accent-text); border-color:var(--accent); }

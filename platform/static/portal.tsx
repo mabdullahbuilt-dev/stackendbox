@@ -7,6 +7,7 @@ import { Link } from "./navigation";
 import { portalApiPath } from "../../lib/portal/browser-path";
 import { portalPageRoute } from "../../lib/portal/page-route";
 import { bootstrapPath } from "../../lib/portal/bootstrap-path";
+import {watchSessionChange} from "../../lib/portal/session-events";
 import "./fonts.css";
 import "../../styles/tokens.css";
 import "../../styles/base.css";
@@ -18,6 +19,25 @@ function App() {
   const [identity, setIdentity] = useState<{ user_id: string } | null>(null);
   const [initialData,setInitialData]=useState<Data|undefined>();
   const [error, setError] = useState("");
+  useEffect(()=>{
+    if(publicPage||!identity)return;
+    let active=true,checking=false,last=Date.now();
+    const controller=new AbortController();
+    const reset=()=>{setIdentity(null);setInitialData(undefined);window.location.reload();};
+    const stop=watchSessionChange(reset);
+    const check=async()=>{
+      if(!active||checking||document.visibilityState!=="visible"||Date.now()-last<15000)return;
+      last=Date.now();checking=true;
+      try{
+        const response=await fetch(portalApiPath(`auth/identity${admin?"?admin=1":""}`),{cache:"no-store",signal:AbortSignal.any([controller.signal,AbortSignal.timeout(10000)])});
+        const current=await response.json();
+        if(active&&(!response.ok||current.user_id!==identity.user_id))reset();
+      }catch{if(active){setIdentity(null);setInitialData(undefined);setError("Your session couldn't be confirmed. Retry to sign in securely.");}}
+      finally{checking=false;}
+    };
+    window.addEventListener("focus",check);document.addEventListener("visibilitychange",check);
+    return()=>{active=false;controller.abort();stop();window.removeEventListener("focus",check);document.removeEventListener("visibilitychange",check);};
+  },[publicPage,admin,identity]);
   useEffect(() => {
     if (publicPage || !section) return;
     const controller = new AbortController();

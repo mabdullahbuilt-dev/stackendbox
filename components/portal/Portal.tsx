@@ -29,6 +29,7 @@ import {AdminInvoices} from "./AdminInvoices";
 import { validatePassword } from "@/lib/portal/password-policy";
 import { portalApiPath } from "@/lib/portal/browser-path";
 import {ClientDomainCards} from "./ClientDomainCards";
+import {notifySessionChange} from "@/lib/portal/session-events";
 import "./portal-ux.css";
 
 type Row = Record<string, unknown>;
@@ -103,6 +104,7 @@ export async function api(path: string, body?: unknown, signal?: AbortSignal) {
   });
   const data = await r.json().catch(() => { throw new Error("The service returned an unreadable response. Refresh to check whether your action was saved before retrying."); });
   if (!r.ok) throw new Error(errors[data.error] || label(data.error));
+  if(body&&["auth/login","auth/logout","auth/password","auth/session"].includes(path))notifySessionChange();
   return data;
 }
 function Form({
@@ -249,7 +251,7 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
       <section><span className="portal-eyebrow">PRIVATE CLIENT ACCESS</span><h1>Set your StackEndBox password</h1><p>Your domains, website and service records stay securely linked to your approved account.</p></section>
       <section className="portal-panel">
         {error ? <p role="alert" className="portal-error">{error}<button onClick={() => void reload()}>Retry</button></p> : busy || !data || dataPage !== page ? <p role="status">Loading your account</p> : <PasswordSetup email={data.account.approved_email} onComplete={() => { save(null); router.replace("/client-portal/dashboard"); router.refresh(); }} />}
-        <p className="portal-small">Need help? <Link href="/#contact">Contact StackEndBox</Link>.</p>
+        <p className="portal-small">Need a fresh link? <Link href="/client-portal/forgot-password">Request password recovery</Link>.</p>
       </section>
     </div>
   </main>;
@@ -300,9 +302,9 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
           </button>
           <span>{rows(data, "clients")[0]?.business_name as string || data?.account.name || "StackEndBox"}</span>
           <div>
-            <Link href="/client-portal/dashboard" aria-label="Notifications">
+            {!!rows(data,"notifications").length&&<Link href="/client-portal/dashboard" aria-label="Notifications">
               <Bell size={18} />
-            </Link>
+            </Link>}
             <span className="portal-avatar">
               {data?.account.name.slice(0, 1) || "S"}
             </span>
@@ -354,6 +356,7 @@ export function PortalContent({
     websites = rows(data, "websites"),
     requests = rows(data, "requests");
   const clients = rows(data, "clients");
+  const displayedInvoices=rows(data,"invoices").filter(invoice=>!adminMode||invoice.order_id!==null);
   const clientSelect = (
     <label>
       Business
@@ -423,7 +426,7 @@ export function PortalContent({
               <Empty>No websites have been assigned to your account.</Empty>
             )}
           </section>
-          <section className="portal-panel">
+          {!!rows(data,"notifications").length&&<section className="portal-panel">
             <h2>Recent notifications</h2>
             {rows(data, "notifications").length ? (
               rows(data, "notifications").map((n) => (
@@ -436,7 +439,7 @@ export function PortalContent({
             ) : (
               <p>No updates to show.</p>
             )}
-          </section>
+          </section>}
         </div>
       </>
     );
@@ -530,8 +533,8 @@ export function PortalContent({
         <OrderList orders={rows(data, "orders")} reload={reload} checkoutEnabled={data.sandbox_checkout_enabled === true} />
         {!!rows(data,"external_payments").length&&<section className="portal-panel"><h2>Payments made to StackEndBox</h2>{rows(data,"external_payments").map(p=><article key={str(p.id)}><p>{money(p.amount_minor)} · {date(p.paid_at)} · {label(p.source)}</p><p>{p.reconciliation_status==="verified"?"Payment evidence verified":"Payment record awaiting reconciliation"}. Reference: {str(p.transaction_reference)}</p></article>)}</section>}
         <h2>Invoices and receipts</h2>
-        {!rows(data, "invoices").length && <Empty>No payment receipts yet.</Empty>}
-        {rows(data, "invoices").map((i) => (
+        {!displayedInvoices.length && <Empty>No payment receipts yet.</Empty>}
+        {displayedInvoices.map((i) => (
           <section className="portal-panel" key={str(i.id)}>
             <h3>{str(i.description)}</h3>
             <p>

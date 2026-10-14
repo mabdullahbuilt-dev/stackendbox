@@ -14,6 +14,7 @@ export function AdminOperations(){
   useEffect(()=>{void load();},[]);
   return <section aria-label="Client operations">
     <h1>Client operations</h1>
+    <p><Link href="/admin/health">Integration and backup health</Link> · <Link href="/admin/renewals">Renewal follow-up</Link></p>
     <p>Saved provider-verified snapshots. Refreshing this dashboard doesn&apos;t call Spaceship or change domains.</p>
     <button disabled={busy} onClick={()=>void load()}>{busy?"Refreshing…":"Refresh operations"}</button>
     {error&&<p className="portal-error" role="alert">{error}</p>}

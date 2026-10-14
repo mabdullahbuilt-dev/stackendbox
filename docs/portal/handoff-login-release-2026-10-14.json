@@ -1,0 +1,27 @@
+{
+  "scope": "Independent portals only. Public website, Vercel, DNS and production routing unchanged.",
+  "branch": "feature/cloudflare-workers-proof",
+  "hostedEvidence": {
+    "authorizedPasswordLogin": "Founder personally signed in to acceptance as the authorized test client. Dashboard displayed one assigned domain and one saved website.",
+    "assignedDomain": "test123.buzz, registered, expiration 2027-10-13. Client DNS refresh returned actual provider status, auto-renew off, and no DNS records on 2026-10-14.",
+    "unassignedDomain": "Direct client navigation to dubaicarrecovery.site rejected access without displaying provider or customer details.",
+    "billing": "Existing $1 Whop Sandbox paid invoice and download control visible. No new checkout or charge performed.",
+    "support": "Existing staff replies and saved client request visible after separate page navigation.",
+    "realCustomerDomain": "Administrator read-only verification found dubaicarrecovery.site registered, expiry 2027-10-13, provider contacts verified, dedicated account custody and no portal assignment. No real customer identity created or assigned."
+  },
+  "changes": [
+    "Bounded Turnstile execution with one Sign in action and server-side verification retained",
+    "Portal session-change signal contains only a random nonce, clears other tabs, and rechecks account identity on focus",
+    "Compact admin Overview uses five count-only queries instead of loading all client records",
+    "Billing and diagnostics nested under the corresponding navigation categories",
+    "Removed duplicate admin invoice listing and empty notification controls",
+    "Password setup recovery link stays inside the independent portal"
+  ],
+  "releaseVerification": "Deployed frontend manifest, bundle checksums and Edge release header must match the pushed commit before handoff.",
+  "remaining": [
+    "Founder enters actual approved customer identity and credential method in the secured handoff form, with fresh MFA before Activate Client Access",
+    "Registered-holder change requires separately authorized contact details, provider confirmations and verified result",
+    "Main-domain paths remain unavailable. Proposed routing-only configuration is prepared but not applied. Current Vercel Hobby commercial policy remains a separate unresolved publication constraint.",
+    "Live payments and registrar mutations remain disabled"
+  ]
+}

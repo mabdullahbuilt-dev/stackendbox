@@ -22,7 +22,7 @@ await cp('node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2',`${outp
 await cp('node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2',`${output}/fonts/geist-mono.woff2`);
 const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
 const branch=execFileSync('git',['branch','--show-current'],{encoding:'utf8',windowsHide:true}).trim();
-const sourcePaths=['components/portal','lib/portal','app/api/portal','app/client-portal/auth','platform/edge','platform/static/portal.tsx','platform/static/navigation.tsx','platform/cloudflare/portal-path-gateway.ts','scripts/build-portals-only.mjs','scripts/build-static-edge.mjs'];
+const sourcePaths=['components/portal','lib/portal','app/admin','app/api/portal','app/client-portal/auth','platform/edge','platform/static/portal.tsx','platform/static/navigation.tsx','platform/cloudflare/portal-path-gateway.ts','scripts/build-portals-only.mjs','scripts/build-static-edge.mjs'];
 const uncommittedInputs=execFileSync('git',['status','--porcelain','--',...sourcePaths],{encoding:'utf8',windowsHide:true}).trim().split(/\r?\n/).filter(Boolean).map(row=>row.slice(3));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 await writeFile(`${output}/release.json`,JSON.stringify({commit,branch,uncommittedInputs,browserSha256:sha(await readFile(`${output}/portal.js`)),stylesSha256:sha(await readFile(`${output}/portal.css`)),scope:'portal-only'},null,2));

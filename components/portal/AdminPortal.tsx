@@ -8,6 +8,7 @@ import { AdminHealth } from "./AdminHealth";
 import { AdminDomains } from "./AdminDomains";
 import { AdminOperations } from "./AdminOperations";
 import {AdminRenewals} from "./AdminRenewals";
+import {AdminOverview} from "./AdminOverview";
 export function AdminPortal({
   section,
   createClient = false,
@@ -36,7 +37,7 @@ export function AdminPortal({
     }
   }, [section,scopedClient]);
   useEffect(() => {
-    if (!["clients", "health", "renewals"].includes(section)) void reload();
+    if (!["overview", "clients", "health", "renewals"].includes(section)) void reload();
   }, [reload, section]);
   const content = (
     {
@@ -54,20 +55,19 @@ export function AdminPortal({
         </Link>
         <nav aria-label="Administration">
           {[
-            ["operations", "Operations"],
-            ["domains", "Domains"],
-            ["renewals", "Renewals"],
+            ["overview", "Overview"],
             ["clients", "Clients"],
-            ["health", "Backend health"],
+            ["domains", "Domains"],
+            ["billing", "Billing & Renewals"],
             ["support", "Support"],
-            ["billing", "Client billing"],
-            ["security", "Account security"],
+            ["operations", "Operations"],
+            ["security", "Settings"],
           ].map(([key, title]) => (
             <Link
               prefetch={false}
               key={key}
               href={`/admin/${key}`}
-              aria-current={section === key ? "page" : undefined}
+              aria-current={section === key || key === "billing" && section === "renewals" || key === "operations" && section === "health" ? "page" : undefined}
             >
               {title}
             </Link>
@@ -98,9 +98,10 @@ export function AdminPortal({
         </header>
         <main id="main" className="portal-main">
           <p className="portal-sandbox">
-          Online payments and live registrar changes are disabled pending acceptance.
+          Live payments and registrar changes are unavailable.
           </p>
-          {section === "clients" ? (
+          {["billing","renewals"].includes(section)&&<nav className="portal-tabs" aria-label="Billing sections"><Link href="/admin/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/admin/renewals" aria-current={section==="renewals"?"page":undefined}>Renewals</Link></nav>}
+          {section === "overview" ? <AdminOverview/> : section === "clients" ? (
             <AdminClients key={`${createClient}:${clientId||""}`} create={createClient} clientId={clientId} />
           ) : section === "health" ? (
             <AdminHealth />

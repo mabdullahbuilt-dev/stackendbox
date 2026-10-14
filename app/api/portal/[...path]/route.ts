@@ -494,6 +494,7 @@ async function handle(req: NextRequest, context: Context) {
       if (route === "admin/clients" && req.method === "GET")
         return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined));
       if (route === "admin/operations" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsData());
+      if (route === "admin/summary" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsSummary());
       if (route === "admin/renewals" && req.method === "GET") return reply(await (await import("@/lib/portal/renewal-monitor")).renewalMonitor(req.nextUrl.searchParams.get("after")||undefined));
       if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions());
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
