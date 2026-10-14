@@ -9,10 +9,20 @@ type Result={client_id?:string;email:string;domain:string;portal_url:string;mess
 const validEmail=(value:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 export function DomainHandoff({reload,domains=[]}:{reload:()=>Promise<void>;domains?:string[]}){
   const params=useSearchParams();
-  const [email,setEmail]=useState(params.get("assign_email")||""),[domain,setDomain]=useState(""),[password,setPassword]=useState(""),[show,setShow]=useState(false);
+  const preferred=params.get("assign_client");
+  const [email,setEmail]=useState(""),[domain,setDomain]=useState(""),[password,setPassword]=useState(""),[show,setShow]=useState(false);
   const [verified,setVerified]=useState<Review|null>(null),[review,setReview]=useState<Review|null>(null),[result,setResult]=useState<Result|null>(null);
   const [checking,setChecking]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[copied,setCopied]=useState(false),[pending,setPending]=useState<Record<string,unknown>|null>(null);
   const request=useRef(crypto.randomUUID()),lock=useRef(false);
+  useEffect(()=>{
+    if(!preferred)return;let active=true;
+    api(`admin/client-options?client_id=${encodeURIComponent(preferred)}`).then(data=>{
+      if(!active)return;
+      if(data.clients?.length!==1||!validEmail(data.clients[0].email))throw Error("This client needs an approved email review. Enter the confirmed email to continue.");
+      setEmail(current=>current||data.clients[0].email);
+    }).catch(e=>{if(active)setError((e as Error).message);});
+    return()=>{active=false;};
+  },[preferred]);
   useEffect(()=>{
     setVerified(null);setError("");
     if(!validEmail(email)||!domain.trim()||review||result)return;

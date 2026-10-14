@@ -6,10 +6,17 @@ vi.mock("@/lib/portal/server",()=>({checkDb:(error:unknown)=>{if(error)throw Err
   for(const method of ["select","eq","gt","gte","lt","lte","in","not","neq","or","ilike","like","order","limit"])builder[method]=(...args:unknown[])=>{state.calls.push({table,method,args});return builder;};
   return builder;
 }})}));
-import {clientDirectory,operationalHealth} from "../lib/portal/admin-data";
+import {clientDirectory,clientOptions,operationalHealth} from "../lib/portal/admin-data";
 import {operationsData,operationsSummary} from "../lib/portal/operations-data";
 import {renewalMonitor} from "../lib/portal/renewal-monitor";
 beforeEach(()=>{state.calls=[];state.results={};});
+it("prefills client-profile handoffs through one authorized UUID lookup instead of putting email in the URL",async()=>{
+  const id="11111111-1111-4111-8111-111111111111";
+  await clientOptions(id);
+  expect(state.calls).toContainEqual({table:"portal_memberships",method:"eq",args:["client_id",id]});
+  expect(state.calls).toContainEqual({table:"portal_memberships",method:"eq",args:["portal_accounts.role","client"]});
+  await expect(clientOptions("invalid-id")).rejects.toThrow();
+});
 it("loads the overview with count-only queries and no client or message payloads",async()=>{
   const result=await operationsSummary();
   expect(result.counts).toEqual({active_clients:3,assigned_domains:3,expires_30_days:3,unpaid_invoices:3,open_support:3});

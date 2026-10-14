@@ -2,8 +2,10 @@ import "server-only";
 import { adminDb, checkDb } from "./server";
 import { z } from "zod";
 import {PortalError} from "./rules";
-export async function clientOptions(){
-  const result=await adminDb().from("portal_memberships").select("client_id,portal_clients!inner(name,business_name,status),portal_accounts!inner(approved_email,active,role)").eq("portal_clients.status","active").eq("portal_accounts.active",true).eq("portal_accounts.role","client").limit(500);
+export async function clientOptions(clientId?:string){
+  let query=adminDb().from("portal_memberships").select("client_id,portal_clients!inner(name,business_name,status),portal_accounts!inner(approved_email,active,role)").eq("portal_clients.status","active").eq("portal_accounts.active",true).eq("portal_accounts.role","client").limit(500);
+  if(clientId)query=query.eq("client_id",z.uuid().parse(clientId));
+  const result=await query;
   checkDb(result.error);
   return {clients:(result.data||[]).map(row=>{
     const client=row.portal_clients as unknown as {name:string;business_name:string},account=row.portal_accounts as unknown as {approved_email:string};

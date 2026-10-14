@@ -499,7 +499,7 @@ async function handle(req: NextRequest, context: Context) {
       if(route === "admin/ownership-tasks" && req.method === "POST") return reply(await (await import("@/lib/portal/ownership-tasks")).createOwnershipTask(admin.user.id,body));
       if(route === "admin/ownership-progress" && req.method === "POST") return reply(await (await import("@/lib/portal/ownership-tasks")).progressOwnershipTask(admin.user.id,body));
       if (route === "admin/renewals" && req.method === "GET") return reply(await (await import("@/lib/portal/renewal-monitor")).renewalMonitor(req.nextUrl.searchParams.get("after")||undefined));
-      if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions());
+      if (route === "admin/client-options" && req.method === "GET") return reply(await clientOptions(req.nextUrl.searchParams.get("client_id")||undefined));
       if (route === "admin/health" && req.method === "GET") return reply(await operationalHealth());
       if (route === "admin/activate-domain-client" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).activateDomainClient(admin.user.id,body));
       if (route === "admin/domain-handoff-preview" && req.method === "POST") return reply(await (await import("@/lib/portal/domain-handoff")).previewDomainHandoff(body));
