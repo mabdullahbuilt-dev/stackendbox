@@ -14,6 +14,7 @@ import {AdminTeam} from "./AdminTeam";
 import {AdminSupport} from "./AdminSupport";
 import {AdminAccess} from "./AdminAccess";
 import {customerScope} from "@/lib/portal/customer-scope";
+import {watchSessionChange} from "@/lib/portal/session-events";
 import {Activity,Building2,ClipboardList,Globe2,LayoutDashboard,LifeBuoy,Menu,Settings,Users,Wallet} from "lucide-react";
 export function AdminPortal({
   section,
@@ -27,6 +28,7 @@ export function AdminPortal({
   clientId?: string;
 }) {
   const [permissions,setPermissions]=useState<string[]|null>(null),[failure,setFailure]=useState("");
+  useEffect(()=>watchSessionChange(()=>{setPermissions(null);setFailure("Your session or staff access changed. Reload to verify your current permissions.");}),[]);
   useEffect(()=>{let active=true;api("auth/identity?admin=1").then(identity=>{if(active)setPermissions(identity.permissions);}).catch(error=>{if(active)setFailure(error.message);});return()=>{active=false;};},[]);
   if(failure)return <main className="portal-auth"><p role="alert">{failure}</p><Link href="/client-portal/settings">Account security</Link></main>;
   if(!permissions)return <p role="status">Loading your permissions…</p>;

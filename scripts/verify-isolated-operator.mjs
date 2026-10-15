@@ -17,6 +17,19 @@ const tickets=check(await db.from('portal_requests').select('id,status').eq('cli
 const replies=check(await db.from('portal_messages').select('body').eq('client_id',client.id));
 const notes=tickets.length?check(await db.from('portal_support_notes').select('id').in('request_id',tickets.map(t=>t.id))):[];
 const outbox=check(await db.from('portal_email_outbox').select('dedupe_key,status,body').eq('client_id',client.id));
+const staff=check(await db.from('portal_accounts').select('user_id,active').eq('approved_email',`operations-${runId}@operator.invalid`).single());
+const grant=check(await db.from('portal_staff_grants').select('role,active,revision').eq('user_id',staff.user_id).single());
+const staffChanges=check(await db.from('portal_staff_changes').select('role,active').eq('target_id',staff.user_id).order('created_at'));
+const provisioning=check(await db.from('portal_provisioning').select('id,email,state,auth_user_id,client_id').like('email',`%-${runId}@operator.invalid`));
+const provisioningEvidence=await Promise.all(provisioning.map(async row=>{
+ const auth=row.auth_user_id?await db.auth.admin.getUserById(row.auth_user_id):null;
+ const memberships=row.auth_user_id?check(await db.from('portal_memberships').select('client_id').eq('user_id',row.auth_user_id)):[];
+ return {fixture:row.email.split('@')[0].replace(`-${runId}`,''),state:row.state,authIdentityVerified:!!auth?.data.user&&auth.data.user.email===row.email,membershipCount:memberships.length,membershipMatches:memberships.length===1&&memberships[0].client_id===row.client_id};
+}));
+const recovery=check(await db.from('portal_domains').select('id').eq('name',`recovery-${runId}.invalid`).maybeSingle());
+const handoffs=recovery?check(await db.from('portal_handoff_requests').select('id').eq('domain_id',recovery.id)):[];
+const recoveryNotifications=recovery?check(await db.from('portal_email_outbox').select('id').like('dedupe_key',`domain-assigned:${recovery.id}:${client.id}:%`)):[];
 const evidence={at:new Date().toISOString(),scope:'Read-only local database evidence following actual browser actions. Provider transports are fixtures, not live acceptance.',runId,assignmentCount:assignments.length,websiteCount:websites.length,services:services.map(({id,...s})=>s),serviceHistoryCount:history.length,invoiceStates:invoices.map(i=>i.status),supportStates:tickets.map(t=>t.status),replyCount:replies.length,privateSupportNotes:notes.length,privateMarkerInReplies:replies.some(r=>r.body.includes('ISOLATED PRIVATE')),privateMarkerInEmail:outbox.some(r=>r.body.includes('ISOLATED PRIVATE')),outboxStates:outbox.map(r=>r.status),duplicateOutboxKeys:outbox.length-new Set(outbox.map(r=>r.dedupe_key)).size,credentialsRead:false,businessRecordsChanged:false};
+Object.assign(evidence,{staffAccountActive:staff.active,staffGrant:grant,staffChanges,provisioningEvidence,recoveryHandoffCount:handoffs.length,recoveryAssignmentNotificationCount:recoveryNotifications.length});
 await writeFile(`dist/isolated-operator/${runId}-durable-evidence.json`,JSON.stringify(evidence,null,2));
 console.log(JSON.stringify(evidence));

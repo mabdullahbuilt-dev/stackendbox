@@ -10,6 +10,11 @@ import {clientDirectory,clientOptions,operationalHealth} from "../lib/portal/adm
 import {operationsData,operationsSummary} from "../lib/portal/operations-data";
 import {renewalMonitor} from "../lib/portal/renewal-monitor";
 beforeEach(()=>{state.calls=[];state.results={};});
+it("includes bounded service-payment records in operations without customer or provider payloads",async()=>{
+ const result=await operationsData();expect(result.invoice_payments).toEqual([]);
+ const selected=state.calls.find(call=>call.table==="portal_invoice_payments"&&call.method==="select");expect(selected?.args[0]).toContain("invoice_id,client_id,provider_id,status,environment");
+ expect(state.calls).toContainEqual({table:"portal_invoice_payments",method:"limit",args:[50]});expect(String(selected?.args[0])).not.toContain("*");
+});
 it("prefills client-profile handoffs through one authorized UUID lookup instead of putting email in the URL",async()=>{
   const id="11111111-1111-4111-8111-111111111111";
   await clientOptions(id);

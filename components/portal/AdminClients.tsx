@@ -209,6 +209,8 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
           <button className="portal-button" disabled={busy || !requestId || finished}>
             {busy
               ? "Saving…"
+              : finished
+                ? "Client created"
               : attempt
                 ? "Retry same request"
                 : credentialMode === "initial_password" ? "Create client and send account-ready email" : "Create client and send invitation"}

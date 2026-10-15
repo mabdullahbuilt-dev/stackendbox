@@ -568,6 +568,10 @@ async function handle(req: NextRequest, context: Context) {
       if(route==="admin/support/note"&&req.method==="POST")return reply(await (await import("@/lib/portal/support")).supportNote(admin.user.id,body));
       if (route === "admin/invoices" && req.method === "POST") return reply(await createServiceInvoice(admin.user.id,body));
       if (route === "admin/invoice-status" && req.method === "POST") return reply(await transitionServiceInvoice(admin.user.id,body));
+      if(path[1]==="invoices"&&path[2]&&path[3]==="sandbox-payment-check"&&path.length===4&&req.method==="POST"){
+        z.object({}).strict().parse(body);
+        return reply(await (await import("@/lib/portal/sandbox-payment-review")).reviewSandboxInvoicePayment(admin.user.id,path[2]));
+      }
       if (path[1] === "invoices" && path[2] && path[3] === "checkout" && path.length === 4 && req.method === "POST") {
         requireSandboxCheckout();
         return reply(await (await import("@/lib/portal/whop")).checkoutServiceInvoice(uuid.parse(path[2])));

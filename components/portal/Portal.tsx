@@ -29,7 +29,7 @@ import {AdminInvoices} from "./AdminInvoices";
 import { validatePassword } from "@/lib/portal/password-policy";
 import { portalApiPath } from "@/lib/portal/browser-path";
 import {ClientDomainCards} from "./ClientDomainCards";
-import {notifySessionChange} from "@/lib/portal/session-events";
+import {notifySessionChange,notifyAccessRevoked,isAuthorizationRejection} from "@/lib/portal/session-events";
 import "./portal-ux.css";
 import {PageHeader,StatusBadge,MetricCard} from "./PortalUI";
 import {useAdminAccess} from "./AdminAccess";
@@ -133,6 +133,7 @@ export async function api(path: string, body?: unknown, signal?: AbortSignal) {
   });
   const data = await r.json().catch(() => { throw new Error("The service returned an unreadable response. Refresh to check whether your action was saved before retrying."); });
   if (!r.ok) {
+    if(path!=="auth/login"&&isAuthorizationRejection(r.status,data.error))notifyAccessRevoked();
     const providerError = typeof data.error === "string" && /^(spaceship_|registrant_|registrar_)/.test(data.error);
     throw new Error(providerError && !path.startsWith("admin/") ? "Domain information is temporarily unavailable. Your saved records are unchanged. Please try again later or contact support." : errors[data.error] || "This request couldn't be completed. Refresh to check its saved status before retrying, or contact StackEndBox.");
   }

@@ -1,0 +1,55 @@
+{
+  "scope": "Phase A operator acceptance in disposable local Supabase/Auth/PostgreSQL. Not a hosted staff rollout or live financial/registrar acceptance.",
+  "run": "e9214efd",
+  "newlyPassedBrowserJourneys": [
+    "Non-owner Operations Administrator creates an invitation-based customer through the normal secured form",
+    "Synthetic incomplete provisioning reservation resumed through the staff UI, followed by retry of the same request after an injected lost successful response",
+    "Owner changes the same active staff identity to Domain Manager through Team & Permissions",
+    "Domain Manager verifies and assigns a separate recovery domain fixture, then retries the same durable request after an injected lost response",
+    "Domain Manager denied Billing, Support, Services and Team workspaces",
+    "Owner restores Operations Administrator role without resetting credentials or MFA",
+    "Operator recovers synthetic confirmed-unsent, pre-dispatch notification using existing guarded backend operation",
+    "Changed inline confirmation supports Cancel recovery and Confirm queue once, without a native browser prompt",
+    "Owner suspends an already-active staff session, next staff request is denied",
+    "After the relevant UI fix, suspension automatically clears the active workspace on the next rejected request without a manual reload"
+  ],
+  "durableReadbackAt": "2026-10-15T11:23:55.899Z",
+  "durableResults": {
+    "newAndRecoveredFixtureIdentitiesHaveOneCorrectMembershipEach": true,
+    "recoveryHandoffRequests": 1,
+    "recoveryHandoffNotifications": 1,
+    "duplicateOutboxKeys": 0,
+    "recoveredNotificationStatus": "retry",
+    "notificationDispatchPerformed": false,
+    "staffFinalAccountActive": false,
+    "staffFinalGrantActive": false,
+    "staffRoleRevision": 5
+  },
+  "fixtureLimitations": [
+    "One staff identity transitioned between Operations Administrator and Domain Manager, not two independently hired employees",
+    "Owner authentication is disposable fixture setup. Staff password and authenticator were entered personally by the founder",
+    "Incomplete provisioning and unsent-email failures are explicitly seeded local fixtures, not claims of natural provider outages",
+    "Response-loss tests replace a successful response after the real local backend commits",
+    "Spaceship, Brevo and Turnstile transports are fixtures. Prior genuine provider acceptance is not repeated",
+    "The initial native-HTML fault-control form didn't seed its intended state. It was corrected to fetch-based submission and verified before counting recovery passes"
+  ],
+  "productFixes": [
+    "Completed provisioning says Client created rather than Retry same request",
+    "Notification recovery confirmation is in-page, bound to the selected notification, and retains backend safeguards",
+    "Authorization rejection invalidates the requesting workspace and signals other tabs without identity/token storage",
+    "Operations includes bounded service-invoice payment records separately from domain orders",
+    "Sandbox service-payment provider check validates account, checkout, invoice, client, amount, currency and environment without changing financial state"
+  ],
+  "checks": {"focusedTestsPassed":119,"typescript":"passed","lint":"passed","fixtureScripts":"Node syntax checks"},
+  "sandboxProviderReadback": "New provider-check control requires separate hosted verification after deployment. It doesn't create a transaction or claim domain-renewal acceptance.",
+  "knownLimits": [
+    "Live customer charges, registrar renewal execution, production schedules and customer-domain assignment remain separately gated",
+    "An uncertain checkout without a provider payment reference, refund/dispute outcome, or legal registrar action remains owner-reviewed. The new check doesn't repair these states",
+    "Support and service history still have documented bounded windows rather than unlimited historical pagination"
+  ],
+  "hostedStaffEnabled": false,
+  "rolloutPlan": "docs/portal/staff-rollout-approval-plan.json",
+  "dnsReviewGate": "2026-10-15T19:00:10.186Z",
+  "dnsChangesAuthorizedByThisWork": false,
+  "productionCustomerRecordsOrProviderCredentialsChanged": false
+}

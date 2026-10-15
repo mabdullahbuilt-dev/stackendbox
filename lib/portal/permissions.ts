@@ -14,6 +14,7 @@ export function routePermission(route:string,method:string,section?:string):Perm
   if(route.startsWith("auth/"))return null;
   if(/^invoices\/[^/]+\/download$/.test(route)&&!write)return "billing.read";
   if(/^admin\/invoices\/[^/]+\/checkout$/.test(route)&&write)return "billing.write";
+  if(/^admin\/invoices\/[0-9a-f-]+\/sandbox-payment-check$/.test(route)&&write)return "billing.read";
   if(route==="data")return section==="settings"||section==="reset-password"?null:"owner";
   if(route==="admin/workspace")return ({domains:"domains.read",websites:"services.read",billing:"billing.read",requests:"support.read",settings:"owner",dashboard:"clients.read"} as const)[section||"dashboard"]||"owner";
   if(route.startsWith("admin/team"))return "owner";

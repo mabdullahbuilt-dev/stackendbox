@@ -1,0 +1,29 @@
+{
+  "status": "Prepared only. No hosted staff privilege activation is authorized by this file.",
+  "project": "irzjkdxxfvobtabwkqmz",
+  "approvalScope": "One-time activation of existing portal_staff_rollout gate, followed by owner-managed staff invitations through Team & Permissions.",
+  "preconditions": [
+    "Verify deployed portal and Edge commit match the reviewed release",
+    "Verify hosted staff gate remains false and review any existing staff identities/grants before activation",
+    "Review isolated Operations Administrator and Domain Manager browser evidence, recovery behavior and active-session revocation",
+    "Record known unsupported payment/registrar recovery paths and leave them unavailable or owner-escalated",
+    "Founder explicitly approves the rollout and the first staff member's role"
+  ],
+  "activation": [
+    "Capture the gate state and existing grants without exporting credentials",
+    "Enable only portal_staff_rollout.enabled in the existing project after explicit approval",
+    "Owner verifies fresh MFA, opens Team & Permissions and enters the approved employee name/email",
+    "Use Domain Manager for client/domain handoffs only, or Operations Administrator only for approved broader duties",
+    "Employee sets their own password, verifies their email and enrolls their own authenticator",
+    "Verify the employee can use only their assigned role before relying on the account for daily work"
+  ],
+  "rollback": [
+    "Owner can suspend an individual employee through Team & Permissions with fresh MFA",
+    "For a rollout-wide incident, set the existing gate false. Owner access is preserved and staff API permissions are denied",
+    "Authorization rejection clears the affected workspace on the next request, with independent cross-tab session invalidation",
+    "Preserve identities, customer records, assignments and immutable audit history. Do not delete records to revoke access"
+  ],
+  "unchanged": ["DNS and nameservers", "Worker custom domains", "Public website and Vercel fallback", "Production customer-affecting schedules", "Live payment and registrar-write gates", "Provider credentials", "Backups"],
+  "separateApprovals": ["Company-domain nameserver delegation after the DNS gate review", "Worker application cutover after delegation and website/email checks", "Live financial and registrar acceptance", "Production scheduler activation"],
+  "limits": "The isolated browser exercise uses one disposable staff identity whose role is changed through the owner UI. It is not a hosted employee rollout, a multi-employee load test or approval to execute live renewals. Uncertain provider actions must be escalated rather than guessed or replayed."
+}

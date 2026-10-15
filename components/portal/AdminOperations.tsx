@@ -13,7 +13,7 @@ type Assignment={client_id:string;portal_clients:Client};
 type Domain={id:string;name:string;lifecycle_status:string;expiration_date:string|null;auto_renew:boolean|null;last_synced_at:string|null;reconciliation_required:boolean;portal_domain_assignments:Assignment[]|Assignment|null};
 type Item={id?:string;client_id?:string;domain?:string;subject?:string;status?:string;kind?:string;category?:string;order_id?:string;amount_minor?:number;currency?:string;payment_id?:string;last_error?:string;created_at?:string;environment?:string;reconciliation_status?:string;portal_clients?:Client|null};
 type Quote={domain_id:string;retail_minor:number;currency:string;valid_until:string};
-type Snapshot={checked_at:string;counts:Record<string,number|null>;domains:Domain[];quotes:Quote[];orders:Item[];email:Item[];operations:Item[];ledger:Item[];audit:{id:number;action:string;target_id:string|null;created_at:string}[]};
+type Snapshot={checked_at:string;counts:Record<string,number|null>;domains:Domain[];quotes:Quote[];orders:Item[];email:Item[];operations:Item[];ledger:Item[];audit:{id:number;action:string;target_id:string|null;created_at:string}[];invoice_payments?:({invoice_id:string;provider_id:string}&Item)[]};
 const tabs=["All","Needs attention","Renewals","Payments","Notifications","Domain operations","Activity log"] as const;
 type Tab=typeof tabs[number];
 const date=(value?:string|null)=>value?new Date(value).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"Not verified";
@@ -23,12 +23,19 @@ export function AdminOperations(){
   const [data,setData]=useState<Snapshot|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
   const [tab,setTab]=useState<Tab>("All"),[search,setSearch]=useState("");
   const [detail,setDetail]=useState<{kind:string;item:Item}|null>(null),[help,setHelp]=useState(false);
+  const [recoveryConfirmation,setRecoveryConfirmation]=useState<string|null>(null);
   async function load(){setBusy(true);try{setData(await api("admin/operations"));setError("");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   useEffect(()=>{void load();},[]);
   async function notification(recover=false){
     if(!detail?.item.id||busy)return;
     setBusy(true);setError("");setMessage("");
     try{const result=await api(recover?"admin/notification-recover":"admin/notification-reconcile",{id:detail.item.id,...(recover?{confirmed:true}:{})});setMessage(result.message);setDetail(null);await load();}
+    catch(e){setError((e as Error).message);}finally{setBusy(false);setRecoveryConfirmation(null);}
+  }
+  async function paymentEvidence(){
+    if(!detail?.item.id||detail.kind!=="invoice_payment"||busy)return;
+    setBusy(true);setError("");setMessage("");
+    try{const result=await api(`admin/invoices/${detail.item.id}/sandbox-payment-check`,{});setMessage(result.message);setDetail(null);await load();}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
   const filtered=(items:Item[])=>items.filter(item=>`${item.subject||""} ${item.domain||""} ${item.kind||""} ${item.status||""} ${item.portal_clients?.business_name||""}`.toLowerCase().includes(search.toLowerCase()));
@@ -46,7 +53,7 @@ export function AdminOperations(){
         {tab==="All"&&<><div className="p-section-heading"><h2>Your work, organized</h2><span className="p-muted">Includes labelled test records</span></div><div className="p-queue-grid">{([["Notifications","Delivery history and safe follow-up",Mail],["Renewals","Verified expiry and saved renewal quotes",Clock3],["Payments","Orders and reconciliation reviews",CreditCard],["Domain operations","Registrar follow-up and ownership tasks",ShieldAlert]] as const).map(([name,description,Icon])=><button key={name} className="p-queue-card" onClick={()=>setTab(name)}><span className="p-icon-tile"><Icon size={19}/></span><span><strong>{name}</strong><small>{description}</small></span><ArrowUpRight size={16}/></button>)}</div><div className="p-section-heading"><h2>Recent activity</h2><button className="p-link-button" onClick={()=>setTab("Activity log")}>View activity</button></div>{data.audit.length?<ol className="p-timeline">{data.audit.slice(0,5).map(row=><li key={row.id}><span>{title(row.action)}</span><time>{date(row.created_at)}</time></li>)}</ol>:<EmptyState title="No activity yet"/>}</>}
         {tab==="Needs attention"&&table([...data.orders.filter(row=>needsOperationReview("payments",row.status)),...data.email.filter(row=>needsOperationReview("email",row.status)),...data.operations].map(row=>({...row,kind:row.subject?"Notification":row.kind||"Review"})),"review")}
         {tab==="Notifications"&&table(data.email,"email")}
-        {tab==="Payments"&&<>{table(data.orders,"orders")}<details className="p-technical-details"><summary>Supplier and processor reconciliation</summary>{table(data.ledger,"ledger")}</details></>}
+        {tab==="Payments"&&<><h3>Domain order follow-up</h3>{table(data.orders,"orders")}<h3>Service invoice payments</h3>{table((data.invoice_payments||[]).map(item=>({...item,id:item.invoice_id,payment_id:item.provider_id,kind:"Service invoice"})),"invoice_payment")}<details className="p-technical-details"><summary>Supplier and processor reconciliation</summary>{table(data.ledger,"ledger")}</details></>}
         {tab==="Domain operations"&&<>{table(data.operations,"operations")}<div className="p-section-heading"><h2>Ownership follow-up</h2></div><OwnershipTasks/></>}
         {tab==="Renewals"&&(data.domains.length?<div className="portal-table-wrap"><table><thead><tr><th>Domain</th><th>Expiry</th><th>Status</th><th>Renewal</th><th>Action</th></tr></thead><tbody>{data.domains.filter(d=>d.name.includes(search.toLowerCase())).map(d=>{const quote=data.quotes.find(q=>q.domain_id===d.id&&Date.parse(q.valid_until)>Date.now());return <tr key={d.id}><td><strong>{d.name}</strong></td><td>{date(d.expiration_date)}</td><td><StatusBadge value={d.lifecycle_status}/></td><td>{quote?`${(quote.retail_minor/100).toFixed(2)} ${quote.currency.toUpperCase()}`:"Quote required"}<small>Auto-renew {d.auto_renew===null?"unverified":d.auto_renew?"on":"off"}</small></td><td><Link className="p-button p-button-small" href={`/admin/domains/${encodeURIComponent(d.name)}`}>Open domain</Link></td></tr>;})}</tbody></table></div>:<EmptyState title="No domains saved"/>)}
         {tab==="Activity log"&&<div className="portal-table-wrap"><table><thead><tr><th>Activity</th><th>Date</th><th>Details</th></tr></thead><tbody>{data.audit.filter(row=>row.action.includes(search.toLowerCase().replaceAll(" ","_"))).map(row=><tr key={row.id}><td>{title(row.action)}</td><td>{date(row.created_at)}</td><td><details><summary>Reference</summary><code>{row.target_id||"System event"}</code></details></td></tr>)}</tbody></table></div>}
@@ -63,10 +70,11 @@ export function AdminOperations(){
         {detail.item.payment_id&&<><dt>Payment reference</dt><dd><code>{detail.item.payment_id}</code></dd></>}
       </dl>
       {detail.item.last_error&&<details className="p-technical-details"><summary>Diagnostic details</summary><code>{detail.item.last_error}</code></details>}
+      {detail.kind==="invoice_payment"&&detail.item.environment==="sandbox"&&can("billing.read")&&<><p className="p-muted">Compare the saved invoice with Sandbox provider evidence. This never charges money, changes saved payment status or renews a domain.</p><button className="p-button" disabled={busy} onClick={()=>void paymentEvidence()}>{busy?"Checking…":"Check Sandbox payment"}</button></>}
       {detail.kind==="email"&&can("operations.recover")&&<>
         <p className="p-muted">Check provider evidence without sending another message. Accepted and delivered are separate states.</p>
         <button className="p-button p-button-primary" disabled={busy} onClick={()=>void notification()}>{busy?"Checking…":"Check delivery status"}</button>
-        {detail.item.status==="review_required"&&detail.item.last_error==="configuration_required:BREVO_CLIENT_SENDER_EMAIL"&&<details className="p-technical-details"><summary>Safe recovery</summary><p>This exact failure occurred before dispatch. Fresh MFA is required. This queues once and does not send immediately.</p><button className="p-button" disabled={busy} onClick={()=>{if(window.confirm("Queue this confirmed unsent notification once?"))void notification(true);}}>Recover confirmed unsent email</button></details>}
+        {detail.item.status==="review_required"&&detail.item.last_error==="configuration_required:BREVO_CLIENT_SENDER_EMAIL"&&<details className="p-technical-details"><summary>Safe recovery</summary><p>This exact failure occurred before dispatch. Fresh MFA is required. This queues once and does not send immediately.</p>{recoveryConfirmation===detail.item.id?<div role="group" aria-label="Confirm notification recovery"><p>Queue this confirmed unsent notification once? Nothing is sent by this action.</p><button className="p-button" disabled={busy} onClick={()=>void notification(true)}>Confirm queue once</button><button className="p-button" disabled={busy} onClick={()=>setRecoveryConfirmation(null)}>Cancel recovery</button></div>:<button className="p-button" disabled={busy} onClick={()=>setRecoveryConfirmation(detail.item.id||null)}>Recover confirmed unsent email</button>}</details>}
       </>}
       {detail.item.client_id&&<p><Link className="p-button" href={`/admin/clients/${detail.item.client_id}`}>Open client profile</Link></p>}
       {error&&<p className="portal-error" role="alert">{error}</p>}

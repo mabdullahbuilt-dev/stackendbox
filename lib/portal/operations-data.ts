@@ -40,17 +40,18 @@ export async function operationsData() {
   };
   const names=Object.keys(queries),counts=await Promise.all(Object.values(queries));
   counts.forEach(r=>checkDb(r.error));
-  const [domains,orders,mail,operations,ledger,audit]=await Promise.all([
+  const [domains,orders,mail,operations,ledger,audit,invoicePayments]=await Promise.all([
     db.from("portal_domains").select("id,name,lifecycle_status,expiration_date,auto_renew,last_synced_at,reconciliation_required,portal_domain_assignments(client_id,portal_clients(name,business_name))").eq("protected",false).order("expiration_date",{ascending:true,nullsFirst:true}).limit(100),
     db.from("portal_orders").select("id,client_id,domain,status,environment,amount_minor,currency,payment_id,created_at").in("status",["paid","action_required","disputed","declined","simulation_queued"]).order("created_at",{ascending:false}).limit(50),
     db.from("portal_email_outbox").select("id,client_id,subject,status,last_error,created_at,portal_clients(name,business_name)").order("created_at",{ascending:false}).limit(50),
     db.from("portal_domain_operations").select("id,domain_id,client_id,kind,status,created_at,updated_at").in("status",operationReviewStates.domains).order("created_at",{ascending:false}).limit(50),
     db.from("portal_ledger").select("order_id,category,amount_minor,currency,reconciliation_status").eq("reconciliation_status","unreconciled").limit(50),
     db.from("portal_audit").select("id,actor_id,action,target_id,created_at").order("created_at",{ascending:false}).limit(50),
+    db.from("portal_invoice_payments").select("invoice_id,client_id,provider_id,status,environment,amount_minor,currency,created_at,portal_clients(name,business_name)").order("created_at",{ascending:false}).limit(50),
   ]);
-  [domains,orders,mail,operations,ledger,audit].forEach(r=>checkDb(r.error));
+  [domains,orders,mail,operations,ledger,audit,invoicePayments].forEach(r=>checkDb(r.error));
   const domainIds=(domains.data||[]).map(d=>d.id);
   const quotes=domainIds.length?await db.from("portal_quotes").select("id,domain_id,retail_minor,currency,valid_until,created_at").in("domain_id",domainIds).eq("kind","renewal").gte("valid_until",at).order("created_at",{ascending:false}).limit(500):{data:[],error:null};
   checkDb(quotes.error);
-  return {checked_at:at,counts:Object.fromEntries(names.map((name,i)=>[name,counts[i].count])),domains:domains.data,quotes:quotes.data,orders:orders.data,email:mail.data,operations:operations.data,ledger:ledger.data,audit:audit.data};
+  return {checked_at:at,counts:Object.fromEntries(names.map((name,i)=>[name,counts[i].count])),domains:domains.data,quotes:quotes.data,orders:orders.data,email:mail.data,operations:operations.data,ledger:ledger.data,audit:audit.data,invoice_payments:invoicePayments.data};
 }
