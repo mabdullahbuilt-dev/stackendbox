@@ -12,6 +12,10 @@ it("supports the requested client route aliases without broad public fallbacks",
     expect(portalPageRoute(path)).toBeNull();
 });
 it("loads client data through the authenticated scoped endpoint but retains the admin MFA gate",()=>{
+  expect(portalPageRoute("/admin/login")).toMatchObject({admin:true,section:"login",publicPage:true});
+  expect(portalPageRoute("/admin/forgot-password")).toMatchObject({admin:true,publicPage:true});
+  expect(portalPageRoute("/admin/verify")).toMatchObject({admin:true,section:"verify",publicPage:false});
+  expect(bootstrapPath(portalPageRoute("/admin/verify")!)).toBe("auth/identity");
   expect(bootstrapPath(portalPageRoute("/client-portal/websites")!)).toBe("data?section=websites");
   expect(bootstrapPath(portalPageRoute("/client-portal/domains/fixture.example")!)).toBe("data?section=domains&domain=fixture.example");
   expect(bootstrapPath(portalPageRoute("/admin/clients")!)).toBe("auth/identity?admin=1");

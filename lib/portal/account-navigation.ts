@@ -1,2 +1,5 @@
-/** Password login and activation must land staff at MFA setup, not tenant data. */
-export function accountLandingPath(role:string){return role==="staff"?"/client-portal/settings":"/client-portal/dashboard";}
+export function isAdministrativeAccount(role:string){return role==="staff"||role==="super_admin";}
+/** Administrative password login and activation must reach MFA before the workspace. */
+export function accountLandingPath(role:string){return isAdministrativeAccount(role)?"/admin/verify":"/client-portal/dashboard";}
+/** This destination is returned only after successful server-side MFA verification. */
+export function verifiedMfaLandingPath(role:string){return isAdministrativeAccount(role)?"/admin":null;}

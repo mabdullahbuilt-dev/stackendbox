@@ -304,7 +304,6 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
           StackEndBox<span>{data?.account.role==="staff"?"STAFF ACCOUNT":"CLIENT PORTAL"}</span>
         </Link>
         <nav aria-label="Client portal">
-          {data?.account.role==="staff"&&<Link href="/admin">Open staff workspace</Link>}
           {nav.filter(([url])=>data?.account.role!=="staff"||url==="settings").map(([url, title, Icon]) => (
             <Link
               prefetch={false}
@@ -1233,7 +1232,8 @@ function PasswordSetup({ email, onComplete }: { email: string; onComplete: () =>
     </Form>
   </>;
 }
-function Mfa({ factors }: { factors: { id: string; status: string }[] }) {
+export function Mfa({ factors }: { factors: { id: string; status: string }[] }) {
+  const router=useRouter();
   const [enrollment, setEnrollment] = useState<{
     id: string;
     totp: { qr_code: string };
@@ -1264,12 +1264,14 @@ function Mfa({ factors }: { factors: { id: string; status: string }[] }) {
       {(enrollment || factors.length > 0) && (
         <Form
           button="Verify authenticator"
-          onSubmit={(f) =>
-            api("auth/mfa", {
+          onSubmit={async(f) => {
+            const result=await api("auth/mfa", {
               factorId: enrollment?.id || factors[0].id,
               code: f.code,
-            })
-          }
+            });
+            if(result.redirect==="/admin")router.replace("/admin");
+            return result;
+          }}
         >
           <Field name="code" title="Six-digit authenticator code" />
         </Form>

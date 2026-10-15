@@ -50,7 +50,7 @@ import {customerScope,filterCustomerScope} from "@/lib/portal/customer-scope";
 import {requiresFreshAdminMfa} from "@/lib/portal/admin-action";
 import {observeLatency} from "@/lib/portal/latency";
 import {routePermission} from "@/lib/portal/permissions";
-import {accountLandingPath} from "@/lib/portal/account-navigation";
+import {accountLandingPath,isAdministrativeAccount,verifiedMfaLandingPath} from "@/lib/portal/account-navigation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -129,6 +129,10 @@ async function handle(req: NextRequest, context: Context) {
       } catch {
         await db.auth.signOut();
         throw new PortalError("invalid_credentials", 401);
+      }
+      if(body.audience==="admin"&&!isAdministrativeAccount(accountRole)){
+        await db.auth.signOut();
+        throw new PortalError("administrator_required",403);
       }
       return reply({ redirect: passwordChangeRequired ? "/client-portal/reset-password" : accountLandingPath(accountRole) });
     }
@@ -231,7 +235,8 @@ async function handle(req: NextRequest, context: Context) {
         code: input.code,
       });
       if (error) throw new PortalError("mfa_verification_failed");
-      return reply({ message: "Authenticator verified." });
+      const redirect=verifiedMfaLandingPath(auth.account.role);
+      return reply({ message: "Authenticator verified.", ...(redirect?{redirect}:{}) });
     }
     if (["data", "admin/workspace"].includes(route) && req.method === "GET") {
       const adminMode = route === "admin/workspace";

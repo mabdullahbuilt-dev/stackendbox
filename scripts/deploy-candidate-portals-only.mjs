@@ -4,6 +4,8 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {cli,projectRef} from './lib/supabase-access.mjs';
 const run=promisify(execFile),root='dist/static',changed=new Set(['portal.js','portal.css','portal.html','release.json']);
+const companyDomain=process.argv.includes('--company-domain');
+const configPath=companyDomain?'wrangler.main-domain.jsonc':'wrangler.production-candidate.jsonc';
 const command=(args,env=process.env)=>run(process.execPath,args,{env,windowsHide:true,timeout:120000,maxBuffer:4194304});
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 async function publicSnapshot(directory=root,prefix=''){
@@ -17,8 +19,10 @@ async function publicSnapshot(directory=root,prefix=''){
 }
 let stage='scope';
 try{
-  const config=JSON.parse(await readFile('wrangler.production-candidate.jsonc','utf8'));
-  if(config.name!=='stackendbox-production'||config.routes?.length||config.triggers.crons.length)throw Error('unsafe_scope');
+  const configSource=await readFile(configPath,'utf8');
+  const config=JSON.parse(configSource.replace(/^\s*\/\/.*$/gm,''));
+  const expectedRoutes=companyDomain?[{pattern:'www.stackendbox.com',custom_domain:true},{pattern:'stackendbox.com',custom_domain:true}]:[];
+  if(config.name!=='stackendbox-production'||JSON.stringify(config.routes)!==JSON.stringify(expectedRoutes)||config.triggers.crons.length||config.vars.PORTAL_JOBS_ENABLED!=='false')throw Error('unsafe_scope');
   const before=await publicSnapshot();
   if(!before['site.js']||!before['index.html'])throw Error('verified_public_artifacts_required');
   // Do not publish local work under an unrelated commit identifier.
@@ -36,8 +40,9 @@ try{
   // Existing bridge, provider credentials and configuration remain untouched.
   await cli(['functions','deploy','stackendbox-production','--project-ref',projectRef,'--no-verify-jwt','--use-api']);
   stage='worker';
-  const deployed=await command(['node_modules/wrangler/bin/wrangler.js','deploy','--config','wrangler.production-candidate.jsonc']);
+  if(await readFile(configPath,'utf8')!==configSource)throw Error('deployment_configuration_changed');
+  const deployed=await command(['node_modules/wrangler/bin/wrangler.js','deploy','--config',configPath]);
   const version=deployed.stdout.match(/Current Version ID:\s*([a-f0-9-]+)/)?.[1];
   const release=JSON.parse(await readFile(`${root}/release.json`,'utf8'));
-  console.log(JSON.stringify({origin:'https://stackendbox-production.stackendbox.workers.dev',version,commit:release.commit,publicFilesPreserved:Object.keys(before).length,providerCredentialsChanged:false,dnsChanged:false,cronChanged:false}));
+  console.log(JSON.stringify({origin:companyDomain?'https://www.stackendbox.com':'https://stackendbox-production.stackendbox.workers.dev',version,commit:release.commit,publicFilesPreserved:Object.keys(before).length,providerCredentialsChanged:false,existingCompanyBindingsPreserved:companyDomain,cronChanged:false}));
 }catch{console.error(JSON.stringify({error:'portal_candidate_deployment_failed',stage,sensitiveOutputWithheld:true}));process.exitCode=1;}

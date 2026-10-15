@@ -75,11 +75,36 @@ describe("mandatory temporary password replacement", () => {
   });
 });
 
+describe("verified MFA navigation",()=>{
+  it.each(["super_admin","staff","client"])("returns the appropriate destination only after %s MFA succeeds",async role=>{
+    const challengeAndVerify=vi.fn().mockResolvedValue({error:null});
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture",app_metadata:{}},account:{role},db:{auth:{mfa:{challengeAndVerify}}}} as never);
+    const response=await POST(new NextRequest("https://portal.example/api/portal/auth/mfa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({factorId:"aaaaaaaa-0000-4000-8000-000000000011",code:"123456"})}),{params:Promise.resolve({path:["auth","mfa"]})});
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({message:"Authenticator verified.",...(role==="client"?{}:{redirect:"/admin"})});
+    expect(challengeAndVerify).toHaveBeenCalledOnce();
+  });
+  it("never redirects after a rejected authenticator code",async()=>{
+    vi.mocked(identity).mockResolvedValue({user:{id:"fixture",app_metadata:{}},account:{role:"super_admin"},db:{auth:{mfa:{challengeAndVerify:vi.fn().mockResolvedValue({error:{message:"invalid code"}})}}}} as never);
+    const response=await POST(new NextRequest("https://portal.example/api/portal/auth/mfa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({factorId:"aaaaaaaa-0000-4000-8000-000000000011",code:"123456"})}),{params:Promise.resolve({path:["auth","mfa"]})});
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({error:"mfa_verification_failed"});
+  });
+});
+
 describe("authentication verification errors", () => {
+  it("rejects a client at administrator sign-in without forwarding them into a client session",async()=>{
+    const db={auth:{signInWithPassword:vi.fn().mockResolvedValue({data:{user:{id:"client"}},error:null}),signOut:vi.fn().mockResolvedValue({error:null})}};
+    vi.mocked(sessionDb).mockResolvedValue(db as never);
+    vi.mocked(identity).mockResolvedValue({user:{id:"client",app_metadata:{}},account:{role:"client"},db} as never);
+    const response=await POST(new NextRequest("https://portal.example/api/portal/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"client@example.com",password:"fixture-only",token:"fixture-verification",audience:"admin"})}),{params:Promise.resolve({path:["auth","login"]})});
+    expect(response.status).toBe(403);expect(await response.json()).toEqual({error:"administrator_required"});expect(db.auth.signOut).toHaveBeenCalledOnce();
+    vi.mocked(sessionDb).mockClear();vi.mocked(turnstile).mockClear();
+  });
   it("sends staff to Account Security after password login without changing client routing",async()=>{
     const db={auth:{signInWithPassword:vi.fn().mockResolvedValue({data:{user:{id:"staff"}},error:null}),signOut:vi.fn()}};
     vi.mocked(sessionDb).mockResolvedValue(db as never);
-    for(const [role,redirect] of [["staff","/client-portal/settings"],["client","/client-portal/dashboard"]]){
+    for(const [role,redirect] of [["staff","/admin/verify"],["super_admin","/admin/verify"],["client","/client-portal/dashboard"]]){
       vi.mocked(identity).mockResolvedValue({user:{id:"staff",app_metadata:{}},account:{role},db} as never);
       const response=await POST(new NextRequest("https://portal.example/api/portal/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"staff@example.com",password:"fixture-only",token:"fixture-verification"})}),{params:Promise.resolve({path:["auth","login"]})});
       expect(response.status).toBe(200);expect(await response.json()).toEqual({redirect});
