@@ -1,0 +1,96 @@
+{
+  "scope": "Staff authorization, support operations and service lifecycle milestone. This is not full operational-independence or main-domain launch acceptance.",
+  "branch": "feature/cloudflare-workers-proof",
+  "featureCommits": ["b2852ee", "f2b788f", "75fc960"],
+  "candidateOrigin": "https://stackendbox-production.stackendbox.workers.dev",
+  "acceptanceOrigin": "https://stackendbox-static-acceptance.stackendbox.workers.dev",
+  "staff": {
+    "ownerTeamBrowserAccepted": true,
+    "roles": {
+      "operations_admin": "Client provisioning, domain assignment, services, billing, support and permitted operation recovery. No team administration or unapproved registrar execution.",
+      "domain_manager": "Client provisioning and reviewed portal-domain assignment. No billing, service or support administration.",
+      "billing_manager": "Client/domain reads, invoices and gated billing workflows. No domain assignment or support administration.",
+      "support_staff": "Client directory and support operations only. No financial or registrar administration.",
+      "auditor": "Explicit read capabilities only. No business mutations."
+    },
+    "databaseAndApiNegativeTests": "Passed against real disposable Supabase Auth, TOTP and PostgreSQL RLS for all five roles.",
+    "sessionRoleChangesAndSuspension": "Passed. Existing sessions lose the prior capabilities.",
+    "ownerAndSelfPromotionProtected": true,
+    "hostedStaffGateEnabled": false,
+    "hostedStaffIdentitiesCreated": 0,
+    "staffBrowserExercise": "Not completed. API/RLS tests and owner browser checks do not substitute for the required non-owner operator exercise."
+  },
+  "support": {
+    "implemented": ["Bounded 50-ticket queue", "Priority", "Authorized staff assignment", "Open/Pending/Resolved/Closed labels", "Preservation of legacy request statuses", "Escalation", "Private notes", "Client replies", "Revision conflicts", "Idempotent updates", "Atomic audit", "Deduplicated notification enqueue", "Ticket reload"],
+    "hostedBrowser": "Existing labelled test ticket opened. One labelled private note saved and read back.",
+    "hostedPrivateNoteCount": 1,
+    "publicMessageCopiesOfPrivateNote": 0,
+    "emailQueueCopiesOfPrivateNote": 0,
+    "historyWindow": "Latest 100 replies, notes and management changes. Older-history pagination remains unfinished."
+  },
+  "services": {
+    "implemented": ["Existing category, client, scope, status and website relationship preserved", "Start date", "Renewal/end date", "Billing arrangement", "Private staff note", "Atomic revisioned lifecycle history", "50-record cursor pagination", "Bounded client search and website options", "Customer-visible dates and billing arrangement"],
+    "hostedBrowser": "One clearly labelled nonfinancial service created for the existing authorized test client through the admin form. Its dates, included billing arrangement and private note were saved and read back.",
+    "realCustomerRecordsChanged": false,
+    "invoicePaymentOrRegistrarOperationStarted": false,
+    "isolatedPagination": "52 disposable service records returned as 50 plus 2, without duplicate or omitted IDs. Functional pagination check, not a capacity benchmark.",
+    "historyWindow": "Latest 50 lifecycle changes. This does not claim complete historical coverage of legacy category/status edits."
+  },
+  "hostedPrivacy": {
+    "verifiedAt": "2026-10-15T09:54:09.093Z",
+    "clientSeesSavedServiceDatesAndBilling": true,
+    "privateSupportAndServiceNotesAbsentFromCustomerResponses": true,
+    "privateTablesDeniedByRls": 5,
+    "newAdminEndpointsDeniedToClient": true,
+    "scope": "One existing authorized test-client SDK email-token session. No normal password-login, multi-tenant load or complete browser-operator claim."
+  },
+  "checks": {
+    "affectedUnitSuites": "74 tests across support, role matrix, authentication and admin suites, plus 40 tests across service lifecycle, website assignment and customer contracts, passed in the recorded focused runs.",
+    "typescript": "Passed before service release.",
+    "lint": "Passed before service release.",
+    "portalAndEdgeBuilds": "Passed and deployed. No legacy runtime build or public homepage rebuild.",
+    "browserBundle": "Server-only and legacy framework dependencies absent.",
+    "supportViewportChecks": [390, 768, 1280, 1440],
+    "supportDocumentHorizontalOverflow": false,
+    "serviceMobileViewportCheck": 390,
+    "latency": {
+      "origin": "Production candidate",
+      "applicationCommit": "75fc960",
+      "dataMedianMs": 703,
+      "dataMaximumMs": 2075,
+      "scope": "One authorized test account, read-only hosted page-data requests. Not p95 load, 400-client concurrency or free-tier-consumption proof."
+    }
+  },
+  "preservation": {
+    "publicArtifactsSha256Matched": 28,
+    "vercelFallbackChanged": false,
+    "dnsOrNameserversChanged": false,
+    "workerCustomDomainsChanged": false,
+    "providerCredentialsChanged": false,
+    "newTablesCoveredByExistingBackupReader": 5,
+    "newBackupOrRestoreClaim": false,
+    "productionSchedulesEnabled": false,
+    "liveChargesEnabled": false,
+    "liveRegistrarWritesEnabled": false,
+    "realCustomerDomainAssigned": false,
+    "unrelatedWorkingTreeChangesPreserved": true
+  },
+  "evidenceFiles": [
+    "dist/portal-evidence/isolated-staff-authorization.json",
+    "dist/portal-evidence/hosted-operational-privacy.json",
+    "dist/portal-evidence/customer-contract-service-lifecycle-release.json",
+    "dist/portal-evidence/owner-team-gated.png",
+    "dist/portal-evidence/hosted-private-support-note.png",
+    "dist/portal-evidence/support-mobile-390.png",
+    "dist/portal-evidence/hosted-service-lifecycle-saved.png",
+    "dist/portal-evidence/service-lifecycle-mobile-390.png"
+  ],
+  "remaining": [
+    "Complete the isolated non-owner browser operator exercise, including invitation/MFA and failure recovery, before asserting operational independence or enabling hosted staff privileges.",
+    "Finish older support/service-history pagination and remaining role-specific UI recovery coverage.",
+    "Verify the complete gated renewal/reconciliation operator journey without unapproved real payments or registrar writes.",
+    "Keep production scheduling disabled until its independent approval.",
+    "Main-domain delegation review is gated until 2026-10-15T19:00:10.186Z. Fresh DNS evidence and separate founder delegation approval are still required, followed by separate application cutover approval."
+  ],
+  "founderActionNeededForThisMilestone": "None. The provided owner session was sufficient. Staff rollout and DNS cutover are not being requested or executed by this milestone."
+}

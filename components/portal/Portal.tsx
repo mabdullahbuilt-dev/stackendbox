@@ -69,6 +69,7 @@ const date = (value: unknown) =>
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 function ServiceDates({row}:{row:Row}){const parts=[row.start_date?`Starts ${date(`${str(row.start_date)}T00:00:00`)}`:"",row.end_date?`Renewal / end ${date(`${str(row.end_date)}T00:00:00`)}`:"",row.billing_arrangement?label(row.billing_arrangement):""].filter(Boolean);return parts.length?<p className="p-muted">{parts.join(" · ")}</p>:null;}
 const errors: Record<string, string> = {
+  idempotency_conflict:"This retry doesn't match the saved request. Reload and review its saved result before trying again.",
   ticket_changed_refresh_required:"Another team member updated this ticket. Refresh it before saving again.",
   service_changed_refresh_required:"This service changed in another session. Close and reopen its lifecycle before saving.",
   staff_assignee_unavailable:"That employee isn't currently authorized for support. Choose another assignee.",
