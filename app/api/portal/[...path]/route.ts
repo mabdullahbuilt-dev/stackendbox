@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
   adminDb,
+  administrator,
   audit,
   checkDb,
   clientAccess,
@@ -48,6 +49,7 @@ import {boundedText} from "@/lib/portal/request-body";
 import {customerScope,filterCustomerScope} from "@/lib/portal/customer-scope";
 import {requiresFreshAdminMfa} from "@/lib/portal/admin-action";
 import {observeLatency} from "@/lib/portal/latency";
+import {routePermission} from "@/lib/portal/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -156,13 +158,17 @@ async function handle(req: NextRequest, context: Context) {
     }
     const auth = await identity(undefined,route === "data" && req.method === "GET");
     if (route === "auth/identity" && req.method === "GET") {
-      if (req.nextUrl.searchParams.get("admin") === "1") await superAdmin(auth);
+      if (req.nextUrl.searchParams.get("admin") === "1") {const staff=await administrator(auth);return reply({user_id:auth.user.id,role:auth.account.role,permissions:staff.permissions});}
       return reply({ user_id: auth.user.id, role: auth.account.role, password_change_required: auth.user.app_metadata?.portal_password_change_required === true });
     }
     if (auth.user.app_metadata?.portal_password_change_required === true && route !== "auth/password") {
       if (route === "data" && req.method === "GET" && req.nextUrl.searchParams.get("section") === "reset-password")
         return reply({ account: auth.account, factors: [], clients: [], password_change_required: true });
       throw new PortalError("password_change_required", 403);
+    }
+    if(auth.account.role==="staff"){
+      const permission=routePermission(route,req.method,req.nextUrl.searchParams.get("section")||undefined);
+      if(permission)await administrator(auth,permission,requiresFreshAdminMfa(route,req.method));
     }
     if (path[0] === "invoices" && path[2] === "download" && path.length === 3 && req.method === "GET") {
       const id = uuid.parse(path[1]);
@@ -201,6 +207,11 @@ async function handle(req: NextRequest, context: Context) {
     }
     if (route === "auth/mfa" && req.method === "POST") {
       if (body.action === "enroll") {
+        if(auth.account.role!=="client"){
+          const factors=await auth.db.auth.mfa.listFactors();
+          if(factors.error)throw new PortalError("mfa_factors_unavailable",503);
+          if(factors.data.totp.some(factor=>factor.status==="verified"))await administrator(auth,undefined,true);
+        }
         const { data, error } = await auth.db.auth.mfa.enroll({
           factorType: "totp",
           friendlyName: "StackEndBox portal",
@@ -221,7 +232,7 @@ async function handle(req: NextRequest, context: Context) {
     }
     if (["data", "admin/workspace"].includes(route) && req.method === "GET") {
       const adminMode = route === "admin/workspace";
-      if (adminMode) await superAdmin(auth);
+      if (adminMode) await administrator(auth,routePermission(route,req.method,req.nextUrl.searchParams.get("section")||undefined)||undefined);
       const scopedClient = adminMode && req.nextUrl.searchParams.has("client_id") ? uuid.parse(req.nextUrl.searchParams.get("client_id")) : undefined;
       const scope = adminMode ? customerScope(req.nextUrl.searchParams.get("scope")) : undefined;
       const section = z.enum(clientSections).parse(req.nextUrl.searchParams.get("section") || "dashboard");
@@ -492,6 +503,7 @@ async function handle(req: NextRequest, context: Context) {
           `A member of StackEndBox replied to your request. Read the reply securely at ${portalOrigin()}/client-portal/requests.`,
           `reply:${r.id}:${messageId}`,
         );
+      await audit(auth.user.id,"support_reply_saved",r.id,{message_id:messageId});
       return reply({ message: "Reply saved." });
     }
     if (path[0] === "documents" && req.method === "GET") {
@@ -509,10 +521,19 @@ async function handle(req: NextRequest, context: Context) {
       return reply({ url: data?.signedUrl });
     }
     if (path[0] === "admin") {
-      const admin = await superAdmin(auth,requiresFreshAdminMfa(route,req.method)),
+      const admin = await administrator(auth,routePermission(route,req.method,req.nextUrl.searchParams.get("section")||undefined)||undefined,requiresFreshAdminMfa(route,req.method)),
         db = adminDb();
-      if (route === "admin/clients" && req.method === "GET")
-        return reply(await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined,customerScope(req.nextUrl.searchParams.get("scope"))));
+      if(route==="admin/team"&&req.method==="GET")return reply(await (await import("@/lib/portal/staff")).team());
+      if(route==="admin/team/invite"&&req.method==="POST")return reply(await (await import("@/lib/portal/staff")).inviteStaff(admin.user.id,body));
+      if(route==="admin/team/change"&&req.method==="POST")return reply(await (await import("@/lib/portal/staff")).changeStaff(admin.user.id,body));
+      if (route === "admin/clients" && req.method === "GET") {
+        const result=await clientDirectory(req.nextUrl.searchParams.has("after") ? uuid.parse(req.nextUrl.searchParams.get("after")) : undefined,req.nextUrl.searchParams.get("q")||"",req.nextUrl.searchParams.has("client_id")?uuid.parse(req.nextUrl.searchParams.get("client_id")):undefined,customerScope(req.nextUrl.searchParams.get("scope")));
+        if(admin.account.role==="staff"){
+          result.clients=result.clients.map(client=>({...client,...(!admin.permissions.includes("domains.read")?{portal_domain_assignments:[]}:{}),...(!admin.permissions.includes("services.read")?{portal_websites:[],portal_service_entitlements:[]}: {})}));
+          if(!admin.permissions.includes("clients.write"))result.provisioning=[];
+        }
+        return reply(result);
+      }
       if (route === "admin/operations" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsData());
       if (route === "admin/summary" && req.method === "GET") return reply(await (await import("@/lib/portal/operations-data")).operationsSummary(z.enum(["customers","test"]).parse(req.nextUrl.searchParams.get("scope")||"customers")));
       if(route === "admin/ownership-tasks" && req.method === "GET") return reply(await (await import("@/lib/portal/ownership-tasks")).ownershipTasks());
@@ -595,6 +616,7 @@ async function handle(req: NextRequest, context: Context) {
       }
       if (route === "admin/clients" && req.method === "POST") {
         if(body.domain_id)throw new PortalError("use_reviewed_domain_handoff",409);
+        if(body.website&&admin.account.role==="staff"&&!admin.permissions.includes("services.write"))throw new PortalError("staff_permission_denied",403);
         return reply(await provisionClient(admin.user.id,body));
       }
       if (route === "admin/account-status" && req.method === "POST") {

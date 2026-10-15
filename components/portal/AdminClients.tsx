@@ -7,6 +7,7 @@ import { api } from "./Portal";
 import { generateTemporaryPassword, validatePassword } from "@/lib/portal/password-policy";
 import {PageHeader,StatusBadge,EmptyState,SectionTabs} from "./PortalUI";
 import {Plus} from "lucide-react";
+import {useAdminAccess} from "./AdminAccess";
 type Client = {
   id: string;
   name: string;
@@ -45,6 +46,8 @@ type Directory = {
   next: string | null;
 };
 export function AdminClients({ create = false, clientId }: { create?: boolean; clientId?: string }) {
+  const {can}=useAdminAccess();
+  const profileTabs=["Overview",...(can("domains.read")?["Domains"]:[]),...(can("services.read")?["Websites & Services"]:[]),...(can("clients.write")?["Account"]:[])];
   const scope=customerScope(useSearchParams().get("scope"));
   const [data, setData] = useState<Directory | null>(null),
     [error, setError] = useState(""),
@@ -123,6 +126,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
     try {const result=await api(route,input);setMessage(result.message);await load();}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
+  if(create&&!can("clients.write"))return <p role="alert">Your role can view client records but cannot create an account.</p>;
   if (create)
     return (
       <section className="portal-panel">
@@ -226,7 +230,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
     );
   return (
     <>
-      <PageHeader title={clientId?"Client profile":"Clients"} eyebrow="Workspace" description={clientId?"Account, assigned services and customer access.":"Manage customer accounts and their assigned services."} actions={!clientId?<Link className="p-button p-button-primary" href="/admin/clients/new"><Plus size={16}/>Add client</Link>:<Link className="p-button" href="/admin/clients">All clients</Link>}/>
+      <PageHeader title={clientId?"Client profile":"Clients"} eyebrow="Workspace" description={clientId?"Account, assigned services and customer access.":"Manage customer accounts and their assigned services."} actions={!clientId?can("clients.write")&&<Link className="p-button p-button-primary" href="/admin/clients/new"><Plus size={16}/>Add client</Link>:<Link className="p-button" href="/admin/clients">All clients</Link>}/>
       {scope&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href="/admin/clients">Show all clients</Link></p>}
       {!clientId&&<form className="p-client-search" onSubmit={e=>{e.preventDefault();if(loading)return;activeSearch.current=search.trim();void load();}}><label>Find a client<input type="search" placeholder="Name, approved email or domain" value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/></label><button disabled={loading}>{loading?"Searching…":"Search clients"}</button></form>}
       <p>
@@ -255,10 +259,10 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               <p>
                 {c.name} · {c.status}
               </p>
-              <SectionTabs tabs={["Overview","Domains","Websites & Services","Account"]} value={profileTab} onChange={setProfileTab} label="Client profile sections" panelId={`profile-${c.id}`}/>
-              <div id={`profile-${c.id}`} role="tabpanel" aria-labelledby={`profile-${c.id}-${["Overview","Domains","Websites & Services","Account"].indexOf(profileTab)}`} tabIndex={0}>
-              {profileTab==="Overview"&&<div className="p-profile-overview"><div><StatusBadge value={c.status}/><p>{c.portal_domain_assignments.length} assigned domains · {c.portal_websites.length} websites · {c.portal_service_entitlements?.length??0} services</p></div><div className="portal-actions"><Link className="p-button p-button-primary" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain</Link><Link className="p-button" href={`/admin/billing?client_id=${c.id}`}>Client billing</Link><Link className="p-button" href={`/admin/support?client_id=${c.id}`}>Open support</Link><button onClick={()=>setProfileTab("Account")}>Account & access</button></div></div>}
-              <div hidden={profileTab!=="Account"}>
+              <SectionTabs tabs={profileTabs} value={profileTab} onChange={setProfileTab} label="Client profile sections" panelId={`profile-${c.id}`}/>
+              <div id={`profile-${c.id}`} role="tabpanel" aria-labelledby={`profile-${c.id}-${profileTabs.indexOf(profileTab)}`} tabIndex={0}>
+              {profileTab==="Overview"&&<div className="p-profile-overview"><div><StatusBadge value={c.status}/><p>Client information is limited to your assigned role.</p></div><div className="portal-actions">{can("domains.assign")&&<Link className="p-button p-button-primary" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain</Link>}{can("billing.read")&&<Link className="p-button" href={`/admin/billing?client_id=${c.id}`}>Client billing</Link>}{can("support.read")&&<Link className="p-button" href={`/admin/support?client_id=${c.id}`}>Open support</Link>}{can("clients.write")&&<button onClick={()=>setProfileTab("Account")}>Account & access</button>}</div></div>}
+              <div hidden={profileTab!=="Account"||!can("clients.write")}>
               <details><summary>Internal reference</summary><code>{c.id}</code></details>
               <details><summary>Edit client details and access</summary><form className="portal-form" onSubmit={e=>{e.preventDefault();const fields=Object.fromEntries(new FormData(e.currentTarget));void operate("admin/client-update",{...fields,client_id:c.id});}}>
                 <label>Client name<input name="name" defaultValue={c.name} required maxLength={100}/></label>
@@ -300,8 +304,8 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
                   </div>
                 );
               })}
-              </div><div hidden={profileTab!=="Domains"}><h3>Domains</h3>
-              <p><Link className="portal-button" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain to this client</Link></p>
+              </div><div hidden={profileTab!=="Domains"||!can("domains.read")}><h3>Domains</h3>
+              {can("domains.assign")&&<p><Link className="portal-button" href={`/admin/domains?assign_client=${c.id}#domain-handoff`}>Assign domain to this client</Link></p>}
               {c.portal_domain_assignments.length ? (
                 c.portal_domain_assignments.map((d) => (
                   <p key={d.domain_id}>
@@ -311,7 +315,7 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               ) : (
                 <p>No domains assigned.</p>
               )}
-              </div><div hidden={profileTab!=="Websites & Services"}><h3>Websites</h3>
+              </div><div hidden={profileTab!=="Websites & Services"||!can("services.read")}><h3>Websites</h3>
               {c.portal_websites.length ? (
                 c.portal_websites.map((w) => (
                   <p key={w.id}>
@@ -323,8 +327,8 @@ export function AdminClients({ create = false, clientId }: { create?: boolean; c
               )}
               <h3>Services</h3>{c.portal_service_entitlements?.length?c.portal_service_entitlements.map(service=><p key={service.id}>{service.service} <StatusBadge value={service.status}/></p>):<EmptyState title="No services assigned"/>}<Link className="p-button" href="/admin/services">Manage websites & services</Link>
               </div></div><p>
-                <Link href={`/admin/billing?client_id=${c.id}`}>Client billing</Link> ·{" "}
-                <Link href={`/admin/support?client_id=${c.id}`}>Support records</Link>
+                {can("billing.read")&&<Link href={`/admin/billing?client_id=${c.id}`}>Client billing</Link>}{" "}
+                {can("support.read")&&<Link href={`/admin/support?client_id=${c.id}`}>Support records</Link>}
               </p>
             </section>
           ))}

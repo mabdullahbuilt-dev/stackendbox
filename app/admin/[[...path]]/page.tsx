@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { superAdmin } from "@/lib/portal/server";
+import { administrator } from "@/lib/portal/server";
 import { PortalError } from "@/lib/portal/rules";
 import {PrivateAdminPortal} from "@/components/portal/PrivatePortal";
 import {portalPageRoute} from "@/lib/portal/page-route";
@@ -14,7 +14,7 @@ export default async function AdminPage({
   const section = path[0] || "overview";
   if (!portalPageRoute(`/admin/${path.join("/")}`)) notFound();
   try {
-    await superAdmin();
+    await administrator();
   } catch (error) {
     if (error instanceof PortalError && error.status === 401)
       redirect("/client-portal/login");

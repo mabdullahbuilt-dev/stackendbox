@@ -32,6 +32,7 @@ import {ClientDomainCards} from "./ClientDomainCards";
 import {notifySessionChange} from "@/lib/portal/session-events";
 import "./portal-ux.css";
 import {PageHeader,StatusBadge,MetricCard} from "./PortalUI";
+import {useAdminAccess} from "./AdminAccess";
 
 type Row = Record<string, unknown>;
 export type Data = {
@@ -145,9 +146,10 @@ function Form({
     [message, setMessage] = useState(""),
     [failed, setFailed] = useState(false);
   const [requestKey,setRequestKey]=useState<string|null>(null);
+  const {readOnly}=useAdminAccess();
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if(busy)return;
+    if(busy||readOnly)return;
     const form=e.currentTarget;
     const key=requestKey||crypto.randomUUID();
     if(idempotent)setRequestKey(key);
@@ -169,10 +171,10 @@ function Form({
   }
   return (
     <form onSubmit={submit} className="portal-form">
-      {children}
-      <button className="portal-button" disabled={busy}>
+      <fieldset disabled={readOnly}>{children}
+      <button className="portal-button" disabled={busy||readOnly}>
         {busy ? "Please wait…" : button}
-      </button>
+      </button></fieldset>
       {message && (
         <p
           role={failed ? "alert" : "status"}

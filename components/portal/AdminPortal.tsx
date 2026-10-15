@@ -10,6 +10,8 @@ import { AdminOperations } from "./AdminOperations";
 import {AdminRenewals} from "./AdminRenewals";
 import {AdminOverview} from "./AdminOverview";
 import {AdminServices} from "./AdminServices";
+import {AdminTeam} from "./AdminTeam";
+import {AdminAccess} from "./AdminAccess";
 import {customerScope} from "@/lib/portal/customer-scope";
 import {Activity,Building2,ClipboardList,Globe2,LayoutDashboard,LifeBuoy,Menu,Settings,Users,Wallet} from "lucide-react";
 export function AdminPortal({
@@ -23,6 +25,16 @@ export function AdminPortal({
   domain?: string;
   clientId?: string;
 }) {
+  const [permissions,setPermissions]=useState<string[]|null>(null),[failure,setFailure]=useState("");
+  useEffect(()=>{let active=true;api("auth/identity?admin=1").then(identity=>{if(active)setPermissions(identity.permissions);}).catch(error=>{if(active)setFailure(error.message);});return()=>{active=false;};},[]);
+  if(failure)return <main className="portal-auth"><p role="alert">{failure}</p><Link href="/client-portal/settings">Account security</Link></main>;
+  if(!permissions)return <p role="status">Loading your permissions…</p>;
+  return <AdminWorkspace section={section} createClient={createClient} domain={domain} clientId={clientId} permissions={permissions}/>;
+}
+function AdminWorkspace({section,createClient,domain,clientId,permissions}:{section:string;createClient:boolean;domain?:string;clientId?:string;permissions:string[]}){
+  const owner=permissions.includes("owner"),can=(permission:string)=>owner||permissions.includes(permission);
+  const sectionPermission=({clients:"clients",domains:"domains",services:"services",support:"support",billing:"billing",renewals:"billing",operations:"operations"} as Record<string,string>)[section];
+  const readOnly=!owner&&(!sectionPermission||!can(`${sectionPermission}.${section==="domains"?"assign":section==="operations"?"recover":"write"}`));
   const router = useRouter();
   const scopedClient=useSearchParams().get("client_id");
   const scope=customerScope(useSearchParams().get("scope"));
@@ -39,9 +51,9 @@ export function AdminPortal({
         e instanceof Error ? e.message : "Unable to load administration.",
       );
     }
-  }, [section,scopedClient,scope]);
+  }, [section,scopedClient,scope,setError,setData]);
   useEffect(() => {
-    if (!["overview", "clients", "services", "health", "renewals"].includes(section)) void reload();
+    if (!["overview", "clients", "services", "team", "health", "renewals"].includes(section)) void reload();
   }, [reload, section]);
   const content = (
     {
@@ -51,8 +63,9 @@ export function AdminPortal({
       security: "settings",
     } as Record<string, string>
   )[section];
+  if(section!=="overview"&&!can(({clients:"clients.read",domains:"domains.read",services:"services.read",billing:"billing.read",renewals:"billing.read",support:"support.read",operations:"operations.read"} as Record<string,string>)[section]||"owner"))return <main className="portal-auth"><h1>Access unavailable</h1><p>Your role doesn&apos;t permit this workspace.</p><Link href="/admin">Return to your workspace</Link></main>;
   return (
-    <div className="portal-shell">
+    <AdminAccess permissions={permissions} readOnly={readOnly}><div className="portal-shell">
       <aside id="admin-navigation" className={`portal-sidebar ${open ? "is-open" : ""}`}>
         <Link prefetch={false} className="portal-brand" href="/admin">
           StackEndBox<span>ADMINISTRATION</span>
@@ -61,8 +74,8 @@ export function AdminPortal({
           {([
             ["Workspace",[["overview","Overview",LayoutDashboard],["clients","Clients",Users],["domains","Domains",Globe2],["services","Websites & Services",Building2]]],
             ["Business",[["billing","Billing & Renewals",Wallet],["support","Support",LifeBuoy]]],
-            ["Administration",[["operations","Operations",ClipboardList],["health","Service health",Activity],["security","Settings",Settings]]],
-          ] as const).map(([group,items])=><div className="p-nav-group" key={group}><p className="p-nav-label">{group}</p>{items.map(([key,title,Icon]) => (
+            ["Administration",[["operations","Operations",ClipboardList],["team","Team & Permissions",Users],["health","Service health",Activity],["security","Settings",Settings]]],
+          ] as const).map(([group,items])=><div className="p-nav-group" key={group}><p className="p-nav-label">{group}</p>{items.filter(([key])=>key==="overview"||can(({clients:"clients.read",domains:"domains.read",services:"services.read",billing:"billing.read",support:"support.read",operations:"operations.read"} as Record<string,string>)[key]||"owner")).map(([key,title,Icon]) => (
             <Link
               prefetch={false}
               key={key}
@@ -103,7 +116,7 @@ export function AdminPortal({
           </p>
           {scope&&!["overview","clients","operations"].includes(section)&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href={`/admin/${section}`}>Show all records</Link></p>}
           {["billing","renewals"].includes(section)&&<nav className="portal-tabs" aria-label="Billing sections"><Link href="/admin/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/admin/renewals" aria-current={section==="renewals"?"page":undefined}>Renewals</Link></nav>}
-          {section === "overview" ? <AdminOverview/> : section === "clients" ? (
+          {section === "overview" ? owner?<AdminOverview/>:<section><h1>Your workspace</h1><p>Use the available navigation to work within your assigned permissions. Financial and registrar execution gates remain in place.</p><Link className="p-button" href="/client-portal/settings">Account & authenticator</Link></section> : section === "clients" ? (
             <AdminClients key={`${createClient}:${clientId||""}`} create={createClient} clientId={clientId} />
           ) : section === "health" ? (
             <AdminHealth />
@@ -111,6 +124,8 @@ export function AdminPortal({
             <AdminRenewals />
           ) : section === "services" ? (
             <AdminServices />
+          ) : section === "team" ? (
+            <AdminTeam />
           ) : error ? (
             <div role="alert" className="portal-error">
               {error}
@@ -120,7 +135,7 @@ export function AdminPortal({
             section === "domains" ? (
               <AdminDomains data={data} reload={reload} domain={domain} />
             ) : (
-              <>{section === "operations" && <AdminOperations />}{section === "operations"?<details className="portal-panel"><summary>Advanced operations and supplier pricing</summary><PortalContent section={content} path={[content]} data={data} reload={reload} adminMode/></details>:<PortalContent
+              <>{section === "operations" && <AdminOperations />}{section === "operations"?owner&&<details className="portal-panel"><summary>Advanced operations and supplier pricing</summary><PortalContent section={content} path={[content]} data={data} reload={reload} adminMode/></details>:<PortalContent
                 section={content}
                 path={[content]}
                 data={data}
@@ -133,6 +148,6 @@ export function AdminPortal({
           )}
         </main>
       </div>
-    </div>
+    </div></AdminAccess>
   );
 }

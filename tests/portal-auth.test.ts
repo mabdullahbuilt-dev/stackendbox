@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 vi.mock("server-only", () => ({}));
 
-vi.mock("@/lib/portal/server", () => ({
+vi.mock("@/lib/portal/server", () => {const ownerGate=vi.fn();return ({
   adminDb: vi.fn(), audit: vi.fn(), checkDb: vi.fn(), clientAccess: vi.fn(),
   identity: vi.fn(), originCheck: vi.fn(), portalOrigin: vi.fn(),
-  rateLimit: vi.fn(), sessionDb: vi.fn(), superAdmin: vi.fn(), turnstile: vi.fn(),
-}));
+  rateLimit: vi.fn(), sessionDb: vi.fn(), superAdmin: ownerGate, turnstile: vi.fn(),
+  administrator:vi.fn(async(auth:object,_permission?:unknown,fresh=false)=>{await ownerGate(auth,fresh);return {...auth,permissions:["owner"]};}),
+});});
 vi.mock("@/lib/portal/services", () => ({
   availability: vi.fn(), createQuote: vi.fn(), notifyClient: vi.fn(),
   syncDomains: vi.fn(), validateQuote: vi.fn(), runJobs: vi.fn(),
@@ -38,7 +39,7 @@ describe("reviewed domain handoff gate",()=>{
     vi.mocked(superAdmin).mockRejectedValueOnce(new PortalError("administrator_fresh_mfa_required",403));
     const response=await POST(new NextRequest(`https://portal.example/api/portal/admin/${operation}`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}),{params:Promise.resolve({path:["admin",operation]})});
     expect(response.status).toBe(403);
-    expect(vi.mocked(superAdmin).mock.lastCall).toEqual([auth,true]);
+    expect(vi.mocked(superAdmin).mock.lastCall).toEqual([auth,operation==="activate-domain-client"]);
   });
 });
 

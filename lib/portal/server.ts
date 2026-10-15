@@ -7,6 +7,7 @@ import { PortalError } from "./rules";
 import { observeLatency } from "./latency";
 import type {User} from "@supabase/supabase-js";
 import {z} from "zod";
+import {rolePermissions,type Permission} from "./permissions";
 
 export function env(name: string) {
   const value = process.env[name];
@@ -95,10 +96,28 @@ export async function superAdmin(existing?: Awaited<ReturnType<typeof identity>>
   }
   return auth;
 }
+export async function administrator(existing?:Awaited<ReturnType<typeof identity>>,permission?:Permission|"owner",fresh=false){
+  const auth=existing||await identity();
+  if(auth.account.role==="super_admin")return {...await superAdmin(auth,fresh),permissions:[...new Set(Object.values(rolePermissions).flat()),"owner"]};
+  if(auth.account.role!=="staff"||permission==="owner")throw new PortalError("administrator_required",403);
+  const assurance=await auth.db.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(assurance.error||assurance.data?.currentLevel!=="aal2")throw new PortalError("administrator_mfa_required",403);
+  if(fresh&&!assurance.data.currentAuthenticationMethods?.some(method=>typeof method!=="string"&&["totp","mfa/totp"].includes(method.method)&&Number.isFinite(method.timestamp)&&method.timestamp<=Date.now()/1000+30&&Date.now()/1000-method.timestamp<=600))throw new PortalError("administrator_fresh_mfa_required",403);
+  const result=await auth.db.rpc("portal_my_permissions");checkDb(result.error);
+  const permissions=z.array(z.string()).parse(result.data);
+  if(!permissions.length||permission&&!permissions.includes(permission))throw new PortalError("staff_permission_denied",403);
+  return {...auth,permissions};
+}
 export async function clientAccess(id: string, existing?: Awaited<ReturnType<typeof identity>>) {
   // Reuse only the identity already verified by this request's handler. The
   // tenant RPC still runs for every target, and no identity is cached globally.
   const auth = existing || await identity();
+  if(auth.account.role==="staff"){
+    await administrator(auth,"clients.read");
+    const target=await adminDb().from("portal_clients").select("id").eq("id",id).eq("status","active").maybeSingle();checkDb(target.error);
+    if(!target.data)throw new PortalError("access_denied",403);
+    return auth;
+  }
   const { data, error } = await auth.db.rpc("portal_access", { target: id });
   if (error || !data) throw new PortalError("access_denied", 403);
   return auth;

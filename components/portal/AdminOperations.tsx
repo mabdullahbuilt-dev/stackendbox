@@ -6,6 +6,7 @@ import {api} from "./Portal";
 import {OwnershipTasks} from "./OwnershipTasks";
 import {operatorGuide} from "@/lib/portal/operator-guide";
 import {needsOperationReview} from "@/lib/portal/operation-review";
+import {useAdminAccess} from "./AdminAccess";
 import {DetailDrawer,EmptyState,LoadingSkeleton,MetricCard,PageHeader,StatusBadge,SectionTabs} from "./PortalUI";
 type Client={name:string;business_name:string};
 type Assignment={client_id:string;portal_clients:Client};
@@ -18,6 +19,7 @@ type Tab=typeof tabs[number];
 const date=(value?:string|null)=>value?new Date(value).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"Not verified";
 const title=(value:string)=>value.replaceAll("_"," ");
 export function AdminOperations(){
+  const {can}=useAdminAccess();
   const [data,setData]=useState<Snapshot|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
   const [tab,setTab]=useState<Tab>("All"),[search,setSearch]=useState("");
   const [detail,setDetail]=useState<{kind:string;item:Item}|null>(null),[help,setHelp]=useState(false);
@@ -61,7 +63,7 @@ export function AdminOperations(){
         {detail.item.payment_id&&<><dt>Payment reference</dt><dd><code>{detail.item.payment_id}</code></dd></>}
       </dl>
       {detail.item.last_error&&<details className="p-technical-details"><summary>Diagnostic details</summary><code>{detail.item.last_error}</code></details>}
-      {detail.kind==="email"&&<>
+      {detail.kind==="email"&&can("operations.recover")&&<>
         <p className="p-muted">Check provider evidence without sending another message. Accepted and delivered are separate states.</p>
         <button className="p-button p-button-primary" disabled={busy} onClick={()=>void notification()}>{busy?"Checking…":"Check delivery status"}</button>
         {detail.item.status==="review_required"&&detail.item.last_error==="configuration_required:BREVO_CLIENT_SENDER_EMAIL"&&<details className="p-technical-details"><summary>Safe recovery</summary><p>This exact failure occurred before dispatch. Fresh MFA is required. This queues once and does not send immediately.</p><button className="p-button" disabled={busy} onClick={()=>{if(window.confirm("Queue this confirmed unsent notification once?"))void notification(true);}}>Recover confirmed unsent email</button></details>}

@@ -4,10 +4,12 @@ import Link from "next/link";
 import {useSearchParams} from "next/navigation";
 import {api} from "./Portal";
 import {generateTemporaryPassword,validatePassword} from "@/lib/portal/password-policy";
+import {useAdminAccess} from "./AdminAccess";
 type Review={domain:string;email:string;existing_client:boolean;already_assigned:boolean;expiration:string;checked_at:string};
 type Result={client_id?:string;email:string;domain:string;portal_url:string;message:string};
 const validEmail=(value:string)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 export function DomainHandoff({reload,domains=[]}:{reload:()=>Promise<void>;domains?:string[]}){
+  const {can}=useAdminAccess();
   const params=useSearchParams();
   const preferred=params.get("assign_client");
   const [email,setEmail]=useState(""),[domain,setDomain]=useState(""),[password,setPassword]=useState(""),[show,setShow]=useState(false);
@@ -52,6 +54,7 @@ export function DomainHandoff({reload,domains=[]}:{reload:()=>Promise<void>;doma
     try{const saved=await api("admin/activate-domain-client",input);if(!saved.client_id)throw Error("Client access needs review. Check its saved operation before retrying.");setResult(saved);setPassword("");setPending(null);await reload();}
     catch(e){setError((e as Error).message);}finally{lock.current=false;setBusy(false);}
   }
+  if(!can("domains.assign"))return null;
   if(result)return <section className="portal-panel" id="domain-handoff"><h2>Domain Assigned Successfully</h2><p>{result.domain}</p><p>Assigned to: {result.email}</p><p role="status">{result.message}</p><p><Link href={result.portal_url}>{result.portal_url}</Link></p><button onClick={()=>{void navigator.clipboard.writeText(result.portal_url).then(()=>setCopied(true)).catch(()=>setError("Copy unavailable. Select the displayed link to copy it manually."));}}>{copied?"Link copied":"Copy Link"}</button>{error&&<p role="alert">{error}</p>}<button onClick={()=>{request.current=crypto.randomUUID();setResult(null);setReview(null);setVerified(null);setEmail("");setDomain("");setPassword("");setCopied(false);setError("");}}>Assign another domain</button></section>;
   return <section className="portal-panel" id="domain-handoff"><h2>Assign Domain</h2><p>Give a customer access to their purchased domain.</p>
     {!review?<form className="portal-form" onSubmit={prepare}><fieldset disabled={busy}>

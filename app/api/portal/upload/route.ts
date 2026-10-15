@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     const form = await req.formData();
     const clientId = z.string().uuid().parse(form.get("client_id"));
     const auth = await clientAccess(clientId);
+    if(auth.account.role==="staff")throw new PortalError("staff_document_upload_unavailable",403);
     await rateLimit(`upload:${auth.user.id}`, 15, 3600);
     const file = form.get("file");
     if (!(file instanceof File) || !file.size || file.size > 4 * 1024 * 1024)

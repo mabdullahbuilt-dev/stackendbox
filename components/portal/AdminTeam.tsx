@@ -1,0 +1,25 @@
+"use client";
+import {useEffect,useRef,useState} from "react";
+import {api} from "./Portal";
+import {staffRoles,type StaffRole} from "@/lib/portal/permissions";
+import {DetailDrawer,EmptyState,PageHeader,StatusBadge} from "./PortalUI";
+type Member={user_id:string;name:string;approved_email:string;active:boolean};
+type Grant={user_id:string;role:StaffRole;active:boolean;revision:number};
+type Snapshot={staff:Member[];grants:Grant[];enabled:boolean;roles:Record<StaffRole,readonly string[]>;invitations:{id:string;email:string;name:string;role:string;state:string}[]};
+const roleName=(role:string)=>role.replaceAll("_"," ");
+export function AdminTeam(){
+  const [data,setData]=useState<Snapshot|null>(null),[error,setError]=useState(""),[message,setMessage]=useState(""),[busy,setBusy]=useState(false),[editing,setEditing]=useState<Member|"invite"|null>(null),key=useRef("");
+  async function load(){try{setData(await api("admin/team"));setError("");}catch(e){setError((e as Error).message);}}
+  useEffect(()=>{void load();},[]);
+  function open(member:Member|"invite"){key.current=crypto.randomUUID();setEditing(member);setError("");setMessage("");}
+  async function save(form:HTMLFormElement){if(busy||!editing)return;setBusy(true);setError("");const fields=Object.fromEntries(new FormData(form));
+    try{const member=editing!=="invite"?editing:null,grant=data?.grants.find(g=>g.user_id===member?.user_id);const result=await api(member?"admin/team/change":"admin/team/invite",{...fields,idempotency_key:key.current,...(member?{user_id:member.user_id,active:fields.active==="true",expected_revision:grant?.revision||0}:{})});setMessage(result.message);setEditing(null);await load();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+  return <section><PageHeader title="Team & Permissions" eyebrow="Administration" description="Individual staff accounts, defined roles and immediate access revocation." actions={<><button className="p-button" disabled={busy} onClick={()=>void load()}>Refresh</button><button className="p-button p-button-primary" disabled={busy} onClick={()=>open("invite")}>Invite staff</button></>}/>
+    {error&&<p className="portal-error" role="alert">{error}</p>}{message&&<p role="status" className="p-toast">{message}</p>}
+    {data&&!data.enabled&&<p className="portal-sandbox">Staff privileges are disabled pending authorization acceptance and owner rollout approval. Owner access is unchanged.</p>}
+    {data?.staff.length?<div className="p-workbench portal-table-wrap"><table><thead><tr><th>Staff member</th><th>Approved email</th><th>Role</th><th>Access</th><th>Action</th></tr></thead><tbody>{data.staff.map(member=><tr key={member.user_id}><td>{member.name}</td><td>{member.approved_email}</td><td>{roleName(data.grants.find(g=>g.user_id===member.user_id)?.role||"unassigned")}</td><td><StatusBadge value={member.active?data.enabled?"active":"pending":"suspended"}/></td><td><button disabled={busy} onClick={()=>open(member)}>Manage access</button></td></tr>)}</tbody></table></div>:<EmptyState title="No staff accounts" description="Invite an employee without sharing your owner account."/>}
+    <details className="portal-panel"><summary>Role capabilities</summary>{staffRoles.map(role=><section key={role}><h3>{roleName(role)}</h3><p className="p-muted">{data?.roles[role].join(", ")}</p></section>)}</details>
+    {!!data?.invitations.length&&<details className="portal-panel"><summary>Invitation follow-up</summary>{data.invitations.map(invite=><p key={invite.id}>{invite.name} · {invite.email} · <StatusBadge value={invite.state}/></p>)}<p className="p-muted">An uncertain invitation is never resent by retrying the same request.</p></details>}
+    {editing&&<DetailDrawer title={editing==="invite"?"Invite staff":"Manage staff access"} onClose={()=>setEditing(null)}><form className="portal-form" onSubmit={e=>{e.preventDefault();void save(e.currentTarget);}}>{editing==="invite"?<><label>Full name<input name="name" required maxLength={100}/></label><label>Approved email<input name="email" type="email" required maxLength={254}/></label></>:<p>{editing.name} · {editing.approved_email}</p>}<label>Role<select name="role" defaultValue={editing==="invite"?"support_staff":data?.grants.find(g=>g.user_id===editing.user_id)?.role}>{staffRoles.map(role=><option key={role} value={role}>{roleName(role)}</option>)}</select></label>{editing!=="invite"&&<label>Access<select name="active" defaultValue={String(editing.active)}><option value="true">Enabled, subject to rollout gate and MFA</option><option value="false">Suspended immediately</option></select></label>}<p className="p-muted">Fresh authenticator verification is required. Staff choose their own passwords and must enroll MFA. Owner privileges cannot be assigned here.</p>{error&&<p role="alert" className="portal-error">{error}</p>}<button className="p-button p-button-primary" disabled={busy}>{busy?"Saving…":editing==="invite"?"Send staff invitation":"Save access"}</button></form></DetailDrawer>}
+  </section>;
+}
