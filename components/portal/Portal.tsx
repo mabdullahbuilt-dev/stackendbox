@@ -33,6 +33,7 @@ import {notifySessionChange} from "@/lib/portal/session-events";
 import "./portal-ux.css";
 import {PageHeader,StatusBadge,MetricCard} from "./PortalUI";
 import {useAdminAccess} from "./AdminAccess";
+import {accountLandingPath} from "@/lib/portal/account-navigation";
 
 type Row = Record<string, unknown>;
 export type Data = {
@@ -290,7 +291,7 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
     <div className="portal-auth-grid">
       <section><span className="portal-eyebrow">PRIVATE CLIENT ACCESS</span><h1>Set your StackEndBox password</h1><p>Your domains, website and service records stay securely linked to your approved account.</p></section>
       <section className="portal-panel">
-        {error ? <p role="alert" className="portal-error">{error}<button onClick={() => void reload()}>Retry</button></p> : busy || !data || dataPage !== page ? <p role="status">Loading your account</p> : <PasswordSetup email={data.account.approved_email} onComplete={() => { save(null); router.replace("/client-portal/dashboard"); router.refresh(); }} />}
+        {error ? <p role="alert" className="portal-error">{error}<button onClick={() => void reload()}>Retry</button></p> : busy || !data || dataPage !== page ? <p role="status">Loading your account</p> : <PasswordSetup email={data.account.approved_email} onComplete={() => { save(null); router.replace(accountLandingPath(data.account.role)); router.refresh(); }} />}
         <p className="portal-small">Need a fresh link? <Link href="/client-portal/forgot-password">Request password recovery</Link>.</p>
       </section>
     </div>
@@ -298,11 +299,12 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
   return (
     <div className="portal-shell">
       <aside id="client-navigation" className={open ? "portal-sidebar is-open" : "portal-sidebar"}>
-        <Link href="/client-portal" className="portal-brand">
-          StackEndBox<span>CLIENT PORTAL</span>
+        <Link href={data?.account.role==="staff"?"/admin":"/client-portal"} className="portal-brand">
+          StackEndBox<span>{data?.account.role==="staff"?"STAFF ACCOUNT":"CLIENT PORTAL"}</span>
         </Link>
         <nav aria-label="Client portal">
-          {nav.map(([url, title, Icon]) => (
+          {data?.account.role==="staff"&&<Link href="/admin">Open staff workspace</Link>}
+          {nav.filter(([url])=>data?.account.role!=="staff"||url==="settings").map(([url, title, Icon]) => (
             <Link
               prefetch={false}
               key={url}
@@ -316,10 +318,10 @@ export function Portal({ path, userId = "", initialData }: { path: string[]; use
           ))}
         </nav>
         <div className="portal-sidebar-foot">
-          <p>Need a hand?</p>
-          <Link href="/client-portal/requests">
+          <p>{data?.account.role==="staff"?"Contact your administrator for access changes.":"Need a hand?"}</p>
+          {data?.account.role!=="staff"&&<Link href="/client-portal/requests">
             Talk to StackEndBox <ArrowUpRight size={14} />
-          </Link>
+          </Link>}
           <button
             onClick={async () => {
               try { await api("auth/logout", {}); save(null); router.replace("/client-portal/login"); router.refresh(); }

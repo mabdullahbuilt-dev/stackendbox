@@ -50,6 +50,7 @@ import {customerScope,filterCustomerScope} from "@/lib/portal/customer-scope";
 import {requiresFreshAdminMfa} from "@/lib/portal/admin-action";
 import {observeLatency} from "@/lib/portal/latency";
 import {routePermission} from "@/lib/portal/permissions";
+import {accountLandingPath} from "@/lib/portal/account-navigation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -120,16 +121,16 @@ async function handle(req: NextRequest, context: Context) {
       });
       if (error || !data.user) throw new PortalError("invalid_credentials", 401);
       let passwordChangeRequired = false;
-      let staffSignIn = false;
+      let accountRole = "client";
       try {
         const auth = await identity({db,user:data.user});
         passwordChangeRequired = auth.user.app_metadata?.portal_password_change_required === true;
-        staffSignIn = auth.account.role === "staff";
+        accountRole = auth.account.role;
       } catch {
         await db.auth.signOut();
         throw new PortalError("invalid_credentials", 401);
       }
-      return reply({ redirect: passwordChangeRequired ? "/client-portal/reset-password" : staffSignIn ? "/client-portal/settings" : "/client-portal/dashboard" });
+      return reply({ redirect: passwordChangeRequired ? "/client-portal/reset-password" : accountLandingPath(accountRole) });
     }
     if (req.method === "POST" && route === "auth/logout") {
       const db = await sessionDb();

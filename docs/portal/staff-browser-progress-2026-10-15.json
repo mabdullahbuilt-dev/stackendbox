@@ -1,0 +1,53 @@
+{
+  "scope": "Partial non-owner browser operator exercise. Not full operational-independence acceptance.",
+  "isolatedRun": "e9214efd",
+  "transport": "Loopback HTTP with disposable Supabase Auth, PostgreSQL and RLS. Brevo, Turnstile and Spaceship are explicit provider fixtures. No hosted credentials or real provider mutations.",
+  "verified": [
+    "Operations staff invited through owner Team UI and normal activation callback",
+    "User personally set staff password and enrolled/verified existing test-session MFA",
+    "Non-owner operations_admin opened admin workspace and client directory",
+    "Shared client-profile handoff verified fixture domain and preserved existing password",
+    "Reviewed portal-only assignment saved once and displayed queued, not delivered, notification",
+    "Website assignment saved through staff UI",
+    "Maintenance service saved through staff UI",
+    "Service start/end dates, annual arrangement and private note saved with one revisioned history record",
+    "One draft invoice saved without charge or send"
+  ],
+  "durableReadback": {
+    "at": "2026-10-15T10:38:30.638Z",
+    "assignments": 1,
+    "websites": 1,
+    "services": 1,
+    "serviceHistory": 1,
+    "invoiceStatus": "draft"
+  },
+  "fixes": [
+    "Staff password activation now shares the password-login landing rule and goes to Account Settings for MFA",
+    "Static full-page router no longer cancels an issued navigation with an immediate reload",
+    "Staff account settings no longer offer irrelevant customer navigation",
+    "Operator guide reflects implemented staff, support and lifecycle controls"
+  ],
+  "checks": {
+    "affectedTestsPassed": 44,
+    "typescript": "passed",
+    "appLint": "passed",
+    "fixtureScripts": "node syntax checks, scripts excluded by repository ESLint configuration"
+  },
+  "interruption": "Browser control timed out immediately after Issue invoice was clicked. Read-only database evidence confirms invoice remains draft. No retry or manual repair was performed.",
+  "remaining": [
+    "Resume invoice issue and customer-visible readback when browser control is available",
+    "Complete staff provisioning, support, recovery, domain_manager and live-session revocation UI exercises",
+    "Hosted staff rollout stays disabled pending complete exercise and separate approval"
+  ],
+  "dnsObservation": {
+    "normalHttpsAt": "2026-10-15T10:24:24.245Z",
+    "apexAndWww": "HTTP 200 after ordinary apex redirect, normal certificate validation",
+    "contentMatchesVercelOrigin": true,
+    "parentDs": "Absent from both checked authorities",
+    "independentResolvers": "Google and Cloudflare returned all checked records without validation errors",
+    "authoritativeBaseline": "All 11 records matched launch1 and launch2",
+    "minimumReviewGate": "2026-10-15T19:00:10.186Z",
+    "delegationAuthorized": false
+  },
+  "productionDataDnsRoutingPaymentsAndRegistrarSettingsChanged": false
+}
