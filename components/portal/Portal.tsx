@@ -67,8 +67,10 @@ const date = (value: unknown) =>
       })
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
+function ServiceDates({row}:{row:Row}){const parts=[row.start_date?`Starts ${date(`${str(row.start_date)}T00:00:00`)}`:"",row.end_date?`Renewal / end ${date(`${str(row.end_date)}T00:00:00`)}`:"",row.billing_arrangement?label(row.billing_arrangement):""].filter(Boolean);return parts.length?<p className="p-muted">{parts.join(" · ")}</p>:null;}
 const errors: Record<string, string> = {
   ticket_changed_refresh_required:"Another team member updated this ticket. Refresh it before saving again.",
+  service_changed_refresh_required:"This service changed in another session. Close and reopen its lifecycle before saving.",
   staff_assignee_unavailable:"That employee isn't currently authorized for support. Choose another assignee.",
   use_support_ticket_workflow:"Open the Support workspace to update this ticket.",
   staff_permission_denied:"Your staff role doesn't allow this action, or staff access is currently disabled.",
@@ -441,7 +443,7 @@ export function PortalContent({
           </Link>
         </div>
         <DomainList domains={domains} quotes={rows(data,"quotes")} websites={websites} />
-        {!!rows(data,"service_entitlements").length&&<section className="portal-panel"><h2>Your agreed services</h2>{rows(data,"service_entitlements").map(s=><p key={str(s.id)}>{str(s.service)} · {str(s.description)} · {label(s.status)}</p>)}</section>}
+        {!!rows(data,"service_entitlements").length&&<section className="portal-panel"><h2>Your agreed services</h2>{rows(data,"service_entitlements").map(s=><article key={str(s.id)}><p>{str(s.service)} · {str(s.description)} · {label(s.status)}</p><ServiceDates row={s}/></article>)}</section>}
         <div className="portal-columns">
           <section className="portal-panel"><h2>Billing & support</h2>
             <p><Link href="/client-portal/billing">View invoices and receipts</Link></p>
@@ -519,7 +521,7 @@ export function PortalContent({
                 {Boolean(w.last_verified_at) && (
                   <p>Last verified {date(w.last_verified_at)}</p>
                 )}
-                {rows(data,"service_entitlements").filter(s=>s.client_id===w.client_id && (!s.website_id || s.website_id===w.id)).map(s=><p key={str(s.id)}>{str(s.service)}: {str(s.description)} · {label(s.status)}</p>)}
+                {rows(data,"service_entitlements").filter(s=>s.client_id===w.client_id && s.website_id===w.id).map(s=><article key={str(s.id)}><p>{str(s.service)}: {str(s.description)} · {label(s.status)}</p><ServiceDates row={s}/></article>)}
                 <div className="portal-actions"><a
                   className="portal-button"
                   href={str(w.url)}
@@ -537,6 +539,7 @@ export function PortalContent({
             No websites have been assigned to your account. Contact StackEndBox to discuss a website project.
           </Empty>
         )}
+        {!!rows(data,"service_entitlements").filter(s=>!s.website_id).length&&<section className="portal-panel"><h2>Your services</h2>{rows(data,"service_entitlements").filter(s=>!s.website_id).map(s=><article key={str(s.id)}><h3>{str(s.service)}</h3><p>{str(s.description)} · {label(s.status)}</p><ServiceDates row={s}/></article>)}</section>}
       </>
     );
   if (section === "renewals")

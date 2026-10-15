@@ -16,7 +16,7 @@ const fields = {
   messages: "id,request_id,client_id,author_id,body,created_at",
   documents: "id,client_id,name,mime_type,size_bytes,created_at",
   notifications: "id,client_id,title,body,created_at",
-  service_entitlements: "id,client_id,website_id,service,description,status,created_at",
+  service_entitlements: "id,client_id,website_id,service,description,status,start_date,end_date,billing_arrangement,created_at",
   external_payments: "id,client_id,source,transaction_reference,amount_minor,currency,paid_at,reconciliation_status,created_at",
 } satisfies Record<PortalTable, string>;
 

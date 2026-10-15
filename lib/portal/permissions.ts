@@ -19,6 +19,8 @@ export function routePermission(route:string,method:string,section?:string):Perm
   if(route.startsWith("admin/team"))return "owner";
   if(/^admin\/support(?:\/[0-9a-f-]+)?$/.test(route))return "support.read";
   if(["admin/support/change","admin/support/note"].includes(route))return write?"support.write":"owner";
+  if(["admin/services-workspace","admin/service-client-options","admin/service-website-options"].includes(route)||/^admin\/service-lifecycle\/[0-9a-f-]+$/.test(route))return "services.read";
+  if(route==="admin/service-lifecycle")return write?"services.write":"services.read";
   if(["admin/clients","admin/client-update","admin/client-access-email","admin/account-status","admin/provisioning-resume"].includes(route))return write?"clients.write":"clients.read";
   if(["admin/client-options","admin/client-email-review"].includes(route))return "clients.read";
   if(["admin/domain-handoff-preview","admin/domain-handoff-review","admin/activate-domain-client"].includes(route))return "domains.assign";

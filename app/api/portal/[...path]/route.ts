@@ -556,6 +556,11 @@ async function handle(req: NextRequest, context: Context) {
         if(req.method==="POST")return reply(await acceptance.executeDnsAcceptance(domainName(path[2]),admin.user.id,body));
       }
       if (route === "admin/client-update" && req.method === "POST") return reply(await editClient(admin.user.id,body));
+      if(route==="admin/services-workspace"&&req.method==="GET")return reply(await (await import("@/lib/portal/service-lifecycle")).serviceWorkspace(req.nextUrl.searchParams));
+      if(route==="admin/service-client-options"&&req.method==="GET")return reply(await (await import("@/lib/portal/service-lifecycle")).serviceClientOptions(req.nextUrl.searchParams));
+      if(route==="admin/service-website-options"&&req.method==="GET")return reply(await (await import("@/lib/portal/service-lifecycle")).serviceWebsiteOptions(uuid.parse(req.nextUrl.searchParams.get("client_id"))));
+      if(path[1]==="service-lifecycle"&&path.length===3&&req.method==="GET")return reply(await (await import("@/lib/portal/service-lifecycle")).readServiceLifecycle(uuid.parse(path[2])));
+      if(route==="admin/service-lifecycle"&&req.method==="POST")return reply(await (await import("@/lib/portal/service-lifecycle")).saveServiceLifecycle(admin.user.id,body));
       if(route==="admin/support"&&req.method==="GET")return reply(await (await import("@/lib/portal/support")).supportQueue(req.nextUrl.searchParams));
       if(path[1]==="support"&&path.length===3&&req.method==="GET")return reply(await (await import("@/lib/portal/support")).supportDetail(uuid.parse(path[2])));
       if(route==="admin/support/change"&&req.method==="POST")return reply(await (await import("@/lib/portal/support")).supportChange(admin.user.id,body));

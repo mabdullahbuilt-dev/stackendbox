@@ -62,7 +62,18 @@ try{
    const provision=await request(account,'admin/clients',{idempotency_key:randomUUID(),name:'TEST ONLY provisioned customer',business_name:'TEST ONLY role provisioning',email:`client-${randomUUID()}@staff-fixture.invalid`,credential_mode:'invitation'});
    if(provision.state!=='invited'||!provision.client_id)throw Error('local_staff_provisioning_failed');
    await request(account,'admin/websites',{idempotency_key:randomUUID(),client_id:clientId,name:'TEST ONLY role website',url:'https://example.com'});
-   await request(account,'admin/services',{idempotency_key:randomUUID(),client_id:clientId,service:'Maintenance',description:'TEST ONLY agreed service',status:'included'});
+   const serviceId=randomUUID();await request(account,'admin/services',{idempotency_key:serviceId,client_id:clientId,service:'Maintenance',description:'TEST ONLY agreed service',status:'included'});
+   const lifecycle={idempotency_key:randomUUID(),service_id:serviceId,client_id:clientId,expected_revision:0,start_date:'2026-10-15',end_date:'2027-10-15',billing_arrangement:'annual',staff_note:'PRIVATE SERVICE NOTE NEVER CLIENT VISIBLE'};
+   await request(account,'admin/service-lifecycle',lifecycle);await request(account,'admin/service-lifecycle',lifecycle);
+   await request(account,'admin/service-lifecycle',{...lifecycle,idempotency_key:randomUUID()},409);
+   await request(account,'admin/service-lifecycle',{...lifecycle,idempotency_key:randomUUID(),client_id:randomUUID(),expected_revision:1},409);
+   const serviceDetail=await request(account,`admin/service-lifecycle/${serviceId}`);if(serviceDetail.internal.revision!==1||serviceDetail.history.length!==1||serviceDetail.service.start_date!==lifecycle.start_date)throw Error('local_service_lifecycle_not_durable');
+   const page=await request(account,`admin/services-workspace?kind=services&search=Maintenance&client_id=${clientId}`);if(!page.items.some(s=>s.id===serviceId)||page.items.length>50)throw Error('local_bounded_services_failed');
+   check(await db.from('portal_service_entitlements').insert(Array.from({length:51},()=>({client_id:clientId,service:'Technical support',description:'DISPOSABLE PAGINATION FIXTURE',status:'included',created_by:owner.id}))));
+   const page1=await request(account,`admin/services-workspace?kind=services&client_id=${clientId}`),page2=await request(account,`admin/services-workspace?kind=services&client_id=${clientId}&after=${page1.next}`);
+   if(page1.items.length!==50||page2.items.length!==2||page2.next!==null||new Set([...page1.items,...page2.items].map(s=>s.id)).size!==52)throw Error('local_service_cursor_pagination_failed');
+   if(check(await customer.session.from('portal_service_internal').select('*')).length||check(await customer.session.from('portal_service_history').select('*')).length)throw Error('local_private_service_rls_leak');
+   await cookie(customer);const visible=await request(customer,'data?section=websites');if(JSON.stringify(visible).includes(lifecycle.staff_note)||!visible.service_entitlements.some(s=>s.id===serviceId&&s.end_date===lifecycle.end_date))throw Error('local_service_customer_contract_failed');
   }
   if(role==='domain_manager'){
    await request(account,'admin/clients',{idempotency_key:randomUUID(),name:'TEST ONLY rejected website',business_name:'TEST ONLY role boundary',email:`reject-${randomUUID()}@staff-fixture.invalid`,credential_mode:'invitation',website:{name:'Unauthorized bundled service',url:'https://example.com'}},403);
@@ -92,6 +103,8 @@ try{
   }
   await request(account,`admin/support/${reqId}`,undefined,rolePermissions[role].includes('support.read')?200:403);
   if(!rolePermissions[role].includes('support.write'))await request(account,'admin/support/note',{idempotency_key:randomUUID(),request_id:reqId,body:'permission boundary'},403);
+  await request(account,'admin/services-workspace?kind=services',undefined,rolePermissions[role].includes('services.read')?200:403);
+  if(!rolePermissions[role].includes('services.write'))await request(account,'admin/service-lifecycle',{},403);
   outcomes.push({role,realPasswordLogin:true,totpMfaRequired:true,allowedReads:true,permittedWrites:role!=='auditor',negativeApiTests:true,directRls:true,noSelfPromotion:true});
  }
  stage='active_session_role_change';await request(owner,'admin/team/change',{idempotency_key:randomUUID(),user_id:first.id,role:'auditor',active:true,expected_revision:1});await request(first,'admin/request-status',{id:reqId,status:'under_review'},403);await request(first,'admin/workspace?section=websites');
