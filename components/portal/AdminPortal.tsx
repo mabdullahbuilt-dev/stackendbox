@@ -119,7 +119,7 @@ function AdminWorkspace({section,createClient,domain,clientId,permissions}:{sect
           </p>
           {scope&&!["overview","clients","operations"].includes(section)&&<p>{scope==="test"?"Test accounts only":"Customers, test accounts excluded"}. <Link href={`/admin/${section}`}>Show all records</Link></p>}
           {["billing","renewals"].includes(section)&&<nav className="portal-tabs" aria-label="Billing sections"><Link href="/admin/billing" aria-current={section==="billing"?"page":undefined}>Invoices & payments</Link><Link href="/admin/renewals" aria-current={section==="renewals"?"page":undefined}>Renewals</Link></nav>}
-          {section === "overview" ? owner?<AdminOverview/>:<section><h1>Your workspace</h1><p>Use the available navigation to work within your assigned permissions. Financial and registrar execution gates remain in place.</p><Link className="p-button" href="/admin/security">Account & authenticator</Link></section> : section === "clients" ? (
+          {section === "overview" ? owner?<AdminOverview/>:<section><h1>Your workspace</h1><p>Use the available navigation to work within your assigned permissions. Financial and registrar execution gates remain in place.</p><Link className="p-button" href="/admin/verify">Account & authenticator</Link></section> : section === "clients" ? (
             <AdminClients key={`${createClient}:${clientId||""}`} create={createClient} clientId={clientId} />
           ) : section === "health" ? (
             <AdminHealth />

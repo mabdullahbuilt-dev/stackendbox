@@ -56,7 +56,7 @@ function App() {
       if(admin)setIdentity(data);
       else {
         if(typeof data.account?.user_id!=="string")throw new Error("Account response could not be verified. Retry safely.");
-        if(isAdministrativeAccount(data.account.role)&&section!=="reset-password")return window.location.replace(section==="settings"?"/admin/security":"/admin");
+        if(isAdministrativeAccount(data.account.role)&&section!=="reset-password")return window.location.replace(section==="settings"?(data.account.role==="staff"?"/admin/verify":"/admin/security"):"/admin");
         setInitialData(data);setIdentity({user_id:data.account.user_id});
       }
     }).catch(e => { if (e.name !== "AbortError") setError(e.message); });
