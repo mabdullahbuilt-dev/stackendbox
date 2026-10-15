@@ -17,6 +17,8 @@ export function routePermission(route:string,method:string,section?:string):Perm
   if(route==="data")return section==="settings"||section==="reset-password"?null:"owner";
   if(route==="admin/workspace")return ({domains:"domains.read",websites:"services.read",billing:"billing.read",requests:"support.read",settings:"owner",dashboard:"clients.read"} as const)[section||"dashboard"]||"owner";
   if(route.startsWith("admin/team"))return "owner";
+  if(/^admin\/support(?:\/[0-9a-f-]+)?$/.test(route))return "support.read";
+  if(["admin/support/change","admin/support/note"].includes(route))return write?"support.write":"owner";
   if(["admin/clients","admin/client-update","admin/client-access-email","admin/account-status","admin/provisioning-resume"].includes(route))return write?"clients.write":"clients.read";
   if(["admin/client-options","admin/client-email-review"].includes(route))return "clients.read";
   if(["admin/domain-handoff-preview","admin/domain-handoff-review","admin/activate-domain-client"].includes(route))return "domains.assign";

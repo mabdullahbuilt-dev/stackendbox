@@ -11,6 +11,7 @@ import {AdminRenewals} from "./AdminRenewals";
 import {AdminOverview} from "./AdminOverview";
 import {AdminServices} from "./AdminServices";
 import {AdminTeam} from "./AdminTeam";
+import {AdminSupport} from "./AdminSupport";
 import {AdminAccess} from "./AdminAccess";
 import {customerScope} from "@/lib/portal/customer-scope";
 import {Activity,Building2,ClipboardList,Globe2,LayoutDashboard,LifeBuoy,Menu,Settings,Users,Wallet} from "lucide-react";
@@ -53,7 +54,7 @@ function AdminWorkspace({section,createClient,domain,clientId,permissions}:{sect
     }
   }, [section,scopedClient,scope,setError,setData]);
   useEffect(() => {
-    if (!["overview", "clients", "services", "team", "health", "renewals"].includes(section)) void reload();
+    if (!["overview", "clients", "services", "team", "support", "health", "renewals"].includes(section)) void reload();
   }, [reload, section]);
   const content = (
     {
@@ -126,6 +127,8 @@ function AdminWorkspace({section,createClient,domain,clientId,permissions}:{sect
             <AdminServices />
           ) : section === "team" ? (
             <AdminTeam />
+          ) : section === "support" ? (
+            <AdminSupport />
           ) : error ? (
             <div role="alert" className="portal-error">
               {error}

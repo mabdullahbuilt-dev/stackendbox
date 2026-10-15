@@ -120,14 +120,16 @@ async function handle(req: NextRequest, context: Context) {
       });
       if (error || !data.user) throw new PortalError("invalid_credentials", 401);
       let passwordChangeRequired = false;
+      let staffSignIn = false;
       try {
         const auth = await identity({db,user:data.user});
         passwordChangeRequired = auth.user.app_metadata?.portal_password_change_required === true;
+        staffSignIn = auth.account.role === "staff";
       } catch {
         await db.auth.signOut();
         throw new PortalError("invalid_credentials", 401);
       }
-      return reply({ redirect: passwordChangeRequired ? "/client-portal/reset-password" : "/client-portal/dashboard" });
+      return reply({ redirect: passwordChangeRequired ? "/client-portal/reset-password" : staffSignIn ? "/client-portal/settings" : "/client-portal/dashboard" });
     }
     if (req.method === "POST" && route === "auth/logout") {
       const db = await sessionDb();
@@ -554,6 +556,10 @@ async function handle(req: NextRequest, context: Context) {
         if(req.method==="POST")return reply(await acceptance.executeDnsAcceptance(domainName(path[2]),admin.user.id,body));
       }
       if (route === "admin/client-update" && req.method === "POST") return reply(await editClient(admin.user.id,body));
+      if(route==="admin/support"&&req.method==="GET")return reply(await (await import("@/lib/portal/support")).supportQueue(req.nextUrl.searchParams));
+      if(path[1]==="support"&&path.length===3&&req.method==="GET")return reply(await (await import("@/lib/portal/support")).supportDetail(uuid.parse(path[2])));
+      if(route==="admin/support/change"&&req.method==="POST")return reply(await (await import("@/lib/portal/support")).supportChange(admin.user.id,body));
+      if(route==="admin/support/note"&&req.method==="POST")return reply(await (await import("@/lib/portal/support")).supportNote(admin.user.id,body));
       if (route === "admin/invoices" && req.method === "POST") return reply(await createServiceInvoice(admin.user.id,body));
       if (route === "admin/invoice-status" && req.method === "POST") return reply(await transitionServiceInvoice(admin.user.id,body));
       if (path[1] === "invoices" && path[2] && path[3] === "checkout" && path.length === 4 && req.method === "POST") {
@@ -688,38 +694,7 @@ async function handle(req: NextRequest, context: Context) {
         });
       }
       if (route === "admin/request-status" && req.method === "POST") {
-        const input = z
-          .object({
-            id: uuid,
-            status: z.enum([
-              "submitted",
-              "under_review",
-              "quoted",
-              "approved",
-              "in_progress",
-              "completed",
-              "closed",
-            ]),
-          })
-          .parse(body);
-        const { data: r, error } = await db
-          .from("portal_requests")
-          .update({
-            status: input.status,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", input.id)
-          .select("*")
-          .single();
-        checkDb(error);
-        await notifyClient(
-          r.client_id,
-          `Request updated: ${r.subject}`,
-          `Your request is now ${r.status}. View it at ${portalOrigin()}/client-portal/requests.`,
-          `status:${r.id}:${r.status}`,
-        );
-        await audit(admin.user.id, "request_status_changed", r.id);
-        return reply({ message: "Request updated." });
+        throw new PortalError("use_support_ticket_workflow",409);
       }
     }
     throw new PortalError("not_found", 404);

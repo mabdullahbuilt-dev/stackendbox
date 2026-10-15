@@ -68,6 +68,10 @@ const date = (value: unknown) =>
     : "Not recorded";
 const label = (value: unknown) => str(value).replaceAll("_", " ");
 const errors: Record<string, string> = {
+  ticket_changed_refresh_required:"Another team member updated this ticket. Refresh it before saving again.",
+  staff_assignee_unavailable:"That employee isn't currently authorized for support. Choose another assignee.",
+  use_support_ticket_workflow:"Open the Support workspace to update this ticket.",
+  staff_permission_denied:"Your staff role doesn't allow this action, or staff access is currently disabled.",
   invalid_input: "Check the entered values and try again. Your existing records haven't been changed.",
   too_many_requests: "Too many requests. Please wait a few minutes before trying again.",
   domain_information_unavailable: "Domain information is temporarily unavailable. Your saved records are unchanged. Please try again later or contact support.",
@@ -632,7 +636,7 @@ export function PortalContent({
               </div>
               <p>{str(r.description)}</p>
               <small>
-                Request {str(r.id).slice(0, 8)} · Updated {date(r.updated_at)}
+                Updated {date(r.updated_at)}
               </small>
               <div className="portal-conversation">
                 {rows(data, "messages")
@@ -663,36 +667,6 @@ export function PortalContent({
                   <textarea name="body" required maxLength={5000} />
                 </label>
               </Form>
-              {adminMode && data.account.role === "super_admin" && (
-                <Form
-                  button="Update status"
-                  onSubmit={async (f) => {
-                    const result = await api("admin/request-status", {
-                      id: r.id,
-                      ...f,
-                    });
-                    await reload();
-                    return result;
-                  }}
-                >
-                  <label>
-                    Status
-                    <select name="status" defaultValue={str(r.status)}>
-                      {[
-                        "submitted",
-                        "under_review",
-                        "quoted",
-                        "approved",
-                        "in_progress",
-                        "completed",
-                        "closed",
-                      ].map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                  </label>
-                </Form>
-              )}
             </section>
           ))
         ) : (

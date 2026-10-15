@@ -9,7 +9,7 @@ try{
  const database=new URL(state.env.DB_URL);
  if(!['localhost','127.0.0.1'].includes(database.hostname))throw Error('local_database_required');
  const name=process.argv[2]||'202610150001_staff_permissions.sql';
- if(!['202610150001_staff_permissions.sql','202610150002_staff_provisioning_guards.sql'].includes(name))throw Error('reviewed_migration_required');
+ if(!['202610150001_staff_permissions.sql','202610150002_staff_provisioning_guards.sql','202610150003_support_operations.sql'].includes(name))throw Error('reviewed_migration_required');
  const version=name.slice(0,12),file=resolve('supabase/migrations/'+name),linux='/mnt/'+file[0].toLowerCase()+file.slice(2).replaceAll('\\','/');
  const prior=await run('wsl',['-d','Ubuntu','--','psql',database.href,'-X','-Atc',`select count(*) from public.portal_schema_releases where version='${version}'`],{windowsHide:true,timeout:60000});
  if(prior.stdout.trim()==='1'){console.log(JSON.stringify({migration:version,isolatedAlreadyApplied:true,hostedProjectChanged:false}));process.exit(0);}

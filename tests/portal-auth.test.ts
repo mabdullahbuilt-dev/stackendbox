@@ -76,6 +76,16 @@ describe("mandatory temporary password replacement", () => {
 });
 
 describe("authentication verification errors", () => {
+  it("sends staff to Account Security after password login without changing client routing",async()=>{
+    const db={auth:{signInWithPassword:vi.fn().mockResolvedValue({data:{user:{id:"staff"}},error:null}),signOut:vi.fn()}};
+    vi.mocked(sessionDb).mockResolvedValue(db as never);
+    for(const [role,redirect] of [["staff","/client-portal/settings"],["client","/client-portal/dashboard"]]){
+      vi.mocked(identity).mockResolvedValue({user:{id:"staff",app_metadata:{}},account:{role},db} as never);
+      const response=await POST(new NextRequest("https://portal.example/api/portal/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"staff@example.com",password:"fixture-only",token:"fixture-verification"})}),{params:Promise.resolve({path:["auth","login"]})});
+      expect(response.status).toBe(200);expect(await response.json()).toEqual({redirect});
+    }
+    vi.mocked(sessionDb).mockClear();vi.mocked(turnstile).mockClear();
+  });
   for (const action of ["login", "recover"]) {
     it.each([undefined, "", "   ", null])(
       `${action} explains a missing verification token (%s)`,

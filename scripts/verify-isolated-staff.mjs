@@ -75,9 +75,23 @@ try{
    const input={idempotency_key:randomUUID(),client_id:clientId,amount_minor:100,description:'TEST ONLY role invoice'};await request(account,'admin/invoices',input);await request(account,'admin/invoices',input);
   }
   if(role==='support_staff'){
+   stage='support_workflow';const change={idempotency_key:randomUUID(),request_id:reqId,expected_revision:0,priority:'high',assigned_to:account.id,escalated:true,status:'under_review'};
+   await request(account,'admin/support/change',change);await request(account,'admin/support/change',change);
+   await request(account,'admin/support/change',{...change,idempotency_key:randomUUID()},409);
+   await request(account,'admin/support/change',{...change,idempotency_key:randomUUID(),expected_revision:1,assigned_to:customer.id},409);
+   const note={idempotency_key:randomUUID(),request_id:reqId,body:'PRIVATE TEST NOTE NEVER CLIENT VISIBLE'};
+   await request(account,'admin/support/note',note);await request(account,'admin/support/note',note);
+   await request(account,'admin/support/note',{...note,body:'conflicting retry'},409);
+   const detail=await request(account,`admin/support/${reqId}`);if(detail.notes.length!==1||detail.meta.revision!==1||detail.meta.assigned_to!==account.id||!detail.meta.escalated||detail.history.length!==1)throw Error('local_support_persistence_failed');
+   const queue=await request(account,'admin/support?search=role&status=under_review');if(!queue.items.some(t=>t.id===reqId))throw Error('local_support_queue_missing');
+   if(check(await customer.session.from('portal_support_notes').select('*')).length||check(await customer.session.from('portal_support_meta').select('*')).length||check(await customer.session.from('portal_support_changes').select('*')).length)throw Error('local_customer_private_support_leak');
+   await cookie(customer);await request(customer,`admin/support/${reqId}`,undefined,403);const customerData=await request(customer,'data?section=requests');if(JSON.stringify(customerData).includes(note.body))throw Error('local_private_note_dto_leak');
+   if(!(await account.session.rpc('portal_support_note',{p_id:randomUUID(),p_actor:account.id,p_request:reqId,p_body:'direct denied'})).error)throw Error('local_direct_note_rpc_exposed');
    const input={idempotency_key:randomUUID(),body:'TEST ONLY client-visible staff reply'};await request(account,`requests/${reqId}/messages`,input);await request(account,`requests/${reqId}/messages`,input);
    const directory=await request(account,'admin/clients');if(directory.clients.some(c=>c.portal_domain_assignments?.length||c.portal_websites?.length||c.portal_service_entitlements?.length)||directory.provisioning.length)throw Error('local_support_directory_metadata_leak');
   }
+  await request(account,`admin/support/${reqId}`,undefined,rolePermissions[role].includes('support.read')?200:403);
+  if(!rolePermissions[role].includes('support.write'))await request(account,'admin/support/note',{idempotency_key:randomUUID(),request_id:reqId,body:'permission boundary'},403);
   outcomes.push({role,realPasswordLogin:true,totpMfaRequired:true,allowedReads:true,permittedWrites:role!=='auditor',negativeApiTests:true,directRls:true,noSelfPromotion:true});
  }
  stage='active_session_role_change';await request(owner,'admin/team/change',{idempotency_key:randomUUID(),user_id:first.id,role:'auditor',active:true,expected_revision:1});await request(first,'admin/request-status',{id:reqId,status:'under_review'},403);await request(first,'admin/workspace?section=websites');
