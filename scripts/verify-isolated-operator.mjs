@@ -13,6 +13,10 @@ const websites=check(await db.from('portal_websites').select('id').eq('client_id
 const services=check(await db.from('portal_service_entitlements').select('id,start_date,end_date,billing_arrangement').eq('client_id',client.id));
 const history=services.length?check(await db.from('portal_service_history').select('id').in('service_id',services.map(s=>s.id))):[];
 const assignments=check(await db.from('portal_domain_assignments').select('client_id').eq('client_id',client.id));
-const evidence={at:new Date().toISOString(),scope:'Read-only local database evidence following actual browser actions. Provider transports are fixtures, not live acceptance.',runId,assignmentCount:assignments.length,websiteCount:websites.length,services:services.map(({id,...s})=>s),serviceHistoryCount:history.length,invoiceStates:invoices.map(i=>i.status),credentialsRead:false,businessRecordsChanged:false};
+const tickets=check(await db.from('portal_requests').select('id,status').eq('client_id',client.id));
+const replies=check(await db.from('portal_messages').select('body').eq('client_id',client.id));
+const notes=tickets.length?check(await db.from('portal_support_notes').select('id').in('request_id',tickets.map(t=>t.id))):[];
+const outbox=check(await db.from('portal_email_outbox').select('dedupe_key,status,body').eq('client_id',client.id));
+const evidence={at:new Date().toISOString(),scope:'Read-only local database evidence following actual browser actions. Provider transports are fixtures, not live acceptance.',runId,assignmentCount:assignments.length,websiteCount:websites.length,services:services.map(({id,...s})=>s),serviceHistoryCount:history.length,invoiceStates:invoices.map(i=>i.status),supportStates:tickets.map(t=>t.status),replyCount:replies.length,privateSupportNotes:notes.length,privateMarkerInReplies:replies.some(r=>r.body.includes('ISOLATED PRIVATE')),privateMarkerInEmail:outbox.some(r=>r.body.includes('ISOLATED PRIVATE')),outboxStates:outbox.map(r=>r.status),duplicateOutboxKeys:outbox.length-new Set(outbox.map(r=>r.dedupe_key)).size,credentialsRead:false,businessRecordsChanged:false};
 await writeFile(`dist/isolated-operator/${runId}-durable-evidence.json`,JSON.stringify(evidence,null,2));
 console.log(JSON.stringify(evidence));

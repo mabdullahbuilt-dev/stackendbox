@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
+import {useSearchParams} from "next/navigation";
 import {api} from "./Portal";
 import {useAdminAccess} from "./AdminAccess";
 import {DetailDrawer,EmptyState,LoadingSkeleton,PageHeader,StatusBadge} from "./PortalUI";
@@ -9,10 +10,11 @@ type Entry={id:string;body:string;author_id:string;created_at:string};
 type Detail={ticket:Ticket;meta:Meta;messages:Entry[];notes:Entry[];history:{id:string;input:{priority:string;status:string;escalated:boolean};created_at:string}[];assignees:{id:string;name:string}[]};
 const statuses={submitted:"Open",under_review:"Pending",completed:"Resolved",closed:"Closed"};
 export function AdminSupport(){
+ const clientId=useSearchParams().get("client_id");
  const access=useAdminAccess(),writable=access.can("support.write"),[rows,setRows]=useState<Ticket[]|null>(null),[next,setNext]=useState<string|null>(null),[cursor,setCursor]=useState<string|null>(null),[search,setSearch]=useState(""),[filter,setFilter]=useState(""),[error,setError]=useState(""),[message,setMessage]=useState(""),[detail,setDetail]=useState<Detail|null>(null),[busy,setBusy]=useState(false),key=useRef(crypto.randomUUID()),draft=useRef(crypto.randomUUID()),loadId=useRef(0),detailId=useRef(0);
- async function load(before:string|null=null){const id=++loadId.current;try{const params=new URLSearchParams({search,status:filter,...(before?{before}:{})});const data=await api(`admin/support?${params}`);if(id!==loadId.current)return;setRows(data.items);setNext(data.next);setCursor(before);setError("");}catch(e){if(id===loadId.current)setError((e as Error).message);}}
+ async function load(before:string|null=null){const id=++loadId.current;try{const params=new URLSearchParams({search,status:filter,...(clientId?{client_id:clientId}:{}),...(before?{before}:{})});const data=await api(`admin/support?${params}`);if(id!==loadId.current)return;setRows(data.items);setNext(data.next);setCursor(before);setError("");}catch(e){if(id===loadId.current)setError((e as Error).message);}}
  useEffect(()=>{void load();/* Explicit Apply keeps filter requests bounded. */ // eslint-disable-next-line react-hooks/exhaustive-deps
- },[]);
+ },[clientId]);
  async function open(id:string){const request=++detailId.current;setError("");setMessage("");try{const data=await api(`admin/support/${id}`);if(request===detailId.current){setDetail(data);key.current=crypto.randomUUID();draft.current=crypto.randomUUID();}}catch(e){if(request===detailId.current)setError((e as Error).message);}}
  async function save(form:HTMLFormElement,kind:"change"|"note"|"reply"){
   if(!detail||busy||!writable)return;setBusy(true);setError("");const fields=Object.fromEntries(new FormData(form)),id=detail.ticket.id;

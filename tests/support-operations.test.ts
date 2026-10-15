@@ -2,12 +2,22 @@ import {it,expect,vi,beforeEach} from "vitest";
 vi.mock("server-only",()=>({}));
 vi.mock("@/lib/portal/server",()=>({adminDb:vi.fn(),checkDb:vi.fn(error=>{if(error)throw Error("database_operation_failed");}),portalOrigin:()=>"https://portal.example"}));
 vi.mock("@/lib/portal/services",()=>({notifyClient:vi.fn()}));
-import {supportChangeSchema,supportNoteSchema,supportChange,supportNote} from "@/lib/portal/support";
+import {supportChangeSchema,supportNoteSchema,supportChange,supportNote,supportQueue} from "@/lib/portal/support";
 import {adminDb} from "@/lib/portal/server";
 import {notifyClient} from "@/lib/portal/services";
 import {routePermission,rolePermissions} from "@/lib/portal/permissions";
 const id="00000000-0000-4000-8000-000000000001",change={idempotency_key:id,request_id:id,expected_revision:0,priority:"high",assigned_to:null,escalated:false,status:"under_review"};
 beforeEach(()=>vi.clearAllMocks());
+it("keeps the selected client filter in the bounded support queue",async()=>{
+ const q={select:vi.fn(),order:vi.fn(),limit:vi.fn(),eq:vi.fn(),then:(resolve:(result:unknown)=>void)=>resolve({data:[],error:null})};
+ for(const method of [q.select,q.order,q.limit,q.eq])method.mockReturnValue(q);
+ vi.mocked(adminDb).mockReturnValue({from:vi.fn().mockReturnValue(q)} as never);
+ expect(await supportQueue(new URLSearchParams({client_id:id}))).toEqual({items:[],next:null});
+ expect(q.eq).toHaveBeenCalledWith("client_id",id);expect(q.limit).toHaveBeenCalledWith(51);
+});
+it("rejects malformed selected-client filters before reading the queue",async()=>{
+ await expect(supportQueue(new URLSearchParams({client_id:"not-a-client"}))).rejects.toThrow();expect(adminDb).not.toHaveBeenCalled();
+});
 it("rejects unknown fields and malformed private notes",()=>{
  expect(supportChangeSchema.safeParse({...change,client_id:id}).success).toBe(false);
  for(const body of ["", " ","x".repeat(5001)])expect(supportNoteSchema.safeParse({idempotency_key:id,request_id:id,body}).success).toBe(false);

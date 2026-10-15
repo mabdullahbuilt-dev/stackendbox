@@ -11,10 +11,12 @@ function checked(error:{code?:string;message:string}|null){
 }
 export async function supportQueue(params:URLSearchParams){
  const cursor=params.get("before"),search=params.get("search")?.trim()||"",status=params.get("status");
+ const client=params.has("client_id")?z.uuid().parse(params.get("client_id")):null;
  const db=adminDb();let q=db.from("portal_requests").select("id,client_id,subject,status,created_at,updated_at,portal_clients(name),portal_support_meta(priority,assigned_to,escalated,revision,assignee:portal_accounts!portal_support_meta_assigned_to_fkey(name))").order("created_at",{ascending:false}).order("id",{ascending:false}).limit(51);
  if(cursor){const value=z.object({at:z.iso.datetime({offset:true}),id:z.uuid()}).parse(JSON.parse(cursor));q=q.or(`created_at.lt.${value.at},and(created_at.eq.${value.at},id.lt.${value.id})`);}
  if(search)q=q.ilike("subject",`%${search.replace(/[%_\\]/g,"").slice(0,100)}%`);
  if(status)q=q.eq("status",z.enum(["submitted","under_review","completed","closed"]).parse(status));
+ if(client)q=q.eq("client_id",client);
  const result=await q;checkDb(result.error);const rows=result.data||[],items=rows.slice(0,50),last=items.at(-1);
  return {items,next:rows.length>50&&last?JSON.stringify({at:last.created_at,id:last.id}):null};
 }

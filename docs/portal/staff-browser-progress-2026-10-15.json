@@ -11,32 +11,43 @@
     "Website assignment saved through staff UI",
     "Maintenance service saved through staff UI",
     "Service start/end dates, annual arrangement and private note saved with one revisioned history record",
-    "One draft invoice saved without charge or send"
+    "One draft invoice saved, then issued once after personal confirmation, without payment or charge",
+    "Issued invoice downloaded and its saved status verified",
+    "Separate isolated client session sees domain, expiry, auto-renew state, website, service dates and issued invoice",
+    "Client support request saved, staff assigned it to themselves with high priority and Pending status",
+    "Staff reply visible after client refresh, private staff note absent",
+    "Non-owner staff denied Team & Permissions workspace"
   ],
   "durableReadback": {
-    "at": "2026-10-15T10:38:30.638Z",
+    "at": "2026-10-15T10:49:16.055Z",
     "assignments": 1,
     "websites": 1,
     "services": 1,
     "serviceHistory": 1,
-    "invoiceStatus": "draft"
+    "invoiceStatus": "issued",
+    "supportStatus": "under_review",
+    "replies": 1,
+    "privateSupportNotes": 1,
+    "privateMarkersInReplyOrEmail": false,
+    "queuedEmails": 4,
+    "duplicateOutboxKeys": 0
   },
   "fixes": [
     "Staff password activation now shares the password-login landing rule and goes to Account Settings for MFA",
     "Static full-page router no longer cancels an issued navigation with an immediate reload",
     "Staff account settings no longer offer irrelevant customer navigation",
-    "Operator guide reflects implemented staff, support and lifecycle controls"
+    "Operator guide reflects implemented staff, support and lifecycle controls",
+    "Selected-client support link now passes and validates its client filter instead of showing every customer"
   ],
   "checks": {
-    "affectedTestsPassed": 44,
+    "affectedTestsPassed": 50,
     "typescript": "passed",
     "appLint": "passed",
     "fixtureScripts": "node syntax checks, scripts excluded by repository ESLint configuration"
   },
-  "interruption": "Browser control timed out immediately after Issue invoice was clicked. Read-only database evidence confirms invoice remains draft. No retry or manual repair was performed.",
+  "interruption": "Earlier invoice confirmation blocked browser control. After personal interaction browser control resumed and both UI and read-only database confirmed issued. No duplicate issue action or manual repair was performed.",
   "remaining": [
-    "Resume invoice issue and customer-visible readback when browser control is available",
-    "Complete staff provisioning, support, recovery, domain_manager and live-session revocation UI exercises",
+    "Complete staff customer provisioning, remaining recovery, domain_manager and live-session revocation UI exercises",
     "Hosted staff rollout stays disabled pending complete exercise and separate approval"
   ],
   "dnsObservation": {
@@ -49,5 +60,6 @@
     "minimumReviewGate": "2026-10-15T19:00:10.186Z",
     "delegationAuthorized": false
   },
-  "productionDataDnsRoutingPaymentsAndRegistrarSettingsChanged": false
+  "productionDataDnsRoutingPaymentsAndRegistrarSettingsChanged": false,
+  "screenshots": ["dist/portal-evidence/isolated-staff-invoice-issued.png", "dist/portal-evidence/isolated-client-assignment-readback.png", "dist/portal-evidence/isolated-client-support-reply.png"]
 }
